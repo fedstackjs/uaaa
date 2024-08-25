@@ -5,7 +5,7 @@
         <div class="flex-1 flex justify-start">
           <VBtn
             v-if="!isHome"
-            icon="mdi-arrow-left"
+            icon="i-mdi:arrow-left"
             size="sm"
             variant="tonal"
             color="info"

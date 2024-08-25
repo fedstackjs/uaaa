@@ -8,7 +8,7 @@ export class CredentialContext {
 
   constructor(public manager: CredentialManager, public httpCtx: Context) {
     this.app = manager.app
-    this.securityLevel = httpCtx.var.token.level
+    this.securityLevel = httpCtx.var.token?.level ?? 0
   }
 }
 

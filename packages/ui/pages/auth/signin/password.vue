@@ -8,6 +8,7 @@
 
 <script setup lang="ts">
 const { api } = useApi()
+const toast = useToast()
 
 const userId = ref('')
 const password = ref('')
@@ -23,7 +24,12 @@ const { isLoading, execute } = useAsyncState(
         }
       }
     })
-    const { tokens } = await resp.json()
+    if (resp.ok) {
+      //
+      const { tokens } = await resp.json()
+    } else {
+      toast.error('Failed to login')
+    }
   },
   null,
   { immediate: false }

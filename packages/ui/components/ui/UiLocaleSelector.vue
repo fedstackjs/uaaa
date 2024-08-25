@@ -1,7 +1,7 @@
 <template>
   <VMenu>
     <template v-slot:activator="{ props }">
-      <VBtn v-bind="props" icon="mdi-translate" variant="text" />
+      <VBtn v-bind="props" icon="i-mdi:translate" variant="text" />
     </template>
     <VList density="comfortable">
       <VListItem

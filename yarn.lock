@@ -2173,6 +2173,7 @@ __metadata:
     nuxt: "npm:^3.12.3"
     unocss: "npm:^0.61.3"
     vue: "npm:latest"
+    vue-toastification: "npm:^2.0.0-rc.5"
     vuetify: "npm:^3.6.12"
     vuetify-nuxt-module: "npm:^0.17.1"
   languageName: unknown
@@ -9088,6 +9089,15 @@ __metadata:
   peerDependencies:
     vue: ^3.2.0
   checksum: 10/7e313689a7df1595a69af2eb7ab334befe0e62fb52d64e23669a83668cf522b86609c05d607517019f727f1472b1a56e5367a21d2434a36a82362e935fd7e620
+  languageName: node
+  linkType: hard
+
+"vue-toastification@npm:^2.0.0-rc.5":
+  version: 2.0.0-rc.5
+  resolution: "vue-toastification@npm:2.0.0-rc.5"
+  peerDependencies:
+    vue: ^3.0.2
+  checksum: 10/da2698e8a24f3de99269d71327879c389236179225dca9112d1de971fcd2e809d83670e1195f3c59a232f8b53c5625b93d573e809da7cb587527b5d339ec9bdb
   languageName: node
   linkType: hard
 

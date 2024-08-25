@@ -4,7 +4,7 @@
     <VToolbarItems>
       <VBtn to="/" rounded="lg" :active="false">
         <template #prepend>
-          <VIcon size="48">mdi-lock</VIcon>
+          <VIcon size="48">i-mdi:lock</VIcon>
         </template>
         <div v-if="mdAndUp" class="text-none pl-4 font-mono text-3xl">
           {{ $config.public.appName }}

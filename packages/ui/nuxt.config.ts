@@ -4,7 +4,13 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: { enabled: true },
   ssr: false,
-  modules: ['@vueuse/nuxt', '@unocss/nuxt', '@nuxtjs/i18n', 'vuetify-nuxt-module'],
+  modules: [
+    //
+    '@vueuse/nuxt',
+    '@unocss/nuxt',
+    '@nuxtjs/i18n',
+    'vuetify-nuxt-module'
+  ],
   runtimeConfig: {
     public: {
       appName: 'UAAA'

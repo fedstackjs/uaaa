@@ -17,7 +17,7 @@ defineProps<{
 }>()
 
 const links = [
-  { to: '/setting', title: 'pages.setting', prependIcon: 'mdi-account-cog-outline' },
-  { to: '/auth/logout', title: 'pages.auth.logout', prependIcon: 'mdi-logout' }
+  { to: '/setting', title: 'pages.setting', prependIcon: 'i-mdi:account-cog-outline' },
+  { to: '/auth/logout', title: 'pages.auth.logout', prependIcon: 'i-mdi:logout' }
 ]
 </script>

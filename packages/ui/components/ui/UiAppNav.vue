@@ -34,16 +34,16 @@
 const model = defineModel<boolean>()
 
 const links = [
-  { to: '/', title: 'pages.index', prependIcon: 'mdi-home' },
-  { to: '/current', title: 'pages.current', prependIcon: 'mdi-target-account' },
-  { to: '/session', title: 'pages.session', prependIcon: 'mdi-account-key-outline' },
-  { to: '/app', title: 'pages.app', prependIcon: 'mdi-application-cog-outline' },
-  { to: '/credential', title: 'pages.credential', prependIcon: 'mdi-shield-key-outline' },
-  { to: '/setting', title: 'pages.setting', prependIcon: 'mdi-account-cog-outline' }
+  { to: '/', title: 'pages.index', prependIcon: 'i-mdi:home' },
+  { to: '/current', title: 'pages.current', prependIcon: 'i-mdi:target-account' },
+  { to: '/session', title: 'pages.session', prependIcon: 'i-mdi:account-key-outline' },
+  { to: '/app', title: 'pages.app', prependIcon: 'i-mdi:application-cog-outline' },
+  { to: '/credential', title: 'pages.credential', prependIcon: 'i-mdi:shield-key-outline' },
+  { to: '/setting', title: 'pages.setting', prependIcon: 'i-mdi:account-cog-outline' }
 ]
 
 const adminLinks = [
-  { to: '/console', title: 'pages.console.index', prependIcon: 'mdi-console' },
+  { to: '/console', title: 'pages.console.index', prependIcon: 'i-mdi:console' },
   { to: '/console/user', title: 'pages.console.user' },
   { to: '/console/app', title: 'pages.console.app' },
   { to: '/console/setting', title: 'pages.console.setting' }

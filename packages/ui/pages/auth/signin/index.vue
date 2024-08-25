@@ -5,7 +5,7 @@
       :key="loginType"
       variant="tonal"
       class="justify-start"
-      prepend-icon="mdi-lock"
+      prepend-icon="i-mdi:lock"
       :to="`/auth/signin/${loginType}`"
       :text="$t('messages.login-by', [$t(`credentials.${loginType}`)])"
     />
