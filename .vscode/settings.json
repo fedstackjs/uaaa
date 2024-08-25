@@ -1,0 +1,8 @@
+{
+  "unocss.root": ["packages/ui"],
+  "editor.quickSuggestions": {
+    "other": "on",
+    "comments": "off",
+    "strings": "on"
+  }
+}

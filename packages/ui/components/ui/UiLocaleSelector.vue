@@ -1,0 +1,28 @@
+<template>
+  <VMenu>
+    <template v-slot:activator="{ props }">
+      <VBtn v-bind="props" icon="mdi-translate" variant="text" />
+    </template>
+    <VList density="comfortable">
+      <VListItem
+        v-for="(code, i) of availableLocales"
+        :key="i"
+        :title="code"
+        @click="locale = code"
+      />
+    </VList>
+  </VMenu>
+</template>
+
+<script setup lang="ts">
+import { syncRef } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
+import { useLocale } from 'vuetify'
+
+// import { attachToLocalStorage } from '@/utils/persist'
+
+const { locale, availableLocales } = useI18n({ useScope: 'global' })
+const { current } = useLocale()
+syncRef(locale, current)
+// attachToLocalStorage('locale', locale)
+</script>

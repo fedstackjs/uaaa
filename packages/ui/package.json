@@ -1,5 +1,5 @@
 {
-  "name": "nuxt-app",
+  "name": "@uaaa/ui",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,5 +12,15 @@
   "dependencies": {
     "nuxt": "^3.12.3",
     "vue": "latest"
+  },
+  "devDependencies": {
+    "@mdi/font": "^7.4.47",
+    "@nuxtjs/i18n": "^8.3.1",
+    "@unocss/nuxt": "^0.61.3",
+    "@vueuse/core": "^10.11.0",
+    "@vueuse/nuxt": "^10.11.0",
+    "unocss": "^0.61.3",
+    "vite-plugin-vuetify": "^2.0.3",
+    "vuetify": "^3.6.12"
   }
 }
