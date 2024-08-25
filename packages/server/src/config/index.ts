@@ -7,7 +7,9 @@ const tAppConfig = type({
   plugins: 'string[]',
   port: 'number',
   sessionTimeout: 'string',
-  deploymentUrl: 'string'
+  deploymentUrl: 'string',
+  tokenTimeout: 'string',
+  refreshTimeout: 'string'
 })
 
 type IAppConfig = typeof tAppConfig.infer

@@ -6,12 +6,12 @@ export interface ISessionDoc {
   /** The session's user's union id */
   userId: string
 
-  operationCount: number
+  tokenCount: number
 
   terminated?: boolean
 }
 
-export interface ISessionOperationDoc {
+export interface ISessionTokenDoc {
   _id: string
   sessionId: string
   index: number
@@ -23,4 +23,5 @@ export interface ISessionOperationDoc {
   expiresAt: number
   refreshCount: number
   refreshToken?: string | undefined
+  refreshExpiresAt?: number | undefined
 }

@@ -1,6 +1,7 @@
 {
-  "name": "server",
+  "name": "@uaaa/server",
   "type": "module",
+  "main": "lib/index.js",
   "scripts": {
     "dev": "tsx watch src/cli/index.ts serve 3030",
     "build": "tsc"
@@ -18,7 +19,7 @@
     "bcrypt": "^5.1.1",
     "clipanion": "^4.0.0-rc.3",
     "dotenv": "^16.4.5",
-    "hono": "^4.4.13",
+    "hono": "^4.5.8",
     "hookable": "^5.5.3",
     "jsonwebtoken": "^9.0.2",
     "micromatch": "^4.0.8",

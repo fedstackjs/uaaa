@@ -12,6 +12,8 @@ class ServeCommand extends Command {
   plugins = Option.Array('--plugin', ['password', 'oidc'])
   sessionTimeout = Option.String('--session-timeout', '7d')
   deploymentUrl = Option.String('--deployment-url', 'http://localhost:3030')
+  tokenTimeout = Option.String('--token-timeout', '15m')
+  refreshTimeout = Option.String('--refresh-timeout', '7d')
 
   async execute() {
     const app = new App(this)

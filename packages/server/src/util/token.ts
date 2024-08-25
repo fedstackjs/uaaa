@@ -1,7 +1,7 @@
 import { createPrivateKey, createPublicKey } from 'node:crypto'
 import { Hookable } from 'hookable'
 import jwt from 'jsonwebtoken'
-import type { App, ISessionOperationDoc } from '../index.js'
+import type { App, ISessionTokenDoc } from '../index.js'
 import { type } from 'arktype'
 import { ObjectId } from 'mongodb'
 import { HTTPException } from 'hono/http-exception'
@@ -17,6 +17,7 @@ export interface ITokenInit {
   securityLevel: number
   createdAt: number
   expiresAt: number
+  refreshExpiresAt?: number | undefined
 }
 
 export const tTokenPayload = type({
@@ -49,55 +50,60 @@ export class TokenManager extends Hookable {
   async persistAndSign(
     index: number,
     init: Omit<ITokenInit, 'tokenId'>,
-    allowRefresh = false,
     options: jwt.SignOptions = {}
   ) {
-    const { insertedId } = await this.app.db.sessionOperations.insertOne(
+    const refreshToken = init.refreshExpiresAt ? nanoid() : undefined
+    const { insertedId } = await this.app.db.sessionTokens.insertOne(
       {
         _id: nanoid(),
         index,
         refreshCount: 0,
-        refreshToken: allowRefresh ? nanoid() : undefined,
+        refreshToken,
+        refreshExpiresAt: init.refreshExpiresAt,
         ...init
       },
       { ignoreUndefined: true }
     )
-    return this.sign({ ...init, tokenId: insertedId }, options)
+    return {
+      token: await this.sign({ ...init, tokenId: insertedId }, options),
+      refreshToken
+    }
   }
 
-  async persist(index: number, init: Omit<ITokenInit, 'tokenId'>, allowRefresh = false) {
-    const { insertedId } = await this.app.db.sessionOperations.insertOne({
+  async persist(index: number, init: Omit<ITokenInit, 'tokenId'>) {
+    const { insertedId } = await this.app.db.sessionTokens.insertOne({
       _id: nanoid(),
       index,
       refreshCount: 0,
-      refreshToken: allowRefresh ? nanoid() : undefined,
+      refreshToken: init.refreshExpiresAt ? nanoid() : undefined,
+      refreshExpiresAt: init.refreshExpiresAt,
       ...init
     })
     return insertedId
   }
 
-  async signPersisted(
-    userId: string,
-    operation: ISessionOperationDoc,
-    options: jwt.SignOptions = {}
-  ) {
-    return this.sign({ ...operation, userId, tokenId: operation._id }, options)
+  async signPersisted(userId: string, token: ISessionTokenDoc, options: jwt.SignOptions = {}) {
+    return this.sign({ ...token, userId, tokenId: token._id }, options)
   }
 
-  async signAndRefresh(refreshToken: string, expiresAt: number) {
-    const operation = await this.app.db.sessionOperations.findOneAndUpdate(
+  async signAndRefresh(refreshToken: string, expiresAt: number, refreshExpiresAt?: number) {
+    const newRefreshToken = refreshExpiresAt ? nanoid() : undefined
+    const token = await this.app.db.sessionTokens.findOneAndUpdate(
       { refreshToken },
       {
         $inc: { refreshCount: 1 },
-        $unset: { refreshToken: '' },
-        $set: { expiresAt }
+        $unset: refreshExpiresAt ? (undefined as never) : { refreshToken: '' },
+        $set: { expiresAt, refreshToken: newRefreshToken, refreshExpiresAt }
       },
-      { returnDocument: 'after' }
+      { ignoreUndefined: true, returnDocument: 'after' }
     )
-    if (!operation) throw new HTTPException(401)
-    const session = await this.app.db.sessions.findOne({ _id: operation.sessionId })
+    if (!token) throw new HTTPException(401)
+    const session = await this.app.db.sessions.findOne({ _id: token.sessionId })
     if (!session || session.terminated) throw new HTTPException(401)
-    return this.signPersisted(session.userId, operation)
+    return {
+      token: await this.signPersisted(session.userId, token),
+      refreshToken: newRefreshToken
+    }
   }
 
   async sign(init: ITokenInit, options: jwt.SignOptions = {}) {

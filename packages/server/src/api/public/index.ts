@@ -15,7 +15,7 @@ export const publicApi = new Hono()
     return ctx.json(await ctx.var.app.token.getJWKS())
   })
   // Supported login methods
-  .get('/login-types', (ctx) => {
+  .get('/login', (ctx) => {
     return ctx.json({ types: ctx.var.app.credential.getLoginTypes() })
   })
   // Login
@@ -35,31 +35,29 @@ export const publicApi = new Hono()
       const { insertedId: sessionId } = await db.sessions.insertOne({
         _id: nanoid(),
         userId,
-        operationCount: securityLevel > 0 ? 2 : 1
+        tokenCount: securityLevel > 0 ? 2 : 1
       })
       const tokens: string[] = []
       const timestamp = Date.now()
-      tokens.push(
-        await token.persistAndSign(0, {
+      const { token: loginToken } = await token.persistAndSign(0, {
+        sessionId,
+        userId,
+        permissions: ['uaaa/**/*'],
+        securityLevel: 0,
+        createdAt: timestamp,
+        expiresAt: timestamp + ms(config.get('tokenTimeout'))
+      })
+      tokens.push(loginToken)
+      if (securityLevel > 0) {
+        const { token: elevatedToken } = await token.persistAndSign(1, {
           sessionId,
           userId,
-          permissions: ['uaaa/session/**/*'],
-          securityLevel: 0,
+          permissions: ['uaaa/**/*'],
+          securityLevel,
           createdAt: timestamp,
-          expiresAt: timestamp + ms(config.get('sessionTimeout'))
+          expiresAt: timestamp + expiresIn
         })
-      )
-      if (securityLevel > 0) {
-        tokens.push(
-          await token.persistAndSign(1, {
-            sessionId,
-            userId,
-            permissions: ['uaaa/**/*'],
-            securityLevel,
-            createdAt: timestamp,
-            expiresAt: timestamp + expiresIn
-          })
-        )
+        tokens.push(elevatedToken)
       }
       return ctx.json({ tokens })
     }

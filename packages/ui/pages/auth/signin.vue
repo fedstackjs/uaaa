@@ -1,13 +1,22 @@
 <template>
   <VContainer class="fill-height justify-center">
-    <VCard :title="$t('pages.signin')" class="min-w-md">
+    <VCard class="min-w-md">
+      <VCardTitle class="d-flex justify-center justify-between">
+        <div class="flex-1 flex justify-start">
+          <VBtn
+            v-if="!isHome"
+            icon="mdi-arrow-left"
+            size="sm"
+            variant="tonal"
+            color="info"
+            to="/auth/signin"
+          />
+        </div>
+        <div>{{ $t('pages.signin') }}</div>
+        <div class="flex-1 flex justify-start"></div>
+      </VCardTitle>
       <VDivider />
-      <VCardText class="flex flex-col gap-2">
-        <VBtn variant="tonal" class="justify-start" prepend-icon="mdi-lock" text="password" />
-        <VBtn variant="tonal" class="justify-start" prepend-icon="mdi-key" text="passkey" />
-        <VBtn variant="tonal" class="justify-start" prepend-icon="mdi-phone" text="phone" />
-        <VBtn variant="tonal" class="justify-start" prepend-icon="mdi-email" text="email" />
-      </VCardText>
+      <NuxtPage />
     </VCard>
   </VContainer>
 </template>
@@ -16,4 +25,7 @@
 definePageMeta({
   layout: 'plain'
 })
+
+const route = useRoute()
+const isHome = computed(() => route.path.replace(/\/$/, '') === '/auth/signin')
 </script>

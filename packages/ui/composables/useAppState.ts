@@ -1,5 +1,6 @@
-const isLoggedIn = computed(() => true)
+const authToken = useLocalStorage<string | null>('authToken', null)
+const isLoggedIn = computed(() => !!authToken.value)
 
 export const useAppState = () => {
-  return { isLoggedIn }
+  return { authToken, isLoggedIn }
 }

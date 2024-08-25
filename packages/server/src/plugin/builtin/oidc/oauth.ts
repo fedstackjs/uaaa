@@ -1,6 +1,7 @@
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { Hono } from 'hono'
+import ms from 'ms'
 
 const tOIDCAuthorizationRequest = type({
   scope: 'string',
@@ -79,7 +80,8 @@ export const oauthRouter = new Hono()
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#TokenEndpoint
   .post('/oauth/token', arktypeValidator('form', tOIDCAccessTokenRequest), async (ctx) => {
     const request = ctx.req.valid('form')
-    const { apps, sessionOperations, sessions } = ctx.var.app.db
+    const { app } = ctx.var
+    const { apps, sessionTokens, sessions } = app.db
     if (request.grant_type === 'authorization_code') {
       const clientApp = await apps.findOne({ _id: request.client_id })
       if (!clientApp || clientApp.secret !== request.client_secret) {
@@ -89,29 +91,40 @@ export const oauthRouter = new Hono()
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const operation = await sessionOperations.findOne({
+      const sessionToken = await sessionTokens.findOne({
         _id: request.code,
         clientAppId: request.client_id
       })
-      if (!operation) {
+      if (!sessionToken) {
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const session = await sessions.findOne({ _id: operation.sessionId })
+      const session = await sessions.findOne({ _id: sessionToken.sessionId })
       if (!session || session.terminated) {
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const accessToken = await ctx.var.app.token.signPersisted(session.userId, operation)
+      const accessToken = await app.token.signPersisted(session.userId, sessionToken)
       return ctx.json({
         access_token: accessToken,
         token_type: 'Bearer',
-        expires_in: Math.floor((operation.expiresAt - Date.now()) / 1000),
+        expires_in: Math.floor((sessionToken.expiresAt - Date.now()) / 1000),
         // TODO: implement ID token
         // id_token: '',
-        refresh_token: operation.refreshToken
+        refresh_token: sessionToken.refreshToken
       })
     } else {
-      return ctx.json({ error: 'unsupported_grant_type' }, 400)
+      const now = Date.now()
+      const { token, refreshToken } = await ctx.var.app.token.signAndRefresh(
+        request.refresh_token,
+        now + ms(app.config.get('tokenTimeout')),
+        now + ms(app.config.get('refreshTimeout'))
+      )
+      return ctx.json({
+        access_token: token,
+        token_type: 'Bearer',
+        expires_in: Math.floor(ms(app.config.get('tokenTimeout')) / 1000),
+        refresh_token: refreshToken
+      })
     }
   })

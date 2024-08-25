@@ -1,4 +1,5 @@
 export default defineNuxtRouteMiddleware((to, from) => {
   const { isLoggedIn } = useAppState()
-  if (to.meta.layout === 'default' && !isLoggedIn.value) return navigateTo('/auth/signin')
+  const layout = to.meta.layout ?? 'default'
+  if (layout === 'default' && !isLoggedIn.value) return navigateTo('/auth/signin')
 })

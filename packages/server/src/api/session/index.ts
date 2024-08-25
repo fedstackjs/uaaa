@@ -49,18 +49,19 @@ export const sessionApi = new Hono()
       )
       const session = await db.sessions.findOneAndUpdate(
         { _id: ctx.var.token.sid },
-        { $inc: { operationCount: 1 } },
+        { $inc: { tokenCount: 1 } },
         { returnDocument: 'before' }
       )
       if (!session) throw new HTTPException(401)
+      const timestamp = Date.now()
       return ctx.json({
-        token: await token.persistAndSign(session.operationCount, {
+        token: await token.persistAndSign(session.tokenCount, {
           sessionId: ctx.var.token.sid,
           userId: ctx.var.token.sub,
-          permissions: ['uaaa/session/**/*'],
+          permissions: ['uaaa/**/*'],
           securityLevel,
-          createdAt: Date.now(),
-          expiresAt: Date.now() + expiresIn
+          createdAt: timestamp,
+          expiresAt: timestamp + expiresIn
         })
       })
     }
@@ -104,13 +105,13 @@ export const sessionApi = new Hono()
 
       const session = await app.db.sessions.findOneAndUpdate(
         { _id: token.sid },
-        { $inc: { operationCount: 1 } },
+        { $inc: { tokenCount: 1 } },
         { returnDocument: 'before' }
       )
       if (!session) throw new HTTPException(401)
       const timestamp = Date.now()
       return ctx.json({
-        token: await app.token.persistAndSign(session.operationCount, {
+        token: await app.token.persistAndSign(session.tokenCount, {
           sessionId: token.sid,
           userId: token.sub,
           targetAppId,
