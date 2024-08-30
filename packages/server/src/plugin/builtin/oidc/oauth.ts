@@ -81,7 +81,7 @@ export const oauthRouter = new Hono()
   .post('/oauth/token', arktypeValidator('form', tOIDCAccessTokenRequest), async (ctx) => {
     const request = ctx.req.valid('form')
     const { app } = ctx.var
-    const { apps, sessionTokens, sessions } = app.db
+    const { apps, tokens, sessions } = app.db
     if (request.grant_type === 'authorization_code') {
       const clientApp = await apps.findOne({ _id: request.client_id })
       if (!clientApp || clientApp.secret !== request.client_secret) {
@@ -91,35 +91,30 @@ export const oauthRouter = new Hono()
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const sessionToken = await sessionTokens.findOne({
+      const token = await tokens.findOne({
         _id: request.code,
         clientAppId: request.client_id
       })
-      if (!sessionToken) {
+      if (!token) {
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const session = await sessions.findOne({ _id: sessionToken.sessionId })
+      const session = await sessions.findOne({ _id: token.sessionId })
       if (!session || session.terminated) {
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const accessToken = await app.token.signPersisted(session.userId, sessionToken)
+      const accessToken = await app.token.signToken(token)
       return ctx.json({
         access_token: accessToken,
         token_type: 'Bearer',
-        expires_in: Math.floor((sessionToken.expiresAt - Date.now()) / 1000),
+        expires_in: Math.floor((token.expiresAt - Date.now()) / 1000),
         // TODO: implement ID token
         // id_token: '',
-        refresh_token: sessionToken.refreshToken
+        refresh_token: token.refreshToken
       })
     } else {
-      const now = Date.now()
-      const { token, refreshToken } = await ctx.var.app.token.signAndRefresh(
-        request.refresh_token,
-        now + ms(app.config.get('tokenTimeout')),
-        now + ms(app.config.get('refreshTimeout'))
-      )
+      const { token, refreshToken } = await ctx.var.app.token.refreshToken(request.refresh_token)
       return ctx.json({
         access_token: token,
         token_type: 'Bearer',

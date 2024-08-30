@@ -3,11 +3,13 @@ import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import { ConfigManager, IConfig } from './config/index.js'
 import { DbManager } from './db/index.js'
+import { CacheManager } from './cache/index.js'
 import { PluginManager } from './plugin/index.js'
+import { CredentialManager } from './credential/index.js'
+import { TokenManager } from './token/index.js'
+import { ClaimManager } from './claim/index.js'
 import { rootApi } from './api/index.js'
 import { logger } from './util/index.js'
-import { CredentialManager } from './credential/index.js'
-import { TokenManager } from './util/index.js'
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -20,7 +22,9 @@ export class App extends Hookable<{
 }> {
   config
   db
+  cache
   credential
+  claim
   plugin
   token
 
@@ -28,7 +32,9 @@ export class App extends Hookable<{
     super()
     this.config = new ConfigManager(this, config)
     this.db = new DbManager(this)
+    this.cache = new CacheManager(this)
     this.credential = new CredentialManager(this)
+    this.claim = new ClaimManager(this)
     this.plugin = new PluginManager(this)
     this.token = new TokenManager(this)
   }
@@ -38,6 +44,7 @@ export class App extends Hookable<{
     await this.config.validateConfig()
     await this.plugin.setupPlugins()
     await this.db.initDatabase()
+    await this.cache.initCache()
 
     const app = new Hono()
       .use(async (ctx, next) => {
@@ -57,6 +64,8 @@ export class App extends Hookable<{
 export * from './api/index.js'
 export * from './config/index.js'
 export * from './credential/index.js'
+export * from './claim/index.js'
 export * from './db/index.js'
 export * from './plugin/index.js'
+export * from './token/index.js'
 export * from './util/index.js'

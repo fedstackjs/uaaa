@@ -2,7 +2,8 @@ import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import micromatch from 'micromatch'
 import type jwt from 'jsonwebtoken'
-import { UAAA, type ITokenPayload } from '../util/index.js'
+import { UAAA } from '../util/index.js'
+import { ITokenPayload } from '../token/index.js'
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -16,7 +17,7 @@ export const verifyAuthorizationJwt = createMiddleware(async (ctx, next) => {
   const header = ctx.req.header('Authorization')
   const token = header?.split(' ')[1]
   if (!token) throw new HTTPException(401)
-  const { jwt, payload } = await ctx.var.app.token.verify(token)
+  const { jwt, payload } = await ctx.var.app.token.verifyUAAAToken(token)
   ctx.set('jwt', jwt)
   ctx.set('token', payload)
   await next()

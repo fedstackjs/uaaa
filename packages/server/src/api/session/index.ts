@@ -8,8 +8,30 @@ import { UAAA } from '../../util/index.js'
 
 export const sessionApi = new Hono()
   .use(verifyAuthorizationJwt)
-  .get('/', verifyPermission({ path: 'uaaa/session/info' }), async (ctx) => {
+  /** Get session info */
+  .get('/', verifyPermission({ path: 'uaaa/session' }), async (ctx) => {
     //
+  })
+  /** Get session claims */
+  .get('/claims', verifyPermission({ path: 'uaaa/session/claims' }), async (ctx) => {
+    const { app, token } = ctx.var
+    const { client_id } = token
+    if (!client_id) {
+      throw new HTTPException(403, {
+        message: `Only applications can access this endpoint`
+      })
+    }
+    const installation = await app.db.installations.findOne({ appId: client_id, userId: token.sub })
+    const clientApp = await app.db.apps.findOne({ _id: client_id })
+    const user = await app.db.users.findOne({ _id: token.sub })
+    if (!installation || !clientApp || !user) throw new HTTPException(404)
+    const claims = await app.claim.filterClaimsForApp(
+      ctx,
+      installation.grantedClaims,
+      clientApp.requestedClaims,
+      user.claims
+    )
+    return ctx.json({ claims })
   })
   .get(
     '/elevate',
@@ -39,7 +61,7 @@ export const sessionApi = new Hono()
     ),
     async (ctx) => {
       const { type, payload, targetLevel } = ctx.req.valid('json')
-      const { credential, db, token } = ctx.var.app
+      const { credential, db, token, config } = ctx.var.app
       const { securityLevel, expiresIn } = await credential.handleVerify(
         ctx,
         type,
@@ -55,13 +77,16 @@ export const sessionApi = new Hono()
       if (!session) throw new HTTPException(401)
       const timestamp = Date.now()
       return ctx.json({
-        token: await token.persistAndSign(session.tokenCount, {
+        token: await token.createAndSignToken({
           sessionId: ctx.var.token.sid,
           userId: ctx.var.token.sub,
           permissions: ['uaaa/**/*'],
+          index: session.tokenCount,
           securityLevel,
           createdAt: timestamp,
-          expiresAt: timestamp + expiresIn
+          expiresAt: timestamp + expiresIn,
+          tokenTimeout: ms(config.get('tokenTimeout')),
+          refreshTimeout: ms(config.get('refreshTimeout'))
         })
       })
     }
@@ -103,26 +128,35 @@ export const sessionApi = new Hono()
       )
       if (!permissions.length) throw new HTTPException(403)
 
+      const timestamp = Date.now()
+      const parentToken = await app.db.tokens.findOne({
+        _id: token.jti,
+        expiresAt: { $gt: timestamp }
+      })
+      if (!parentToken) throw new HTTPException(401)
+
       const session = await app.db.sessions.findOneAndUpdate(
         { _id: token.sid },
         { $inc: { tokenCount: 1 } },
         { returnDocument: 'before' }
       )
       if (!session) throw new HTTPException(401)
-      const timestamp = Date.now()
-      return ctx.json({
-        token: await app.token.persistAndSign(session.tokenCount, {
-          sessionId: token.sid,
-          userId: token.sub,
-          targetAppId,
-          clientAppId,
-          permissions,
-          securityLevel,
-          createdAt: timestamp,
-          expiresAt: timestamp + ms(app.config.get('sessionTimeout'))
-        })
+      const { _id } = await app.token.createToken({
+        sessionId: token.sid,
+        userId: token.sub,
+        index: session.tokenCount,
+        targetAppId,
+        clientAppId,
+        permissions,
+        securityLevel,
+        createdAt: timestamp,
+        expiresAt: parentToken.expiresAt,
+        // TODO: tokenTimeout and refreshTimeout should be configurable
+        tokenTimeout: parentToken.tokenTimeout,
+        refreshTimeout: parentToken.refreshTimeout
       })
+      return ctx.json({ tokenId: _id })
     }
   )
-  .post('/extends')
+
 export type ISessionApi = typeof sessionApi

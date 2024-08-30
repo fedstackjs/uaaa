@@ -4,18 +4,26 @@ export interface IAppProvidedPermission {
   path: string
 }
 
+export interface IAppRequestedClaim {
+  name: string
+  required?: true | undefined
+  verified?: true | undefined
+}
+
+export interface IAppRequestedPermission {
+  perm: string
+  reason: string
+  required?: true | undefined
+}
+
 export interface IAppDoc {
   /** The app id is the unique app id [a-zA-Z._-]+ */
   _id: string
 
   providedPermissions: IAppProvidedPermission[]
 
-  /** App attributes */
-  attributes: {
-    name: string
-    description: string
-    [K: string]: string
-  }
+  requestedClaims: IAppRequestedClaim[]
+  requestedPermissions: IAppRequestedPermission[]
 
   callbackUrls: string[]
   secret: string

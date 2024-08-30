@@ -39,27 +39,47 @@ export const publicApi = new Hono()
       })
       const tokens: string[] = []
       const timestamp = Date.now()
-      const { token: loginToken } = await token.persistAndSign(0, {
+      const { token: loginToken } = await token.createAndSignToken({
         sessionId,
         userId,
+        index: 0,
         permissions: ['uaaa/**/*'],
         securityLevel: 0,
         createdAt: timestamp,
-        expiresAt: timestamp + ms(config.get('tokenTimeout'))
+        expiresAt: timestamp + ms(config.get('sessionTimeout')),
+        tokenTimeout: ms(config.get('tokenTimeout')),
+        refreshTimeout: ms(config.get('refreshTimeout'))
       })
       tokens.push(loginToken)
       if (securityLevel > 0) {
-        const { token: elevatedToken } = await token.persistAndSign(1, {
+        const { token: elevatedToken } = await token.createAndSignToken({
           sessionId,
           userId,
+          index: 1,
           permissions: ['uaaa/**/*'],
           securityLevel,
           createdAt: timestamp,
-          expiresAt: timestamp + expiresIn
+          expiresAt: timestamp + expiresIn,
+          tokenTimeout: ms(config.get('tokenTimeout')),
+          refreshTimeout: ms(config.get('refreshTimeout'))
         })
         tokens.push(elevatedToken)
       }
       return ctx.json({ tokens })
+    }
+  )
+  .post(
+    '/refresh',
+    arktypeValidator(
+      'json',
+      type({
+        refreshToken: 'string'
+      })
+    ),
+    async (ctx) => {
+      const { refreshToken } = ctx.req.valid('json')
+      const { app } = ctx.var
+      return ctx.json(app.token.refreshToken(refreshToken))
     }
   )
 

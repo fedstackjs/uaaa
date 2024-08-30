@@ -6,10 +6,11 @@ const tAppConfig = type({
   mongoUri: 'string',
   plugins: 'string[]',
   port: 'number',
-  sessionTimeout: 'string',
   deploymentUrl: 'string',
+  sessionTimeout: 'string',
   tokenTimeout: 'string',
-  refreshTimeout: 'string'
+  refreshTimeout: 'string',
+  defaultUserSecurityLevel: 'number'
 })
 
 type IAppConfig = typeof tAppConfig.infer

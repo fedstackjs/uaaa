@@ -6,7 +6,7 @@ import type {
   IInstallationDoc,
   IJsonWebKeyPairDoc,
   ISessionDoc,
-  ISessionTokenDoc,
+  ITokenDoc,
   ISystemConfigDoc,
   IUserDoc
 } from './model/index.js'
@@ -27,7 +27,7 @@ export class DbManager extends Hookable {
   users
   credentials
   sessions
-  sessionTokens
+  tokens
   jwkpairs
   system
 
@@ -43,7 +43,7 @@ export class DbManager extends Hookable {
     this.users = this.mongoDb.collection<IUserDoc>('users')
     this.credentials = this.mongoDb.collection<ICredentialDoc>('credentials')
     this.sessions = this.mongoDb.collection<ISessionDoc>('sessions')
-    this.sessionTokens = this.mongoDb.collection<ISessionTokenDoc>('sessionTokens')
+    this.tokens = this.mongoDb.collection<ITokenDoc>('tokens')
     this.jwkpairs = this.mongoDb.collection<IJsonWebKeyPairDoc>('jwkpairs')
     this.system = this.mongoDb.collection<ISystemConfigDoc>('system')
 

@@ -27,6 +27,13 @@ export interface ICredentialDoc {
   /** The credential will only be valid for this count */
   validCount: number
 
+  createdAt: number
+
+  updatedAt: number
+
+  lastAccessedAt?: number
+  accessedCount?: number
+
   /** Max security level can be provided by authenticating with this credential */
   securityLevel: number
 }
