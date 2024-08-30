@@ -35,7 +35,8 @@ export class EmailImpl extends CredentialImpl {
     const { email } = await this._checkPayload(ctx, payload)
     const credential = await ctx.app.db.credentials.findOne({
       data: email,
-      type: 'email'
+      type: 'email',
+      disabled: { $ne: true }
     })
     if (!credential) {
       throw new HTTPException(401)
@@ -47,9 +48,11 @@ export class EmailImpl extends CredentialImpl {
     const { email } = await this._checkPayload(ctx, payload)
     const credential = await ctx.app.db.credentials.findOne({
       data: email,
-      type: 'email'
+      type: 'email',
+      disabled: { $ne: true }
     })
     if (credential) {
+      await ctx.manager.checkCredentialUse(credential._id)
       return {
         userId: credential.userId,
         credentialId: credential._id,
@@ -58,7 +61,8 @@ export class EmailImpl extends CredentialImpl {
       }
     }
     if (this.plugin.allowSignupFromLogin) {
-      await ctx.app.db.users.insertOne({
+      const now = Date.now()
+      const { insertedId: userId } = await ctx.app.db.users.insertOne({
         _id: nanoid(),
         claims: {
           username: {
@@ -68,6 +72,27 @@ export class EmailImpl extends CredentialImpl {
         salt: nanoid(),
         securityLevel: ctx.app.config.get('defaultUserSecurityLevel')
       })
+      const { insertedId: credentialId } = await ctx.app.db.credentials.insertOne({
+        _id: nanoid(),
+        userId: userId,
+        type: 'email',
+        data: email,
+        secret: '',
+        remark: '',
+        validAfter: now,
+        validBefore: Infinity,
+        validCount: Infinity,
+        createdAt: now,
+        updatedAt: now,
+        securityLevel: 1
+      })
+      await ctx.manager.checkCredentialUse(credentialId)
+      return {
+        userId,
+        credentialId,
+        securityLevel: 1,
+        expiresIn: ms(ctx.app.config.get('tokenTimeout'))
+      }
     }
     throw new HTTPException(401)
   }
@@ -76,6 +101,7 @@ export class EmailImpl extends CredentialImpl {
     const credential = await ctx.app.db.credentials.findOne({
       userId,
       type: 'email',
+      disabled: { $ne: true },
       securityLevel: { $gte: targetLevel }
     })
     return !!credential
@@ -115,6 +141,7 @@ export class EmailImpl extends CredentialImpl {
           _id: nanoid(),
           secret: '',
           remark: '',
+          // TODO: securityLevel
           securityLevel: 1,
           createdAt: now
         },
@@ -124,6 +151,9 @@ export class EmailImpl extends CredentialImpl {
           validBefore: Infinity,
           validCount: Infinity,
           updatedAt: now
+        },
+        $unset: {
+          disabled: ''
         }
       },
       { ignoreUndefined: true }

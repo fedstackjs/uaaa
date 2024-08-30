@@ -41,7 +41,7 @@ export const userApi = new Hono()
       }
       await app.claim.verifyClaim(ctx, name, value)
       await app.db.users.updateOne(
-        { _id: token.sub, [`claims.${name}.verified`]: { $exists: false } },
+        { _id: token.sub, [`claims.${name}.verified`]: { $ne: true } },
         { $set: { [`claims.${name}.value`]: value } }
       )
       return ctx.json({})
@@ -76,7 +76,7 @@ export const userApi = new Hono()
     async (ctx) => {
       const { app, token } = ctx.var
       const { appId, grantedPermissions, grantedClaims } = ctx.req.valid('json')
-      const clientApp = await app.db.apps.findOne({ _id: appId })
+      const clientApp = await app.db.apps.findOne({ _id: appId, disabled: { $ne: true } })
       const user = await app.db.users.findOne({ _id: token.sub })
       if (!clientApp || !user) throw new HTTPException(404)
 

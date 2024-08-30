@@ -38,5 +38,5 @@ export interface ITokenDoc {
   /** Token's issue count */
   issuedCount?: number
 
-  terminated?: boolean
+  terminated?: true | boolean
 }

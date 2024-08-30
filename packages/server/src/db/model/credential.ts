@@ -34,6 +34,7 @@ export interface ICredentialDoc {
   lastAccessedAt?: number
   accessedCount?: number
 
+  disabled?: true | undefined
   /** Max security level can be provided by authenticating with this credential */
   securityLevel: number
 }

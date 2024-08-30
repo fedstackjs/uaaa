@@ -22,6 +22,8 @@ export interface IUserDoc {
 
   salt: string
 
+  disabled?: true | undefined
+
   /** Max security level can be provided by authenticating with this user */
   securityLevel: number
 }

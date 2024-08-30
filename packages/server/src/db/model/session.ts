@@ -1,5 +1,3 @@
-import { ObjectId } from 'mongodb'
-
 export interface ISessionDoc {
   _id: string
 
@@ -8,5 +6,5 @@ export interface ISessionDoc {
 
   tokenCount: number
 
-  terminated?: boolean
+  terminated?: true | boolean
 }

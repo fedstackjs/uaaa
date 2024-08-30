@@ -7,4 +7,5 @@ export interface IInstallationDoc extends ICommonDocument {
   grantedClaims: string[]
   createdAt: number
   updatedAt: number
+  disabled?: true | undefined
 }

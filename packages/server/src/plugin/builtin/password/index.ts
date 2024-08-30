@@ -3,7 +3,11 @@ import { HTTPException } from 'hono/http-exception'
 import bcrypt from 'bcrypt'
 import ms from 'ms'
 import { definePlugin } from '../../_common.js'
-import { CredentialContext, CredentialImpl } from '../../../credential/_common.js'
+import {
+  CredentialContext,
+  CredentialImpl,
+  ICredentialUnbindResult
+} from '../../../credential/_common.js'
 import { nanoid } from 'nanoid'
 
 const tPasswordConfig = type({
@@ -62,7 +66,8 @@ class PasswordImpl extends CredentialImpl {
 
     const credential = await ctx.app.db.credentials.findOne({
       userId: payload.id,
-      type: 'password'
+      type: 'password',
+      disabled: { $ne: true }
     })
     if (!credential) {
       throw new HTTPException(401)
@@ -76,18 +81,19 @@ class PasswordImpl extends CredentialImpl {
     return {
       userId: user._id,
       credentialId: credential._id,
-      securityLevel: 0,
-      expiresIn: 0
+      securityLevel: credential.securityLevel,
+      expiresIn: this.passwordTimeout
     }
   }
 
   override async canElevate(ctx: CredentialContext, userId: string, targetLevel: number) {
     const credential = await ctx.app.db.credentials.findOne({
       userId,
-      type: 'password'
+      type: 'password',
+      disabled: { $ne: true },
+      securityLevel: { $gte: targetLevel }
     })
-    if (!credential) return false
-    return targetLevel === 0
+    return !!credential
   }
 
   override async verify(
@@ -96,19 +102,14 @@ class PasswordImpl extends CredentialImpl {
     targetLevel: number,
     _payload: unknown
   ) {
-    if (targetLevel > 0) {
-      throw new HTTPException(403, {
-        message: 'Password credential cannot provide security level higher than 0'
-      })
-    }
-
     const payload = PasswordImpl.tPasswordVerifyPayload(_payload)
     if (payload instanceof type.errors) {
       throw new HTTPException(400, { cause: payload.summary })
     }
     const credential = await ctx.app.db.credentials.findOne({
       userId: userId,
-      type: 'password'
+      type: 'password',
+      disabled: { $ne: true }
     })
     if (!credential) {
       throw new HTTPException(401)
@@ -119,7 +120,7 @@ class PasswordImpl extends CredentialImpl {
     }
     return {
       credentialId: credential._id,
-      securityLevel: 1,
+      securityLevel: credential.securityLevel,
       expiresIn: this.passwordTimeout
     }
   }
@@ -146,6 +147,7 @@ class PasswordImpl extends CredentialImpl {
           _id: nanoid(),
           data: '',
           remark: '',
+          // TODO: securityLevel
           securityLevel: 1
         },
         $set: {
@@ -153,6 +155,9 @@ class PasswordImpl extends CredentialImpl {
           validAfter: Date.now(),
           validBefore: Date.now() + this.passwordExpiration,
           validCount: Infinity
+        },
+        $unset: {
+          disabled: ''
         }
       },
       { ignoreUndefined: true }
@@ -167,20 +172,9 @@ class PasswordImpl extends CredentialImpl {
     ctx: CredentialContext,
     userId: string,
     credentialId: string,
-    _payload: unknown
-  ) {
-    const credential = await ctx.app.db.credentials.findOne({
-      _id: credentialId,
-      userId,
-      type: 'password'
-    })
-    if (!credential) {
-      throw new HTTPException(404)
-    }
-    await ctx.app.db.credentials.deleteOne({
-      _id: credentialId
-    })
-    return {}
+    payload: unknown
+  ): Promise<ICredentialUnbindResult> {
+    throw new HTTPException(403, { message: 'Cannot unbind password credential' })
   }
 }
 

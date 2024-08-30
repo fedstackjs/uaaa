@@ -130,9 +130,13 @@ export class TokenManager extends Hookable<{}> {
     return { token, refreshToken }
   }
 
-  async refreshToken(refreshToken: string) {
+  async refreshToken(refreshToken: string, clientId?: string) {
     const tokenDoc = await this.app.db.tokens.findOneAndUpdate(
-      { refreshToken, refreshExpiresAt: { $gt: Date.now() } },
+      {
+        refreshToken,
+        refreshExpiresAt: { $gt: Date.now() },
+        clientAppId: clientId ? clientId : { $exists: false }
+      },
       { $unset: { refreshToken: '' } }
     )
     if (!tokenDoc || tokenDoc.terminated) {

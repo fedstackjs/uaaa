@@ -3,6 +3,8 @@ import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { nanoid } from 'nanoid'
 import ms from 'ms'
+import { HTTPException } from 'hono/http-exception'
+import { idParamValidator } from '../_common.js'
 
 /** Public API */
 export const publicApi = new Hono()
@@ -17,6 +19,16 @@ export const publicApi = new Hono()
   // Supported login methods
   .get('/login', (ctx) => {
     return ctx.json({ types: ctx.var.app.credential.getLoginTypes() })
+  })
+  // Get Application info
+  .get('/app/:id', idParamValidator, async (ctx) => {
+    const { id } = ctx.req.valid('param')
+    const app = await ctx.var.app.db.apps.findOne(
+      { _id: id },
+      { projection: { callbackUrls: 0, secret: 0 } }
+    )
+    if (!app) throw new HTTPException(404)
+    return ctx.json(app)
   })
   // Login
   .post(
@@ -68,18 +80,27 @@ export const publicApi = new Hono()
       return ctx.json({ tokens })
     }
   )
+  // Refresh Token
   .post(
     '/refresh',
     arktypeValidator(
       'json',
       type({
-        refreshToken: 'string'
+        refreshToken: 'string',
+        'clientId?': 'string|undefined',
+        'clientSecret?': 'string|undefined'
       })
     ),
     async (ctx) => {
-      const { refreshToken } = ctx.req.valid('json')
+      const { refreshToken, clientId, clientSecret } = ctx.req.valid('json')
       const { app } = ctx.var
-      return ctx.json(app.token.refreshToken(refreshToken))
+      if (clientId) {
+        const client = await app.db.apps.findOne({ _id: clientId }, { projection: { secret: 1 } })
+        if (!client || client.secret !== clientSecret) {
+          throw new HTTPException(401)
+        }
+      }
+      return ctx.json(app.token.refreshToken(refreshToken, clientId))
     }
   )
 

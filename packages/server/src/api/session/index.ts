@@ -21,8 +21,12 @@ export const sessionApi = new Hono()
         message: `Only applications can access this endpoint`
       })
     }
-    const installation = await app.db.installations.findOne({ appId: client_id, userId: token.sub })
-    const clientApp = await app.db.apps.findOne({ _id: client_id })
+    const installation = await app.db.installations.findOne({
+      appId: client_id,
+      userId: token.sub,
+      disabled: { $ne: true }
+    })
+    const clientApp = await app.db.apps.findOne({ _id: client_id, disabled: { $ne: true } })
     const user = await app.db.users.findOne({ _id: token.sub })
     if (!installation || !clientApp || !user) throw new HTTPException(404)
     const claims = await app.claim.filterClaimsForApp(
@@ -112,13 +116,14 @@ export const sessionApi = new Hono()
       }
       if (securityLevel > token.level) throw new HTTPException(403)
 
-      const clientApp = await app.db.apps.findOne({ _id: clientAppId })
+      const clientApp = await app.db.apps.findOne({ _id: clientAppId, disabled: { $ne: true } })
       if (!clientApp) throw new HTTPException(404)
       if (securityLevel > clientApp.securityLevel) throw new HTTPException(403)
 
       const installation = await app.db.installations.findOne({
         userId: token.sub,
-        appId: clientAppId
+        appId: clientAppId,
+        disabled: { $ne: true }
       })
       if (!installation) throw new HTTPException(403)
 

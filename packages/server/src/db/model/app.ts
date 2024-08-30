@@ -20,6 +20,9 @@ export interface IAppDoc {
   /** The app id is the unique app id [a-zA-Z._-]+ */
   _id: string
 
+  name: string
+  description?: string
+
   providedPermissions: IAppProvidedPermission[]
 
   requestedClaims: IAppRequestedClaim[]
@@ -28,6 +31,7 @@ export interface IAppDoc {
   callbackUrls: string[]
   secret: string
 
+  disabled?: true | undefined
   /** Max security level can be hold by this app */
   securityLevel: number
 }

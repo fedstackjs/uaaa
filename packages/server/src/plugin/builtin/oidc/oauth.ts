@@ -22,6 +22,8 @@ const tOIDCAccessTokenRequest = type(
   '|',
   {
     grant_type: "'refresh_token'",
+    client_id: 'string',
+    client_secret: 'string',
     refresh_token: 'string',
     'scope?': 'string|undefined'
   }
@@ -114,7 +116,12 @@ export const oauthRouter = new Hono()
         refresh_token: token.refreshToken
       })
     } else {
-      const { token, refreshToken } = await ctx.var.app.token.refreshToken(request.refresh_token)
+      const { refresh_token, client_id, client_secret } = request
+      const client = await app.db.apps.findOne({ _id: client_id }, { projection: { secret: 1 } })
+      if (!client || client.secret !== client_secret) {
+        return ctx.json({ error: 'invalid_client' }, 400)
+      }
+      const { token, refreshToken } = await ctx.var.app.token.refreshToken(refresh_token, client_id)
       return ctx.json({
         access_token: token,
         token_type: 'Bearer',
