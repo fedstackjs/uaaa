@@ -188,7 +188,8 @@ export default definePlugin({
         unique: true,
         partialFilterExpression: {
           type: 'password'
-        }
+        },
+        name: 'password_userId'
       }
     )
     ctx.app.credential.provide(new PasswordImpl(ctx.app.config.getAll()))

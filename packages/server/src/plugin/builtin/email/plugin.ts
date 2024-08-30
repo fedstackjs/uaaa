@@ -62,14 +62,16 @@ export class EmailPlugin {
       { userId: 1 },
       {
         unique: true,
-        partialFilterExpression: { type: 'email' }
+        partialFilterExpression: { type: 'email' },
+        name: 'email_userId'
       }
     )
     await ctx.app.db.credentials.createIndex(
       { data: 1 },
       {
         unique: true,
-        partialFilterExpression: { type: 'email' }
+        partialFilterExpression: { type: 'email' },
+        name: 'email_email'
       }
     )
     ctx.app.credential.provide(new EmailImpl(this))
