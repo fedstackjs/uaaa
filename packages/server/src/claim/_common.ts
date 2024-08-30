@@ -9,7 +9,7 @@ export const rClaimName = /^(?:[a-z0-9_]{1,32}:)?[a-z0-9_]{1,64}$/
 export interface IClaimNames {
   username: string
   realname?: string | undefined
-  avatarHash?: string | undefined
+  avatar_hash?: string | undefined
   email?: string | undefined
   phone?: string | undefined
 }
@@ -133,12 +133,12 @@ export class ClaimManager extends Hookable<{
     })
 
     this.addClaimDescriptor({
-      name: 'avatarHash',
+      name: 'avatar_hash',
       description: 'Avatar hash',
       editable: true,
       securityLevel: 0
     })
-    this.hook('validate:avatarHash', reFilter(rAvatarHash, 'avatar hash'))
+    this.hook('validate:avatar_hash', reFilter(rAvatarHash, 'avatar hash'))
 
     this.addClaimDescriptor({
       name: 'email',
