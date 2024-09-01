@@ -4,6 +4,8 @@ import { type } from 'arktype'
 import { HTTPException } from 'hono/http-exception'
 import { verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
 import { idParamValidator } from '../_common.js'
+import { IAppDoc, IInstallationDoc } from '../../db/index.js'
+import { BusinessError } from '../../util/errors.js'
 
 export const userApi = new Hono()
   .use(verifyAuthorizationJwt)
@@ -15,25 +17,21 @@ export const userApi = new Hono()
   })
 
   // Claim API
-  .get('/claims', verifyPermission({ path: '/uaaa/user/claims' }), async (ctx) => {
+  .get('/claim', verifyPermission({ path: '/uaaa/user/claim' }), async (ctx) => {
     const { app, token } = ctx.var
     const user = await app.db.users.findOne({ _id: token.sub })
     if (!user) throw new HTTPException(404)
     return ctx.json({ claims: await app.claim.filterClaimsForUser(ctx, user.claims) })
   })
   .patch(
-    '/claims',
-    verifyPermission({ path: '/uaaa/user/claims/edit' }),
-    arktypeValidator(
-      'json',
-      type({
-        name: 'string',
-        value: 'string'
-      })
-    ),
+    '/claim/:name',
+    verifyPermission({ path: '/uaaa/user/claim/edit' }),
+    arktypeValidator('param', type({ name: 'string' })),
+    arktypeValidator('json', type({ value: 'string' })),
     async (ctx) => {
       const { app, token } = ctx.var
-      const { name, value } = ctx.req.valid('json')
+      const { name } = ctx.req.valid('param')
+      const { value } = ctx.req.valid('json')
       if (!app.claim.hasClaim(name)) {
         throw new HTTPException(400, {
           message: `Claim ${name} does not exist`
@@ -60,16 +58,40 @@ export const userApi = new Hono()
   .get('/session/:id', verifyPermission({ path: '/uaaa/user/session' }), async (ctx) => {
     //
   })
-  .post('/session/:id/terminate', verifyPermission({ path: '/uaaa/user/edit' }), async (ctx) => {
-    //
-  })
+  .post(
+    '/session/:id/terminate',
+    verifyPermission({ path: '/uaaa/user/session/edit' }),
+    async (ctx) => {
+      //
+    }
+  )
 
   // Installation API
-  .get('/installation', async (ctx) => {
-    //
-  })
-  .get('/installation/:id', async (ctx) => {
-    //
+  .get('/installation', verifyPermission({ path: '/uaaa/user/installation' }), async (ctx) => {
+    const { app, token } = ctx.var
+    const installations = await app.db.installations
+      .aggregate<
+        Pick<IInstallationDoc, 'appId' | 'createdAt' | 'updatedAt' | 'disabled'> & {
+          app: Pick<IAppDoc, 'name' | 'description'>
+        }
+      >([
+        { $match: { userId: token.sub } },
+        { $lookup: { from: 'apps', localField: 'appId', foreignField: '_id', as: 'app' } },
+        { $unwind: '$app' },
+        {
+          $project: {
+            appId: 1,
+            'app.name': 1,
+            'app.description': 1,
+            'app.disabled': 1,
+            createdAt: 1,
+            updatedAt: 1,
+            disabled: 1
+          }
+        }
+      ])
+      .toArray()
+    return ctx.json({ installations })
   })
   .put(
     '/installation',
@@ -114,6 +136,64 @@ export const userApi = new Hono()
         grantedPermissions,
         grantedClaims: await app.claim.filterClaimsForUser(ctx, claims)
       })
+    }
+  )
+  .get(
+    '/installation/:id',
+    verifyPermission({ path: '/uaaa/user/installation' }),
+    idParamValidator,
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const { app, token } = ctx.var
+      const installation = await app.db.installations.findOne({ appId: id, userId: token.sub })
+      if (!installation) throw new HTTPException(404)
+      return ctx.json({ installation })
+    }
+  )
+  .patch(
+    '/installation/:id',
+    verifyPermission({ path: '/uaaa/user/installation/edit' }),
+    idParamValidator,
+    arktypeValidator(
+      'json',
+      type({
+        disabled: 'boolean'
+      })
+    ),
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const { disabled } = ctx.req.valid('json')
+      const { app, token } = ctx.var
+      if (disabled) {
+        await app.db.tokens.updateMany(
+          { appId: id, userId: token.sub },
+          { $set: { terminated: true } }
+        )
+        await app.db.installations.updateOne(
+          { appId: id, userId: token.sub },
+          { $set: { disabled } }
+        )
+      } else {
+        if (!(await app.db.apps.findOne({ _id: id, disabled: { $ne: true } }))) {
+          throw new BusinessError('INVALID_OPERATION', {})
+        }
+        await app.db.installations.updateOne(
+          { appId: id, userId: token.sub },
+          { $unset: { disabled: '' } }
+        )
+      }
+      return ctx.json({})
+    }
+  )
+  .delete(
+    '/installation/:id',
+    verifyPermission({ path: '/uaaa/user/installation/edit' }),
+    idParamValidator,
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const { app, token } = ctx.var
+      await app.db.installations.deleteOne({ appId: id, userId: token.sub, disabled: true })
+      return ctx.json({})
     }
   )
 

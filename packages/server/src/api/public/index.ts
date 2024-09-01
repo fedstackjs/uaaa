@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid'
 import ms from 'ms'
 import { HTTPException } from 'hono/http-exception'
 import { idParamValidator } from '../_common.js'
+import { IAppDoc } from '../../db/index.js'
 
 /** Public API */
 export const publicApi = new Hono()
@@ -23,7 +24,7 @@ export const publicApi = new Hono()
   // Get Application info
   .get('/app/:id', idParamValidator, async (ctx) => {
     const { id } = ctx.req.valid('param')
-    const app = await ctx.var.app.db.apps.findOne(
+    const app: null | Omit<IAppDoc, 'callbackUrls' | 'secret'> = await ctx.var.app.db.apps.findOne(
       { _id: id },
       { projection: { callbackUrls: 0, secret: 0 } }
     )

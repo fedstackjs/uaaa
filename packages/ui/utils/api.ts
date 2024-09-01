@@ -173,7 +173,7 @@ export class ApiManager {
   }
 
   async getUserClaims(): Promise<IUserClaim[]> {
-    const resp = await api.user.claims.$get()
+    const resp = await api.user.claim.$get()
     const { claims } = await resp.json()
     this.isAdmin.value = claims.is_admin?.value === 'true'
     return Object.entries(claims).map(([name, claim]) => ({ name, ...claim }))

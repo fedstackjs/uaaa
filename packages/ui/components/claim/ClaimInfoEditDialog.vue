@@ -37,7 +37,10 @@ watch(
 )
 
 const { run } = useTask(async () => {
-  await api.user.claims.$patch({ json: { name: props.name, value: value.value } })
+  await api.user.claim[':name'].$patch({
+    param: { name: props.name },
+    json: { value: value.value }
+  })
   model.value = false
   emit('updated')
 })
