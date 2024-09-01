@@ -3,7 +3,7 @@
     <template v-slot:activator="{ props }">
       <VBtn
         v-bind="props"
-        prepend-icon="i-mdi:security"
+        prepend-icon="mdi-security"
         class="text-none mr-2"
         variant="tonal"
         :color="color"
@@ -31,7 +31,7 @@
       <VBtn
         v-bind="props"
         :loading="status === 'pending'"
-        prepend-icon="i-mdi:account"
+        prepend-icon="mdi-account"
         class="text-none"
         variant="tonal"
         color="info"
@@ -54,8 +54,8 @@ const { t } = useI18n()
 const route = useRoute()
 
 const links = [
-  { to: '/setting', title: 'pages.setting', prependIcon: 'i-mdi:account-cog-outline' },
-  { to: '/auth/signout', title: 'pages.auth.signout', prependIcon: 'i-mdi:logout' }
+  { to: '/setting', title: 'pages.setting', prependIcon: 'mdi-account-cog-outline' },
+  { to: '/auth/signout', title: 'pages.auth.signout', prependIcon: 'mdi-logout' }
 ]
 
 const higherLevels = computed(() =>
@@ -66,7 +66,7 @@ const higherLevels = computed(() =>
 )
 
 const { data, status, refresh } = await useAsyncData(async () => {
-  return api.getUserClaims()
+  return api.getSessionClaims()
 })
 
 const { effectiveToken } = api
@@ -88,13 +88,3 @@ watch(
   () => refresh()
 )
 </script>
-
-<i18n>
-zhHans:
-  securityLevel:
-    0: 低
-    1: 中
-    2: 高
-    3: 特权
-    4: 安全设备
-</i18n>

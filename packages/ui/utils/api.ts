@@ -4,7 +4,8 @@ import type {
   IUserApi,
   IConsoleApi,
   ITokenPayload,
-  IClaim
+  IClaim,
+  ErrorName
 } from '@uaaa/server'
 import type { IEmailApi } from '@uaaa/server/lib/plugin/builtin/email'
 import type { IWebauthnApi } from '@uaaa/server/lib/plugin/builtin/webauthn'
@@ -177,11 +178,34 @@ export class ApiManager {
     })
   }
 
+  async getSessionClaims(): Promise<IUserClaim[]> {
+    const resp = await api.session.claim.$get()
+    const { claims } = await resp.json()
+    this.isAdmin.value = claims.is_admin?.value === 'true'
+    return Object.entries(claims).map(([name, claim]) => ({ name, ...claim }))
+  }
+
   async getUserClaims(): Promise<IUserClaim[]> {
     const resp = await api.user.claim.$get()
     const { claims } = await resp.json()
     this.isAdmin.value = claims.is_admin?.value === 'true'
     return Object.entries(claims).map(([name, claim]) => ({ name, ...claim }))
+  }
+
+  async getError(resp: Response): Promise<{ error: ErrorName | 'UNKNOWN_ERROR'; data: any }> {
+    try {
+      const { error, data } = await resp.json()
+      return { error, data }
+    } catch (err) {
+      return {
+        error: 'UNKNOWN_ERROR',
+        data: { msg: this.formatError(err) }
+      }
+    }
+  }
+
+  formatError(err: unknown) {
+    return err instanceof Error ? err.message : `${err}`
   }
 
   static parseJWT(token: string) {

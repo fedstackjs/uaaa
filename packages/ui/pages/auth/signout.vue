@@ -8,7 +8,7 @@
       </VCardTitle>
       <VDivider />
       <VCardText>
-        <VAlert type="success" icon="i-mdi:check-circle-outline">
+        <VAlert type="success" icon="mdi-check-circle-outline">
           {{ t('scoped.msg') }}
         </VAlert>
       </VCardText>

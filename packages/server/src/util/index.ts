@@ -12,4 +12,5 @@ export const generateUsername = (suggested: string) => {
 export * from './constants.js'
 export * from './errors.js'
 export * from './logger.js'
+export * from './permission.js'
 export * from './types.js'

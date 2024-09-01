@@ -10,6 +10,9 @@ type IOidcConfig = typeof tOidcConfig.infer
 
 declare module '../../../index.js' {
   interface IConfig extends IOidcConfig {}
+  interface IClaimDescriptor {
+    oidcAlias?: string
+  }
 }
 
 export default definePlugin({
@@ -19,5 +22,9 @@ export default definePlugin({
     ctx.app.hook('extendApp', (router) => {
       router.route('/', oauthRouter)
     })
+    ctx.app.claim.registry['username'].oidcAlias = 'preferred_username'
+    ctx.app.claim.registry['realname'].oidcAlias = 'email'
+    ctx.app.claim.registry['email'].oidcAlias = 'email'
+    ctx.app.claim.registry['phone'].oidcAlias = 'phone_number'
   }
 })

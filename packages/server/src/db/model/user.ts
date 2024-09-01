@@ -1,4 +1,3 @@
-import type { SecurityLevel } from '../../util/index.js'
 import type { IClaimNames } from '../../claim/index.js'
 
 export interface IClaim {

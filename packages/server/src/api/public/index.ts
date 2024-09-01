@@ -24,12 +24,12 @@ export const publicApi = new Hono()
   // Get Application info
   .get('/app/:id', idParamValidator, async (ctx) => {
     const { id } = ctx.req.valid('param')
-    const app: null | Omit<IAppDoc, 'callbackUrls' | 'secret'> = await ctx.var.app.db.apps.findOne(
+    const app: null | Omit<IAppDoc, 'secret'> = await ctx.var.app.db.apps.findOne(
       { _id: id },
-      { projection: { callbackUrls: 0, secret: 0 } }
+      { projection: { secret: 0 } }
     )
     if (!app) throw new HTTPException(404)
-    return ctx.json(app)
+    return ctx.json({ app })
   })
   // Login
   .post(

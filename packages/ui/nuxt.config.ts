@@ -1,4 +1,4 @@
-import { md3 } from 'vuetify/blueprints'
+import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 
 export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
@@ -9,32 +9,42 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@unocss/nuxt',
     '@nuxtjs/i18n',
-    'vuetify-nuxt-module'
+    (_options, nuxt) => {
+      nuxt.hooks.hook('vite:extendConfig', (config) => {
+        // @ts-expect-error
+        config.plugins.push(vuetify({ autoImport: true }))
+      })
+    }
   ],
   runtimeConfig: {
     public: {
       appName: 'UAAA'
     }
   },
+  build: {
+    transpile: ['vuetify']
+  },
+  vite: {
+    vue: {
+      template: {
+        transformAssetUrls
+      }
+    }
+  },
   nitro: {
     devProxy: {
-      '/api': 'http://localhost:3030/api'
+      '/api': 'http://localhost:3030/api',
+      '/oauth': 'http://localhost:3030/oauth',
+      '/.well-known': 'http://localhost:3030/.well-known'
     }
   },
   i18n: {
+    vueI18n: './i18n.config.ts',
     langDir: 'locales',
     strategy: 'no_prefix',
     locales: [
       { code: 'en', file: 'en.yml' },
       { code: 'zhHans', file: 'zhHans.yml', isCatchallLocale: true }
     ]
-  },
-  vuetify: {
-    vuetifyOptions: {
-      blueprint: md3,
-      icons: {
-        defaultSet: 'unocss-mdi'
-      }
-    }
   }
 })

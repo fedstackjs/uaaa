@@ -8,8 +8,8 @@
             <code>{{ item.value }}</code>
           </td>
           <td>
-            <VIcon v-if="item.verified" color="success" icon="i-mdi:shield-check" />
-            <VIcon color="primary" icon="i-mdi:edit" @click="edit(item.name, item.value)" />
+            <VIcon v-if="item.verified" color="success" icon="mdi-shield-check" />
+            <VIcon v-else color="primary" icon="mdi-pencil" @click="edit(item.name, item.value)" />
           </td>
         </tr>
       </tbody>

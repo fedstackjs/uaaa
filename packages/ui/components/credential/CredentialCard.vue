@@ -80,7 +80,7 @@
       </tbody>
     </VTable>
     <VCardActions class="justify-end">
-      <VBtn prepend-icon="i-mdi:shield-remove" color="error">
+      <VBtn prepend-icon="mdi-shield-remove" color="error">
         {{ t('actions.unbind') }}
         <CredentialBindDialog
           action="unbind"
@@ -89,7 +89,7 @@
           @updated="() => emit('updated')"
         />
       </VBtn>
-      <VBtn prepend-icon="i-mdi:shield-edit">
+      <VBtn prepend-icon="mdi-shield-edit">
         {{ t('actions.rebind') }}
         <CredentialBindDialog
           action="bind"
@@ -98,7 +98,7 @@
           @updated="() => emit('updated')"
         />
       </VBtn>
-      <VBtn prepend-icon="i-mdi:note-edit" color="info">
+      <VBtn prepend-icon="mdi-note-edit" color="info">
         {{ t('actions.edit-remark') }}
         <CredentialRemarkUpdateDialog
           :id="credential._id"

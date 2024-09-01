@@ -3,7 +3,7 @@
     <VCardText>
       <VTextField
         v-model="email"
-        prepend-inner-icon="i-mdi:email"
+        prepend-inner-icon="mdi-email"
         :label="t('credentials.email')"
         :rules="emailRules"
         :append-icon="emailIcon"
@@ -54,7 +54,7 @@ const toast = useToast()
 
 const requireCode = computed(() => props.action !== 'unbind')
 const email = ref('')
-const emailIcon = ref('i-mdi:send')
+const emailIcon = ref('mdi-send')
 const emailSending = ref(false)
 const code = ref('')
 
@@ -71,14 +71,14 @@ const isLoading = ref(false)
 async function sendCode() {
   if (emailSending.value) return
   emailSending.value = true
-  emailIcon.value = 'i-mdi:send-clock'
+  emailIcon.value = 'mdi-send-clock'
   try {
     await api.email.send.$post({ json: { email: email.value } })
     toast.success(t('hint.email-sent'))
-    emailIcon.value = 'i-mdi:send-check'
+    emailIcon.value = 'mdi-send-check'
   } catch (err) {
     toast.error(t('hint.email-send-failed', { msg: await prettyHTTPError(err) }))
-    emailIcon.value = 'i-mdi:send'
+    emailIcon.value = 'mdi-send'
   }
   emailSending.value = false
 }
@@ -127,7 +127,7 @@ async function submit(ev?: SubmitEventPromise) {
         })
         break
     }
-    toast.success(t('hint.success'))
+    toast.success(t('msg.task-succeeded'))
     emit('updated', credentialId)
   } catch (err) {
     toast.error(t('hint.wrong-credentials'))

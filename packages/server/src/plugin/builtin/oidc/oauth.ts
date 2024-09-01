@@ -1,7 +1,9 @@
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
-import { Hono } from 'hono'
+import { Context, Hono } from 'hono'
 import ms from 'ms'
+import { ClaimName } from '../../../claim/_common.js'
+import { BusinessError, checkPermission } from '../../../util/index.js'
 
 const tOIDCAuthorizationRequest = type({
   scope: 'string',
@@ -29,20 +31,37 @@ const tOIDCAccessTokenRequest = type(
   }
 )
 
-function mapScopeToPermission(scope: string): string[] {
-  switch (scope) {
-    case 'openid':
-      return ['uaaa/user/claims/read']
-    default:
-      return [scope]
+async function generateIDToken(ctx: Context, appId: string, userId: string) {
+  const { app } = ctx.var
+  const installation = await app.db.installations.findOne({
+    appId,
+    userId,
+    disabled: { $ne: true }
+  })
+  const clientApp = await app.db.apps.findOne({ _id: appId, disabled: { $ne: true } })
+  const user = await app.db.users.findOne({ _id: userId })
+  if (!installation || !clientApp || !user) throw new BusinessError('NOT_FOUND', {})
+  const claims = await app.claim.filterClaimsForApp(
+    ctx,
+    installation.grantedClaims,
+    clientApp.requestedClaims,
+    user.claims
+  )
+  const mappedClaims = Object.create(null)
+  for (const [key, value] of Object.entries(claims)) {
+    const descriptor = app.claim.getClaimDescriptor(key as ClaimName)
+    const alias = descriptor.oidcAlias ?? key
+    mappedClaims[alias] = value?.value
+    if (value?.verified) mappedClaims[`${alias}_verified`] = true
   }
-}
-
-function oauthScopeToPermissions(scope: string): string[] {
-  return scope
-    .split(' ')
-    .map((item) => mapScopeToPermission(decodeURIComponent(item)))
-    .flat()
+  const now = Date.now()
+  return app.token.sign({
+    sub: userId,
+    aud: appId,
+    exp: now + ms(app.config.get('tokenTimeout')),
+    iat: now,
+    ...mappedClaims
+  })
 }
 
 export const oauthRouter = new Hono()
@@ -50,8 +69,9 @@ export const oauthRouter = new Hono()
   // https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
   .get('/.well-known/openid-configuration', async (ctx) => {
     return ctx.json({
-      issuer: new URL('/', ctx.req.url).toString(),
-      authorization_endpoint: new URL('/authorize', ctx.req.url).toString(),
+      issuer: new URL('/', ctx.req.url).toString().replace(/\/$/, ''),
+      authorization_endpoint: new URL('/oauth/authorize', ctx.req.url).toString(),
+      token_endpoint: new URL('/oauth/token', ctx.req.url).toString(),
       jwks_uri: new URL('/api/public/jwks', ctx.req.url).toString(),
       response_types_supported: ['code', 'id_token', 'id_token token'],
       subject_types_supported: ['public'],
@@ -60,24 +80,26 @@ export const oauthRouter = new Hono()
   })
   // OIDC Authorization Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#AuthorizationEndpoint
-  .on(
-    ['GET', 'POST'],
-    '/oauth/authorize',
-    arktypeValidator('query', tOIDCAuthorizationRequest),
-    arktypeValidator('form', tOIDCAuthorizationRequest),
-    async (ctx) => {
-      const { client_id, scope, ...rest } = ctx.req.valid(
-        ctx.req.method === 'GET' ? 'query' : 'form'
-      )
-      const params = new URLSearchParams({
-        clientAppId: client_id,
-        permissions: JSON.stringify(oauthScopeToPermissions(scope)),
-        type: 'oidc',
-        params: JSON.stringify(rest)
-      })
-      return ctx.redirect(new URL('/authorize?' + params.toString(), ctx.req.url).toString())
-    }
-  )
+  .get('/oauth/authorize', arktypeValidator('query', tOIDCAuthorizationRequest), async (ctx) => {
+    const { client_id, ...rest } = ctx.req.valid('query')
+    const params = new URLSearchParams({
+      clientAppId: client_id,
+      type: 'oidc',
+      params: JSON.stringify(rest),
+      securityLevel: '0'
+    })
+    return ctx.redirect(new URL('/authorize?' + params.toString(), ctx.req.url).toString())
+  })
+  .post('/oauth/authorize', arktypeValidator('form', tOIDCAuthorizationRequest), async (ctx) => {
+    const { client_id, ...rest } = ctx.req.valid('form')
+    const params = new URLSearchParams({
+      clientAppId: client_id,
+      type: 'oidc',
+      params: JSON.stringify(rest),
+      securityLevel: '0'
+    })
+    return ctx.redirect(new URL('/authorize?' + params.toString(), ctx.req.url).toString())
+  })
   // OIDC Access Token Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#TokenEndpoint
   .post('/oauth/token', arktypeValidator('form', tOIDCAccessTokenRequest), async (ctx) => {
@@ -93,27 +115,35 @@ export const oauthRouter = new Hono()
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const token = await tokens.findOne({
+      const tokenDoc = await tokens.findOne({
         _id: request.code,
-        clientAppId: request.client_id
+        clientAppId: request.client_id,
+        lastIssuedAt: { $exists: false },
+        terminated: { $ne: true }
       })
-      if (!token) {
+      if (!tokenDoc) {
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const session = await sessions.findOne({ _id: token.sessionId })
-      if (!session || session.terminated) {
+      const session = await sessions.findOne({ _id: tokenDoc.sessionId, terminated: { $ne: true } })
+      if (!session) {
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const accessToken = await app.token.signToken(token)
+      const { token, refreshToken } = await app.token.signToken(tokenDoc)
+      ctx.set('token', JSON.parse(atob(token.split('.')[1])))
+
+      let id_token: string | undefined
+      const matchedPermissions = checkPermission(tokenDoc.permissions, '/session/claim')
+      if (matchedPermissions.length) {
+        id_token = await generateIDToken(ctx, request.client_id, tokenDoc.userId)
+      }
       return ctx.json({
-        access_token: accessToken,
+        access_token: token,
         token_type: 'Bearer',
-        expires_in: Math.floor((token.expiresAt - Date.now()) / 1000),
-        // TODO: implement ID token
-        // id_token: '',
-        refresh_token: token.refreshToken
+        expires_in: Math.floor((tokenDoc.expiresAt - Date.now()) / 1000),
+        id_token,
+        refresh_token: refreshToken
       })
     } else {
       const { refresh_token, client_id, client_secret } = request

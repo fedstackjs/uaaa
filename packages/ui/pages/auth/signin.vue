@@ -1,11 +1,11 @@
 <template>
   <VContainer class="fill-height justify-center">
     <VCard class="min-w-md">
-      <VCardTitle class="d-flex justify-center justify-between">
+      <VCardTitle class="d-flex">
         <div class="flex-1 flex justify-start">
           <VBtn
             v-if="type"
-            icon="i-mdi:arrow-left"
+            icon="mdi-arrow-left"
             size="sm"
             variant="tonal"
             color="info"
@@ -23,7 +23,7 @@
             :key="loginType"
             variant="tonal"
             class="justify-start"
-            prepend-icon="i-mdi:lock"
+            prepend-icon="mdi-lock"
             :text="t('msg.login-by', [t(`credentials.${loginType}`)])"
             @click="type = loginType"
           />

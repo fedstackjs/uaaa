@@ -1,22 +1,40 @@
-import type { SecurityLevel } from '../../util/index.js'
+import { type } from 'arktype'
+import { tSecurityLevel, type SecurityLevel } from '../../util/index.js'
 
-export interface IAppProvidedPermission {
-  name: string
-  description: string
-  path: string
-}
+export const tAppProvidedPermission = type({
+  name: 'string',
+  description: 'string',
+  path: 'string'
+})
+export type IAppProvidedPermission = typeof tAppProvidedPermission.infer
 
-export interface IAppRequestedClaim {
-  name: string
-  required?: true | undefined
-  verified?: true | undefined
-}
+export const tAppRequestedClaim = type({
+  name: 'string',
+  reason: 'string',
+  'required?': 'boolean',
+  'verified?': 'boolean'
+})
+export type IAppRequestedClaim = typeof tAppRequestedClaim.infer
 
-export interface IAppRequestedPermission {
-  perm: string
-  reason: string
-  required?: true | undefined
-}
+export const tAppRequestedPermission = type({
+  perm: 'string',
+  reason: 'string',
+  'required?': 'boolean'
+})
+export type IAppRequestedPermission = typeof tAppRequestedPermission.infer
+
+export const tAppManifest = type({
+  appId: 'string',
+  name: 'string',
+  'description?': 'string',
+  providedPermissions: tAppProvidedPermission.array(),
+  requestedClaims: tAppRequestedClaim.array(),
+  requestedPermissions: tAppRequestedPermission.array(),
+  callbackUrls: 'string[]',
+  'promoted?': 'boolean',
+  securityLevel: tSecurityLevel
+})
+export type IAppManifest = typeof tAppManifest.infer
 
 export interface IAppDoc {
   /** The app id is the unique app id [a-zA-Z._-]+ */
@@ -33,9 +51,9 @@ export interface IAppDoc {
   callbackUrls: string[]
   secret: string
 
-  promoted?: true | undefined
+  promoted?: boolean | undefined
 
-  disabled?: true | undefined
+  disabled?: boolean | undefined
   /** Max security level can be hold by this app */
   securityLevel: SecurityLevel
 }

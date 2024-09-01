@@ -5,7 +5,7 @@
         <div class="flex-1 flex justify-start">
           <VBtn
             v-if="type"
-            icon="i-mdi:arrow-left"
+            icon="mdi-arrow-left"
             size="sm"
             variant="tonal"
             color="info"
@@ -23,7 +23,7 @@
             :key="item"
             variant="tonal"
             class="justify-start"
-            prepend-icon="i-mdi:lock"
+            prepend-icon="mdi-lock"
             :text="t('msg.verify-by', [t(`credentials.${item}`)])"
             @click="type = item"
           />
@@ -34,7 +34,7 @@
             @click="router.back()"
             variant="flat"
             color="white"
-            prepend-icon="i-mdi:arrow-left"
+            prepend-icon="mdi-arrow-left"
             :text="t('actions.back')"
           />
         </VAlert>

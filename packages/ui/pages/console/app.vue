@@ -1,5 +1,9 @@
 <template>
-  <VCard :title="t('pages.console.app')"></VCard>
+  <VRow>
+    <VCol>
+      <ConsoleAppListCard />
+    </VCol>
+  </VRow>
 </template>
 
 <script setup lang="ts">

@@ -1,7 +1,7 @@
 <template>
   <VDialog max-width="340" v-model="model">
     <template v-slot:default="{ isActive }">
-      <VCard prepend-icon="i-mdi:note-edit" :title="t(`actions.edit`, [t(`claims.${name}`)])">
+      <VCard prepend-icon="mdi-note-edit" :title="t(`actions.edit`, [t(`claims.${name}`)])">
         <VCardText>
           <VTextarea v-model="value" :label="t(`claims.${name}`)" />
         </VCardText>

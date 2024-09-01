@@ -139,11 +139,12 @@ export class TokenManager extends Hookable<{}> {
       {
         refreshToken,
         refreshExpiresAt: { $gt: Date.now() },
-        clientAppId: clientId ? clientId : { $exists: false }
+        clientAppId: clientId ? clientId : { $exists: false },
+        terminated: { $ne: true }
       },
       { $unset: { refreshToken: '' } }
     )
-    if (!tokenDoc || tokenDoc.terminated) {
+    if (!tokenDoc) {
       throw new HTTPException(401, { cause: 'Invalid refresh token' })
     }
     return this.signToken(tokenDoc)

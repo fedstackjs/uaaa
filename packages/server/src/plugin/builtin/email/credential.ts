@@ -64,6 +64,10 @@ export class EmailImpl extends CredentialImpl {
         claims: {
           username: {
             value: generateUsername(email.split('@')[0])
+          },
+          email: {
+            value: email,
+            verified: true
           }
         },
         salt: nanoid()
@@ -134,6 +138,15 @@ export class EmailImpl extends CredentialImpl {
   ) {
     const { email } = await this._checkPayload(ctx, _payload)
     const now = Date.now()
+    await ctx.app.db.users.updateOne(
+      { _id: userId },
+      {
+        $set: {
+          'claims.email.value': email,
+          'claims.email.verified': true
+        }
+      }
+    )
     const { upsertedId } = await ctx.app.db.credentials.updateOne(
       {
         _id: credentialId as string,

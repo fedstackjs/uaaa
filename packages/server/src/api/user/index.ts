@@ -12,12 +12,12 @@ export const userApi = new Hono()
   .use(verifyPermission({ securityLevel: 1 }))
 
   // Summary API
-  .get('/', verifyPermission({ path: '/uaaa/user' }), async (ctx) => {
+  .get('/', verifyPermission({ path: '/user' }), async (ctx) => {
     return ctx.json({})
   })
 
   // Claim API
-  .get('/claim', verifyPermission({ path: '/uaaa/user/claim' }), async (ctx) => {
+  .get('/claim', verifyPermission({ path: '/user/claim' }), async (ctx) => {
     const { app, token } = ctx.var
     const user = await app.db.users.findOne({ _id: token.sub })
     if (!user) throw new HTTPException(404)
@@ -25,7 +25,7 @@ export const userApi = new Hono()
   })
   .patch(
     '/claim/:name',
-    verifyPermission({ path: '/uaaa/user/claim/edit' }),
+    verifyPermission({ path: '/user/claim/edit' }),
     arktypeValidator('param', type({ name: 'string' })),
     arktypeValidator('json', type({ value: 'string' })),
     async (ctx) => {
@@ -52,22 +52,18 @@ export const userApi = new Hono()
   )
 
   // Session API
-  .get('/session', verifyPermission({ path: '/uaaa/user/session' }), async (ctx) => {
+  .get('/session', verifyPermission({ path: '/user/session' }), async (ctx) => {
     //
   })
-  .get('/session/:id', verifyPermission({ path: '/uaaa/user/session' }), async (ctx) => {
+  .get('/session/:id', verifyPermission({ path: '/user/session' }), async (ctx) => {
     //
   })
-  .post(
-    '/session/:id/terminate',
-    verifyPermission({ path: '/uaaa/user/session/edit' }),
-    async (ctx) => {
-      //
-    }
-  )
+  .post('/session/:id/terminate', verifyPermission({ path: '/user/session/edit' }), async (ctx) => {
+    //
+  })
 
   // Installation API
-  .get('/installation', verifyPermission({ path: '/uaaa/user/installation' }), async (ctx) => {
+  .get('/installation', verifyPermission({ path: '/user/installation' }), async (ctx) => {
     const { app, token } = ctx.var
     const installations = await app.db.installations
       .aggregate<
@@ -95,7 +91,7 @@ export const userApi = new Hono()
   })
   .put(
     '/installation',
-    verifyPermission({ path: '/uaaa/user/installation/edit' }),
+    verifyPermission({ path: '/user/installation/edit' }),
     arktypeValidator(
       'json',
       type({
@@ -110,6 +106,7 @@ export const userApi = new Hono()
       const clientApp = await app.db.apps.findOne({ _id: appId, disabled: { $ne: true } })
       const user = await app.db.users.findOne({ _id: token.sub })
       if (!clientApp || !user) throw new HTTPException(404)
+      if (clientApp.disabled) throw new HTTPException(400, { message: `App ${appId} is disabled` })
 
       const permissionSet = new Set(grantedPermissions)
       if (clientApp.requestedPermissions.some((p) => p.required && !permissionSet.has(p.perm))) {
@@ -140,7 +137,7 @@ export const userApi = new Hono()
   )
   .get(
     '/installation/:id',
-    verifyPermission({ path: '/uaaa/user/installation' }),
+    verifyPermission({ path: '/user/installation' }),
     idParamValidator,
     async (ctx) => {
       const { id } = ctx.req.valid('param')
@@ -150,44 +147,44 @@ export const userApi = new Hono()
       return ctx.json({ installation })
     }
   )
-  .patch(
-    '/installation/:id',
-    verifyPermission({ path: '/uaaa/user/installation/edit' }),
+  .put(
+    '/installation/:id/enable',
+    verifyPermission({ path: '/user/installation/edit' }),
     idParamValidator,
-    arktypeValidator(
-      'json',
-      type({
-        disabled: 'boolean'
-      })
-    ),
     async (ctx) => {
       const { id } = ctx.req.valid('param')
-      const { disabled } = ctx.req.valid('json')
       const { app, token } = ctx.var
-      if (disabled) {
-        await app.db.tokens.updateMany(
-          { appId: id, userId: token.sub },
-          { $set: { terminated: true } }
-        )
-        await app.db.installations.updateOne(
-          { appId: id, userId: token.sub },
-          { $set: { disabled } }
-        )
-      } else {
-        if (!(await app.db.apps.findOne({ _id: id, disabled: { $ne: true } }))) {
-          throw new BusinessError('INVALID_OPERATION', {})
-        }
-        await app.db.installations.updateOne(
-          { appId: id, userId: token.sub },
-          { $unset: { disabled: '' } }
-        )
+      if (!(await app.db.apps.findOne({ _id: id, disabled: { $ne: true } }))) {
+        throw new BusinessError('INVALID_OPERATION', {})
       }
+      await app.db.installations.updateOne(
+        { appId: id, userId: token.sub },
+        { $unset: { disabled: '' } }
+      )
+      return ctx.json({})
+    }
+  )
+  .put(
+    '/installation/:id/disable',
+    verifyPermission({ path: '/user/installation/edit' }),
+    idParamValidator,
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const { app, token } = ctx.var
+      await app.db.tokens.updateMany(
+        { appId: id, userId: token.sub },
+        { $set: { terminated: true } }
+      )
+      await app.db.installations.updateOne(
+        { appId: id, userId: token.sub },
+        { $set: { disabled: true } }
+      )
       return ctx.json({})
     }
   )
   .delete(
     '/installation/:id',
-    verifyPermission({ path: '/uaaa/user/installation/edit' }),
+    verifyPermission({ path: '/user/installation/edit' }),
     idParamValidator,
     async (ctx) => {
       const { id } = ctx.req.valid('param')
@@ -198,7 +195,7 @@ export const userApi = new Hono()
   )
 
   // Credential API
-  .get('/credential', verifyPermission({ path: '/uaaa/user/credential' }), async (ctx) => {
+  .get('/credential', verifyPermission({ path: '/user/credential' }), async (ctx) => {
     const credentials = await ctx.var.app.db.credentials
       .find({ userId: ctx.var.token.sub }, { projection: { secret: 0 } })
       .toArray()
@@ -206,7 +203,7 @@ export const userApi = new Hono()
   })
   .delete(
     '/credential',
-    verifyPermission({ path: '/uaaa/user/credential/edit' }),
+    verifyPermission({ path: '/user/credential/edit' }),
     arktypeValidator(
       'json',
       type({
@@ -223,18 +220,14 @@ export const userApi = new Hono()
       )
     }
   )
-  .get(
-    '/credential/bind',
-    verifyPermission({ path: '/uaaa/user/credential/edit' }),
-    async (ctx) => {
-      const { credential } = ctx.var.app
-      const types = await credential.getBindTypes(ctx, ctx.var.token.sub)
-      return ctx.json({ types })
-    }
-  )
+  .get('/credential/bind', verifyPermission({ path: '/user/credential/edit' }), async (ctx) => {
+    const { credential } = ctx.var.app
+    const types = await credential.getBindTypes(ctx, ctx.var.token.sub)
+    return ctx.json({ types })
+  })
   .put(
     '/credential/bind',
-    verifyPermission({ path: '/uaaa/user/credential/edit' }),
+    verifyPermission({ path: '/user/credential/edit' }),
     arktypeValidator(
       'json',
       type({
@@ -253,7 +246,7 @@ export const userApi = new Hono()
   )
   .get(
     '/credential/:id',
-    verifyPermission({ path: '/uaaa/user/credential' }),
+    verifyPermission({ path: '/user/credential' }),
     idParamValidator,
     async (ctx) => {
       const { id } = ctx.req.valid('param')
@@ -267,7 +260,7 @@ export const userApi = new Hono()
   )
   .patch(
     '/credential/:id',
-    verifyPermission({ path: '/uaaa/user/credential' }),
+    verifyPermission({ path: '/user/credential' }),
     idParamValidator,
     arktypeValidator(
       'json',

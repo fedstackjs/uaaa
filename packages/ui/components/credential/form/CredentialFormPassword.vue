@@ -60,7 +60,7 @@ const { isLoading, execute } = useAsyncState(
         })
         break
     }
-    toast.success(t('hint.success'))
+    toast.success(t('msg.task-succeeded'))
     emit('updated', credentialId)
   },
   null,

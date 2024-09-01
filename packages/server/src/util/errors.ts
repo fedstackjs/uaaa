@@ -7,21 +7,27 @@ export interface IErrorMap {
   REQUIRE_ADMIN: {}
   INVALID_OPERATION: {}
   INVALID_TYPE: { summary: string }
-  NOT_FOUND: {}
+  NOT_FOUND: { msg?: string }
+  BAD_REQUEST: { msg?: string }
+  APP_NOT_INSTALLED: {}
 }
 
+export type ErrorName = keyof IErrorMap
+
 export const ErrorStatusMap: {
-  [key in keyof IErrorMap]: StatusCode
+  [key in ErrorName]: StatusCode
 } = {
   INSUFFICIENT_SECURITY_LEVEL: 403,
   INSUFFICIENT_PERMISSION: 403,
   REQUIRE_ADMIN: 403,
   INVALID_OPERATION: 400,
   INVALID_TYPE: 400,
-  NOT_FOUND: 404
+  NOT_FOUND: 404,
+  BAD_REQUEST: 400,
+  APP_NOT_INSTALLED: 400
 }
 
-export class BusinessError<T extends keyof IErrorMap> extends HTTPException {
+export class BusinessError<T extends ErrorName> extends HTTPException {
   constructor(public code: T, public data: IErrorMap[T], options?: { cause?: unknown }) {
     super(ErrorStatusMap[code], {
       res: new Response(JSON.stringify({ error: code, data }), {

@@ -4,15 +4,15 @@ import { verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import ms from 'ms'
-import { UAAA } from '../../util/index.js'
+import { BusinessError, UAAA } from '../../util/index.js'
 import { tSecurityLevel } from '../../util/index.js'
 
 export const sessionApi = new Hono()
   .use(verifyAuthorizationJwt)
   /** Get session info */
-  .get('/', verifyPermission({ path: '/uaaa/session' }), async (ctx) => {
+  .get('/', verifyPermission({ path: '/session' }), async (ctx) => {
     const { app, token } = ctx.var
-    const session = await app.db.sessions.findOne({ _id: token.sid })
+    const session = await app.db.sessions.findOne({ _id: token.sid, terminated: { $ne: true } })
     if (!session) throw new HTTPException(404)
     return ctx.json({
       tokenCount: session.tokenCount,
@@ -20,7 +20,7 @@ export const sessionApi = new Hono()
     })
   })
   /** Get session claims */
-  .get('/claims', verifyPermission({ path: '/uaaa/session/claims' }), async (ctx) => {
+  .get('/claim', verifyPermission({ path: '/session/claim' }), async (ctx) => {
     const { app, token } = ctx.var
     const { client_id } = token
     if (!client_id) {
@@ -47,7 +47,7 @@ export const sessionApi = new Hono()
   })
   .get(
     '/elevate',
-    verifyPermission({ path: '/uaaa/session/elevate' }),
+    verifyPermission({ path: '/session/elevate' }),
     arktypeValidator(
       'query',
       type({
@@ -62,7 +62,7 @@ export const sessionApi = new Hono()
   )
   .post(
     '/elevate',
-    verifyPermission({ path: '/uaaa/session/elevate' }),
+    verifyPermission({ path: '/session/elevate' }),
     arktypeValidator(
       'json',
       type({
@@ -82,7 +82,7 @@ export const sessionApi = new Hono()
         payload
       )
       const session = await db.sessions.findOneAndUpdate(
-        { _id: ctx.var.token.sid },
+        { _id: ctx.var.token.sid, terminated: { $ne: true } },
         { $inc: { tokenCount: 1 } },
         { returnDocument: 'before' }
       )
@@ -105,7 +105,7 @@ export const sessionApi = new Hono()
   )
   .post(
     '/derive',
-    verifyPermission({ path: '/uaaa/session/derive' }),
+    verifyPermission({ path: '/session/derive' }),
     arktypeValidator(
       'json',
       type({
@@ -122,41 +122,63 @@ export const sessionApi = new Hono()
           message: 'Secondary token can only derive application token'
         })
       }
-      if (securityLevel > token.level) throw new HTTPException(403)
+      if (securityLevel > token.level) {
+        throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', { required: securityLevel })
+      }
 
       const clientApp = await app.db.apps.findOne({ _id: clientAppId, disabled: { $ne: true } })
-      if (!clientApp) throw new HTTPException(404)
-      if (securityLevel > clientApp.securityLevel) throw new HTTPException(403)
+      if (!clientApp) throw new BusinessError('NOT_FOUND', {})
+      if (securityLevel > clientApp.securityLevel) {
+        throw new BusinessError('BAD_REQUEST', {
+          msg: 'Security level higher than client app'
+        })
+      }
 
       const installation = await app.db.installations.findOne({
         userId: token.sub,
         appId: clientAppId,
         disabled: { $ne: true }
       })
-      if (!installation) throw new HTTPException(403)
+      if (!installation) {
+        throw new BusinessError('APP_NOT_INSTALLED', {})
+      }
 
       const permHost = targetAppId ?? UAAA
       const permissions = installation.grantedPermissions.filter(
         (perm) => new URL(`uperm://${perm}`).host === permHost
       )
-      if (!permissions.length) throw new HTTPException(403)
+      if (!permissions.length) {
+        throw new BusinessError('BAD_REQUEST', {
+          msg: 'No permissions granted for target app'
+        })
+      }
 
       const timestamp = Date.now()
       const parentToken = await app.db.tokens.findOne({
         _id: token.jti,
-        expiresAt: { $gt: timestamp }
+        expiresAt: { $gt: timestamp },
+        terminated: { $ne: true }
       })
-      if (!parentToken) throw new HTTPException(401)
+      if (!parentToken) {
+        throw new BusinessError('BAD_REQUEST', {
+          msg: 'Parent token not found'
+        })
+      }
 
       const session = await app.db.sessions.findOneAndUpdate(
-        { _id: token.sid },
+        { _id: token.sid, terminated: { $ne: true } },
         {
           $inc: { tokenCount: 1 },
           $addToSet: { authorizedApps: clientAppId }
         },
         { returnDocument: 'before' }
       )
-      if (!session) throw new HTTPException(401)
+      if (!session) {
+        throw new BusinessError('BAD_REQUEST', {
+          msg: 'Session not found'
+        })
+      }
+
       const { _id } = await app.token.createToken({
         sessionId: token.sid,
         userId: token.sub,
