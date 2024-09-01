@@ -44,7 +44,7 @@ const links = [
 ]
 
 const adminLinks = [
-  { to: '/console', title: 'pages.console.index', prependIcon: 'i-mdi:console' },
+  { title: 'pages.console.index', prependIcon: 'i-mdi:console' },
   { to: '/console/user', title: 'pages.console.user' },
   { to: '/console/app', title: 'pages.console.app' },
   { to: '/console/setting', title: 'pages.console.setting' }

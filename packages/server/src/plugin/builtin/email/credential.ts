@@ -66,8 +66,7 @@ export class EmailImpl extends CredentialImpl {
             value: generateUsername(email.split('@')[0])
           }
         },
-        salt: nanoid(),
-        securityLevel: ctx.app.config.get('defaultUserSecurityLevel')
+        salt: nanoid()
       })
       const { insertedId: credentialId } = await ctx.app.db.credentials.insertOne({
         _id: nanoid(),

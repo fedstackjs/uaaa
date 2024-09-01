@@ -1,15 +1,12 @@
 <template>
   <VContainer>
-    <VRow>
-      <VCol cols="12">
-        <VCard title="authorize" />
-      </VCol>
-    </VRow>
+    <NuxtPage />
   </VContainer>
 </template>
 
 <script setup lang="ts">
 definePageMeta({
-  level: 1
+  level: 4,
+  layout: 'console'
 })
 </script>

@@ -179,7 +179,8 @@ export class ClaimManager extends Hookable<{
     this.addClaimDescriptor({
       name: 'is_admin',
       description: 'Is admin',
-      securityLevel: SecurityLevels.SL3
+      securityLevel: SecurityLevels.SL3,
+      basic: true
     })
   }
 }

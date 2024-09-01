@@ -6,10 +6,11 @@
         prepend-icon="i-mdi:security"
         class="text-none mr-2"
         variant="tonal"
-        color="warning"
-      >
-        {{ t('msg.current-security-level', [t(`securityLevel.${effectiveToken?.decoded.level}`)]) }}
-      </VBtn>
+        :color="color"
+        :text="
+          t('msg.current-security-level', [t(`securityLevel.${effectiveToken?.decoded.level}`)])
+        "
+      />
     </template>
     <VList>
       <VListItem
@@ -17,6 +18,10 @@
         :key="level"
         :title="t('msg.upgrade-security-level-to', [t(`securityLevel.${level}`)])"
         :to="{ path: '/auth/verify', query: { redirect: route.fullPath, targetLevel: level } }"
+      />
+      <VListItem
+        :title="t('msg.downgrade-security-level')"
+        :to="{ path: '/auth/downgrade', query: { redirect: route.fullPath } }"
       />
     </VList>
   </VMenu>
@@ -31,7 +36,7 @@
         variant="tonal"
         color="info"
       >
-        {{ dense ? '' : data?.claims.username?.value }}
+        {{ dense ? '' : data?.find(({ name }) => name === 'username')?.value }}
       </VBtn>
     </template>
     <VList>
@@ -54,18 +59,29 @@ const links = [
 ]
 
 const higherLevels = computed(() =>
-  new Array(3 - (effectiveToken.value?.decoded.level ?? 0))
+  new Array(4 - (effectiveToken.value?.decoded.level ?? 0))
     .fill(0)
-    .map((_, i) => 3 - i)
+    .map((_, i) => 4 - i)
     .reverse()
 )
 
 const { data, status, refresh } = await useAsyncData(async () => {
-  const resp = await api.session.claims.$get()
-  return resp.json()
+  return api.getUserClaims()
 })
 
 const { effectiveToken } = api
+const color = computed(() => {
+  switch (effectiveToken.value?.decoded.level) {
+    case 4:
+    case 3:
+      return 'error'
+    case 2:
+    case 1:
+      return 'warning'
+    default:
+      return 'info'
+  }
+})
 
 watch(
   () => effectiveToken.value?.decoded.level,
@@ -80,4 +96,5 @@ zhHans:
     1: 中
     2: 高
     3: 特权
+    4: 安全设备
 </i18n>

@@ -11,5 +11,9 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  level: 1
+})
+
 const { t } = useI18n()
 </script>

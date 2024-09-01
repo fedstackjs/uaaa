@@ -1,17 +1,15 @@
 import { type } from 'arktype'
 import { Hookable } from 'hookable'
-import { tSecurityLevel } from '../util/index.js'
 import type { App } from '../index.js'
 
 const tAppConfig = type({
   mongoUri: 'string',
   plugins: 'string[]',
   port: 'number',
-  deploymentUrl: 'string',
+  deploymentUrl: type('string').narrow((s) => !s.endsWith('/')),
   sessionTimeout: 'string',
   tokenTimeout: 'string',
-  refreshTimeout: 'string',
-  defaultUserSecurityLevel: tSecurityLevel
+  refreshTimeout: 'string'
 })
 
 type IAppConfig = typeof tAppConfig.infer

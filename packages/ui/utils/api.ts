@@ -7,6 +7,7 @@ import type {
   IClaim
 } from '@uaaa/server'
 import type { IEmailApi } from '@uaaa/server/lib/plugin/builtin/email'
+import type { IWebauthnApi } from '@uaaa/server/lib/plugin/builtin/webauthn'
 import { hc } from 'hono/client'
 
 export interface IClientToken {
@@ -38,6 +39,7 @@ export class ApiManager {
   console
 
   email
+  webauthn
 
   constructor() {
     this.tokens = useLocalStorage<Record<string, IClientToken>>('tokens', {}, options)
@@ -45,11 +47,14 @@ export class ApiManager {
     this.isAdmin = ref(false)
     this.isLoggedIn = computed(() => !!this.effectiveToken.value)
 
+    const headers = this.getHeaders.bind(this)
     this.public = hc<IPublicApi>('/api/public')
-    this.session = hc<ISessionApi>('/api/session', { headers: this.getHeaders.bind(this) })
-    this.user = hc<IUserApi>('/api/user', { headers: this.getHeaders.bind(this) })
-    this.console = hc<IConsoleApi>('/api/console', { headers: this.getHeaders.bind(this) })
-    this.email = hc<IEmailApi>('/api/plugin/email', { headers: this.getHeaders.bind(this) })
+    this.session = hc<ISessionApi>('/api/session', { headers })
+    this.user = hc<IUserApi>('/api/user', { headers })
+    this.console = hc<IConsoleApi>('/api/console', { headers })
+
+    this.email = hc<IEmailApi>('/api/plugin/email', { headers })
+    this.webauthn = hc<IWebauthnApi>('/api/plugin/webauthn', { headers })
   }
 
   private async _refreshToken(tokenId: string) {

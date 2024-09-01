@@ -7,7 +7,7 @@
             <div class="flex justify-between items-center">
               <div>{{ t('msg.credentials') }}</div>
               <div class="flex gap-2">
-                <VMenu>
+                <VMenu v-if="types?.length">
                   <template v-slot:activator="{ props }">
                     <VBtn :text="t('actions.add-credential')" variant="tonal" v-bind="props" />
                   </template>

@@ -6,6 +6,8 @@ export interface IErrorMap {
   INSUFFICIENT_PERMISSION: { required: string }
   REQUIRE_ADMIN: {}
   INVALID_OPERATION: {}
+  INVALID_TYPE: { summary: string }
+  NOT_FOUND: {}
 }
 
 export const ErrorStatusMap: {
@@ -14,7 +16,9 @@ export const ErrorStatusMap: {
   INSUFFICIENT_SECURITY_LEVEL: 403,
   INSUFFICIENT_PERMISSION: 403,
   REQUIRE_ADMIN: 403,
-  INVALID_OPERATION: 400
+  INVALID_OPERATION: 400,
+  INVALID_TYPE: 400,
+  NOT_FOUND: 404
 }
 
 export class BusinessError<T extends keyof IErrorMap> extends HTTPException {

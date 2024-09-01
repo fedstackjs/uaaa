@@ -22,6 +22,7 @@ credentials:
   passkey: 密钥
   phone: 手机
   email: 邮箱
+  webauthn: 密钥
 
 actions:
   submit: 提交
@@ -54,6 +55,7 @@ msg:
   tips: 提示
   not-implemented: 功能尚未实现
   no-verify-methods: 没有可用的验证方式
+  downgrade-security-level: 降低安全级别
 
 claims:
   username: 用户名

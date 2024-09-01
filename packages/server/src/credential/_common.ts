@@ -1,7 +1,8 @@
 import { Hookable } from 'hookable'
 import { Context } from 'hono'
-import type { App, SecurityLevel } from '../index.js'
+import type { App, ICredentialDoc, ICredentialTypeMap, SecurityLevel } from '../index.js'
 import { HTTPException } from 'hono/http-exception'
+import type { MatchKeysAndValues } from 'mongodb'
 
 export class CredentialContext {
   app
@@ -38,17 +39,27 @@ export interface ICredentialBindResult {
 export interface ICredentialUnbindResult {}
 
 export abstract class CredentialImpl {
-  abstract get type(): string
+  abstract get type(): keyof ICredentialTypeMap
 
   login?(ctx: CredentialContext, payload: unknown): Promise<ICredentialLoginResult>
 
-  abstract canElevate(
+  async canElevate(
     ctx: CredentialContext,
     userId: string,
     targetLevel: SecurityLevel
-  ): Promise<boolean>
+  ): Promise<boolean> {
+    const credential = await ctx.app.db.credentials.findOne({
+      userId,
+      type: this.type,
+      disabled: { $ne: true },
+      securityLevel: { $gte: targetLevel }
+    })
+    return !!credential
+  }
 
-  abstract canBindNew(ctx: CredentialContext, userId: string): Promise<boolean>
+  async canBindNew(ctx: CredentialContext, userId: string): Promise<boolean> {
+    return true
+  }
 
   abstract verify(
     ctx: CredentialContext,
@@ -159,7 +170,7 @@ export class CredentialManager extends Hookable<{}> {
     return impl.unbind(new CredentialContext(this, ctx), userId, credentialId, payload)
   }
 
-  async checkCredentialUse(credentialId: string) {
+  async checkCredentialUse(credentialId: string, set: MatchKeysAndValues<ICredentialDoc> = {}) {
     const now = Date.now()
     const { matchedCount } = await this.app.db.credentials.updateOne(
       {
@@ -170,7 +181,7 @@ export class CredentialManager extends Hookable<{}> {
       },
       {
         $inc: { validCount: -1, accessedCount: 1 },
-        $set: { lastAccessedAt: now }
+        $set: { lastAccessedAt: now, ...set }
       }
     )
     if (!matchedCount) {

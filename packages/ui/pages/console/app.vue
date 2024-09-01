@@ -1,5 +1,5 @@
 <template>
-  <VCard :title="t('pages.console.index')"></VCard>
+  <VCard :title="t('pages.console.app')"></VCard>
 </template>
 
 <script setup lang="ts">
