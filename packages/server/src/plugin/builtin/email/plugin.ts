@@ -9,7 +9,7 @@ import { EmailImpl } from './credential.js'
 import { arktypeValidator } from '@hono/arktype-validator'
 
 export const tEmailConfig = type({
-  emailTransport: 'any',
+  emailTransport: 'unknown',
   emailFrom: 'string',
   'emailHtml?': 'string|undefined',
   'emailAllowSignup?': 'boolean|undefined',
@@ -39,7 +39,7 @@ export class EmailPlugin {
   whitelist?: Array<string | RegExp>
 
   constructor(public app: App, config: IEmailConfig = app.config.getAll()) {
-    this.transporter = mailer.createTransport(config.emailTransport)
+    this.transporter = mailer.createTransport(config.emailTransport as any)
     this.from = config.emailFrom ?? '"UAAA System" <system@uaaa.fedstack.org>'
     this.html = config.emailHtml ?? defaultMailHtml
     this.allowSignupFromLogin = config.emailAllowSignup ?? false
@@ -76,7 +76,7 @@ export class EmailPlugin {
     )
     ctx.app.credential.provide(new EmailImpl(this))
     ctx.app.hook('extendApp', (router) => {
-      router.route('/plugin/email', this.getApiRouter())
+      router.route('/api/plugin/email', this.getApiRouter())
     })
   }
 
@@ -114,13 +114,27 @@ export class EmailPlugin {
     logger.info(info, `sent verification code to ${mail} for ${purpose}`)
   }
 
+  async checkCode(key: string, code: string) {
+    const ttl = await this.app.cache.ttl(key)
+    const value = await this.app.cache.getx<{ code: string; mail: string; n: number }>(key)
+    await this.app.cache.del(key)
+    if (!value) throw new HTTPException(403, { message: 'Invalid code' })
+    if (value.code !== code) {
+      if (ttl > 0 && value.n > 0) {
+        await this.app.cache.setx(key, { ...value, n: value.n - 1 }, ttl)
+      }
+      throw new HTTPException(403, { message: 'Invalid code' })
+    }
+    return value
+  }
+
   getApiRouter() {
     return new Hono().post(
-      '/plugin/email/send',
+      '/send',
       arktypeValidator(
         'json',
         type({
-          email: 'email'
+          email: 'string.email'
         })
       ),
       async (ctx) => {
@@ -129,6 +143,7 @@ export class EmailPlugin {
           throw new HTTPException(403, { message: 'Email not allowed' })
         }
         await this.sendCode(this.mailKey(email), email, 'verification')
+        return ctx.json({})
       }
     )
   }

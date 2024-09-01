@@ -3,22 +3,27 @@ import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { HTTPException } from 'hono/http-exception'
 import { verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
-import { nanoid } from 'nanoid'
+import { idParamValidator } from '../_common.js'
 
 export const userApi = new Hono()
   .use(verifyAuthorizationJwt)
-  .get('/', verifyPermission({ path: 'uaaa/user' }), async (ctx) => {
-    //
+  .use(verifyPermission({ securityLevel: 1 }))
+
+  // Summary API
+  .get('/', verifyPermission({ path: '/uaaa/user' }), async (ctx) => {
+    return ctx.json({})
   })
-  .get('/claims', verifyPermission({ path: 'uaaa/user/claims' }), async (ctx) => {
+
+  // Claim API
+  .get('/claims', verifyPermission({ path: '/uaaa/user/claims' }), async (ctx) => {
     const { app, token } = ctx.var
     const user = await app.db.users.findOne({ _id: token.sub })
     if (!user) throw new HTTPException(404)
-    return ctx.json({ claims: app.claim.filterClaimsForUser(ctx, user.claims) })
+    return ctx.json({ claims: await app.claim.filterClaimsForUser(ctx, user.claims) })
   })
   .patch(
     '/claims',
-    verifyPermission({ path: 'uaaa/user/claims/edit' }),
+    verifyPermission({ path: '/uaaa/user/claims/edit' }),
     arktypeValidator(
       'json',
       type({
@@ -47,15 +52,19 @@ export const userApi = new Hono()
       return ctx.json({})
     }
   )
-  .get('/session', verifyPermission({ path: 'uaaa/user/session' }), async (ctx) => {
+
+  // Session API
+  .get('/session', verifyPermission({ path: '/uaaa/user/session' }), async (ctx) => {
     //
   })
-  .get('/session/:id', verifyPermission({ path: 'uaaa/user/session' }), async (ctx) => {
+  .get('/session/:id', verifyPermission({ path: '/uaaa/user/session' }), async (ctx) => {
     //
   })
-  .post('/session/:id/terminate', verifyPermission({ path: 'uaaa/user/edit' }), async (ctx) => {
+  .post('/session/:id/terminate', verifyPermission({ path: '/uaaa/user/edit' }), async (ctx) => {
     //
   })
+
+  // Installation API
   .get('/installation', async (ctx) => {
     //
   })
@@ -64,7 +73,7 @@ export const userApi = new Hono()
   })
   .put(
     '/installation',
-    verifyPermission({ path: 'uaaa/user/installation/edit' }),
+    verifyPermission({ path: '/uaaa/user/installation/edit' }),
     arktypeValidator(
       'json',
       type({
@@ -107,11 +116,94 @@ export const userApi = new Hono()
       })
     }
   )
-  .get('/credential', async (ctx) => {
-    //
+
+  // Credential API
+  .get('/credential', verifyPermission({ path: '/uaaa/user/credential' }), async (ctx) => {
+    const credentials = await ctx.var.app.db.credentials
+      .find({ userId: ctx.var.token.sub }, { projection: { secret: 0 } })
+      .toArray()
+    return ctx.json({ credentials })
   })
-  .get('/credential/:id', async (ctx) => {
-    //
-  })
+  .delete(
+    '/credential',
+    verifyPermission({ path: '/uaaa/user/credential/edit' }),
+    arktypeValidator(
+      'json',
+      type({
+        type: 'string',
+        payload: 'unknown',
+        credentialId: 'string'
+      })
+    ),
+    async (ctx) => {
+      const { type, payload, credentialId } = ctx.req.valid('json')
+      const { credential } = ctx.var.app
+      return ctx.json(
+        await credential.handleUnbind(ctx, type, ctx.var.token.sub, credentialId, payload)
+      )
+    }
+  )
+  .get(
+    '/credential/bind',
+    verifyPermission({ path: '/uaaa/user/credential/edit' }),
+    async (ctx) => {
+      const { credential } = ctx.var.app
+      const types = await credential.getBindTypes(ctx, ctx.var.token.sub)
+      return ctx.json({ types })
+    }
+  )
+  .put(
+    '/credential/bind',
+    verifyPermission({ path: '/uaaa/user/credential/edit' }),
+    arktypeValidator(
+      'json',
+      type({
+        type: 'string',
+        payload: 'unknown',
+        'credentialId?': 'string'
+      })
+    ),
+    async (ctx) => {
+      const { type, payload, credentialId } = ctx.req.valid('json')
+      const { credential } = ctx.var.app
+      return ctx.json(
+        await credential.handleBind(ctx, type, ctx.var.token.sub, credentialId, payload)
+      )
+    }
+  )
+  .get(
+    '/credential/:id',
+    verifyPermission({ path: '/uaaa/user/credential' }),
+    idParamValidator,
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const credential = await ctx.var.app.db.credentials.findOne(
+        { _id: id, userId: ctx.var.token.sub },
+        { projection: { secret: 0 } }
+      )
+      if (!credential) throw new HTTPException(404)
+      return ctx.json({ credential })
+    }
+  )
+  .patch(
+    '/credential/:id',
+    verifyPermission({ path: '/uaaa/user/credential' }),
+    idParamValidator,
+    arktypeValidator(
+      'json',
+      type({
+        remark: 'string'
+      })
+    ),
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const { remark } = ctx.req.valid('json')
+      await ctx.var.app.db.credentials.updateOne(
+        { _id: id, userId: ctx.var.token.sub },
+        { $set: { remark } }
+      )
+      return ctx.json({})
+    }
+  )
 
 export type IUserApi = typeof userApi

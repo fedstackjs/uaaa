@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid'
 import ms from 'ms'
 import { CredentialContext, CredentialImpl } from '../../../credential/_common.js'
 import { generateUsername } from '../../../util/index.js'
-import type { ICredentialUnbindResult } from '../../../index.js'
+import type { ICredentialUnbindResult, SecurityLevel } from '../../../index.js'
 import type { EmailPlugin } from './plugin.js'
 
 export class EmailImpl extends CredentialImpl {
@@ -24,10 +24,7 @@ export class EmailImpl extends CredentialImpl {
     if (checked instanceof type.errors) {
       throw new HTTPException(400, { cause: checked.summary })
     }
-    const cachedCode = await ctx.app.cache.get(this.plugin.mailKey(checked.email))
-    if (!cachedCode || cachedCode !== checked.code) {
-      throw new HTTPException(401)
-    }
+    await this.plugin.checkCode(this.plugin.mailKey(checked.email), checked.code)
     return { email: checked.email }
   }
 
@@ -94,10 +91,10 @@ export class EmailImpl extends CredentialImpl {
         expiresIn: ms(ctx.app.config.get('tokenTimeout'))
       }
     }
-    throw new HTTPException(401)
+    throw new HTTPException(401, { message: 'User not found' })
   }
 
-  override async canElevate(ctx: CredentialContext, userId: string, targetLevel: number) {
+  override async canElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
       userId,
       type: 'email',
@@ -107,10 +104,18 @@ export class EmailImpl extends CredentialImpl {
     return !!credential
   }
 
+  override async canBindNew(ctx: CredentialContext, userId: string) {
+    const credential = await ctx.app.db.credentials.findOne({
+      userId,
+      type: 'email'
+    })
+    return !credential
+  }
+
   override async verify(
     ctx: CredentialContext,
     userId: string,
-    targetLevel: number,
+    targetLevel: SecurityLevel,
     _payload: unknown
   ) {
     const { credential } = await this._checkPayloadAndCredential(ctx, _payload)
@@ -156,7 +161,7 @@ export class EmailImpl extends CredentialImpl {
           disabled: ''
         }
       },
-      { ignoreUndefined: true }
+      { ignoreUndefined: true, upsert: true }
     )
     credentialId = (upsertedId ?? credentialId) as string
     return {

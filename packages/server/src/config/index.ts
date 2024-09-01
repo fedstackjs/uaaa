@@ -1,5 +1,6 @@
-import { ArkErrors, type } from 'arktype'
+import { type } from 'arktype'
 import { Hookable } from 'hookable'
+import { tSecurityLevel } from '../util/index.js'
 import type { App } from '../index.js'
 
 const tAppConfig = type({
@@ -10,7 +11,7 @@ const tAppConfig = type({
   sessionTimeout: 'string',
   tokenTimeout: 'string',
   refreshTimeout: 'string',
-  defaultUserSecurityLevel: 'number'
+  defaultUserSecurityLevel: tSecurityLevel
 })
 
 type IAppConfig = typeof tAppConfig.infer

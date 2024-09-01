@@ -26,7 +26,7 @@ export default defineNuxtConfig({
     strategy: 'no_prefix',
     locales: [
       { code: 'en', file: 'en.yml' },
-      { code: 'zh-Hans', file: 'zh-Hans.yml', isCatchallLocale: true }
+      { code: 'zhHans', file: 'zhHans.yml', isCatchallLocale: true }
     ]
   },
   vuetify: {

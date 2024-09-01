@@ -2,7 +2,7 @@ import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import micromatch from 'micromatch'
 import type jwt from 'jsonwebtoken'
-import { UAAA } from '../util/index.js'
+import { BusinessError, UAAA } from '../util/index.js'
 import { ITokenPayload } from '../token/index.js'
 
 declare module 'hono' {
@@ -31,14 +31,18 @@ export interface IVerifyPermissionOptions {
 export const verifyPermission = ({ path, securityLevel }: IVerifyPermissionOptions) =>
   createMiddleware(async (ctx, next) => {
     if (securityLevel !== undefined && ctx.var.token.level < securityLevel) {
-      throw new HTTPException(403)
+      throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', {
+        required: securityLevel
+      })
     }
     if (path !== undefined) {
       const matchedPermissions = ctx.var.token.perm
         .map((perm) => new URL(`uperm://${perm}`))
         .filter(({ host, pathname }) => host === UAAA && micromatch.isMatch(path, pathname))
       if (!matchedPermissions.length) {
-        throw new HTTPException(403)
+        throw new BusinessError('INSUFFICIENT_PERMISSION', {
+          required: path
+        })
       }
       ctx.set('matchedPermissions', matchedPermissions)
     }

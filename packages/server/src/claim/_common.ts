@@ -1,8 +1,8 @@
 import { Hookable } from 'hookable'
 import { Context } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import type { App, IAppRequestedClaim, IClaim, UserClaims } from '../index.js'
-import { rAvatarHash, rEmail, rPhone, rUsername } from '../util/index.js'
+import type { App, IAppRequestedClaim, IClaim, IUserClaims, SecurityLevel } from '../index.js'
+import { rAvatarHash, rEmail, rPhone, rUsername, SecurityLevels } from '../util/index.js'
 
 export const rClaimName = /^(?:[a-z0-9_]{1,32}:)?[a-z0-9_]{1,64}$/
 
@@ -12,6 +12,7 @@ export interface IClaimNames {
   avatar_hash?: string | undefined
   email?: string | undefined
   phone?: string | undefined
+  is_admin?: string | undefined
 }
 
 export type ClaimName = keyof IClaimNames
@@ -25,8 +26,10 @@ export interface IClaimDescriptor {
   editable?: true | undefined
   /** Hidden */
   hidden?: true | undefined
+  /** Basic */
+  basic?: true | undefined
   /** Claim's security level */
-  securityLevel: number
+  securityLevel: SecurityLevel
 }
 
 export class ClaimContext {
@@ -66,14 +69,27 @@ export class ClaimManager extends Hookable<{
     await this.callHook(`validate:${name}`, new ClaimContext(this, ctx), value)
   }
 
+  async filterBasicClaims(
+    ctx: Context,
+    claims: Partial<IUserClaims>
+  ): Promise<Partial<IUserClaims>> {
+    const result: Partial<IUserClaims> = Object.create(null)
+    for (const [name, value] of Object.entries(claims)) {
+      if (this.hasClaim(name) && this.getClaimDescriptor(name).basic && value) {
+        result[name] = value
+      }
+    }
+    return result
+  }
+
   async filterClaimsForApp(
     ctx: Context,
     granted: string[],
     requested: IAppRequestedClaim[],
-    claims: Partial<UserClaims>
-  ): Promise<Partial<UserClaims>> {
+    claims: Partial<IUserClaims>
+  ): Promise<Partial<IUserClaims>> {
     const grantedSet = new Set(granted)
-    const result: Partial<UserClaims> = Object.create(null)
+    const result: Partial<IUserClaims> = Object.create(null)
     for (const { name, ...options } of requested) {
       if (this.hasClaim(name) && grantedSet.has(name)) {
         const claim = claims[name]
@@ -95,9 +111,9 @@ export class ClaimManager extends Hookable<{
 
   async filterClaimsForUser(
     ctx: Context,
-    claims: Partial<UserClaims>
-  ): Promise<Partial<UserClaims>> {
-    const result: Partial<UserClaims> = Object.create(null)
+    claims: Partial<IUserClaims>
+  ): Promise<Partial<IUserClaims>> {
+    const result: Partial<IUserClaims> = Object.create(null)
     for (const [name, value] of Object.entries(claims)) {
       if (!value || !this.hasClaim(name)) {
         continue
@@ -122,21 +138,24 @@ export class ClaimManager extends Hookable<{
       name: 'username',
       description: 'User name',
       editable: true,
-      securityLevel: 0
+      securityLevel: SecurityLevels.SL0,
+      basic: true
     })
     this.hook('validate:username', reFilter(rUsername, 'username'))
 
     this.addClaimDescriptor({
       name: 'realname',
       description: 'Real name',
-      securityLevel: 0
+      securityLevel: SecurityLevels.SL0,
+      basic: true
     })
 
     this.addClaimDescriptor({
       name: 'avatar_hash',
       description: 'Avatar hash',
       editable: true,
-      securityLevel: 0
+      securityLevel: SecurityLevels.SL0,
+      basic: true
     })
     this.hook('validate:avatar_hash', reFilter(rAvatarHash, 'avatar hash'))
 
@@ -144,7 +163,8 @@ export class ClaimManager extends Hookable<{
       name: 'email',
       description: 'Email',
       editable: true,
-      securityLevel: 0
+      securityLevel: SecurityLevels.SL0,
+      basic: true
     })
     this.hook('validate:email', reFilter(rEmail, 'email'))
 
@@ -152,8 +172,14 @@ export class ClaimManager extends Hookable<{
       name: 'phone',
       description: 'Phone number',
       editable: true,
-      securityLevel: 0
+      securityLevel: SecurityLevels.SL0
     })
     this.hook('validate:phone', reFilter(rPhone, 'phone'))
+
+    this.addClaimDescriptor({
+      name: 'is_admin',
+      description: 'Is admin',
+      securityLevel: SecurityLevels.SL3
+    })
   }
 }

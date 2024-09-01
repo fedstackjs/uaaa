@@ -1,3 +1,5 @@
+import type { SecurityLevel } from '../../util/index.js'
+
 export interface IAppProvidedPermission {
   name: string
   description: string
@@ -31,7 +33,9 @@ export interface IAppDoc {
   callbackUrls: string[]
   secret: string
 
+  promoted?: true | undefined
+
   disabled?: true | undefined
   /** Max security level can be hold by this app */
-  securityLevel: number
+  securityLevel: SecurityLevel
 }

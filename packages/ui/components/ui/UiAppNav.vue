@@ -1,16 +1,16 @@
 <template>
   <VNavigationDrawer v-model="model">
     <VList nav>
-      <VListItem v-for="(link, i) of links" :key="i" v-bind="link" :title="$t(link.title)" />
+      <VListItem v-for="(link, i) of links" :key="i" v-bind="link" :title="t(link.title)" />
       <VListGroup value="Users">
         <template v-slot:activator="{ props }">
-          <VListItem v-bind="{ ...props, ...adminLinks[0] }" :title="$t(adminLinks[0].title)" />
+          <VListItem v-bind="{ ...props, ...adminLinks[0] }" :title="t(adminLinks[0].title)" />
         </template>
         <VListItem
           v-for="(link, i) of adminLinks.slice(1)"
           :key="i"
           v-bind="link"
-          :title="$t(link.title)"
+          :title="t(link.title)"
         />
       </VListGroup>
     </VList>
@@ -33,9 +33,10 @@
 <script setup lang="ts">
 const model = defineModel<boolean>()
 
+const { t } = useI18n()
+
 const links = [
   { to: '/', title: 'pages.index', prependIcon: 'i-mdi:home' },
-  { to: '/current', title: 'pages.current', prependIcon: 'i-mdi:target-account' },
   { to: '/session', title: 'pages.session', prependIcon: 'i-mdi:account-key-outline' },
   { to: '/app', title: 'pages.app', prependIcon: 'i-mdi:application-cog-outline' },
   { to: '/credential', title: 'pages.credential', prependIcon: 'i-mdi:shield-key-outline' },

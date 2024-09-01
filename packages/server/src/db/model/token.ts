@@ -1,3 +1,5 @@
+import type { SecurityLevel } from '../../util/index.js'
+
 export interface ITokenDoc {
   /** Token ID */
   _id: string
@@ -14,7 +16,7 @@ export interface ITokenDoc {
   /** Token's permissions. Array of stripped UPM-URLs */
   permissions: string[]
   /** Token's security level' */
-  securityLevel: number
+  securityLevel: SecurityLevel
 
   /** Token is created at */
   createdAt: number

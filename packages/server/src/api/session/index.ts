@@ -5,21 +5,29 @@ import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import ms from 'ms'
 import { UAAA } from '../../util/index.js'
+import { tSecurityLevel } from '../../util/index.js'
 
 export const sessionApi = new Hono()
   .use(verifyAuthorizationJwt)
   /** Get session info */
-  .get('/', verifyPermission({ path: 'uaaa/session' }), async (ctx) => {
-    //
+  .get('/', verifyPermission({ path: '/uaaa/session' }), async (ctx) => {
+    const { app, token } = ctx.var
+    const session = await app.db.sessions.findOne({ _id: token.sid })
+    if (!session) throw new HTTPException(404)
+    return ctx.json({
+      tokenCount: session.tokenCount,
+      authorizedApps: session.authorizedApps
+    })
   })
   /** Get session claims */
-  .get('/claims', verifyPermission({ path: 'uaaa/session/claims' }), async (ctx) => {
+  .get('/claims', verifyPermission({ path: '/uaaa/session/claims' }), async (ctx) => {
     const { app, token } = ctx.var
     const { client_id } = token
     if (!client_id) {
-      throw new HTTPException(403, {
-        message: `Only applications can access this endpoint`
-      })
+      const user = await app.db.users.findOne({ _id: token.sub })
+      if (!user) throw new HTTPException(404)
+      const claims = await app.claim.filterBasicClaims(ctx, user.claims)
+      return ctx.json({ claims })
     }
     const installation = await app.db.installations.findOne({
       appId: client_id,
@@ -39,11 +47,11 @@ export const sessionApi = new Hono()
   })
   .get(
     '/elevate',
-    verifyPermission({ path: 'uaaa/session/elevate' }),
+    verifyPermission({ path: '/uaaa/session/elevate' }),
     arktypeValidator(
       'query',
       type({
-        targetLevel: 'number'
+        targetLevel: type('string.numeric.parse').to(tSecurityLevel)
       })
     ),
     async (ctx) => {
@@ -54,13 +62,13 @@ export const sessionApi = new Hono()
   )
   .post(
     '/elevate',
-    verifyPermission({ path: 'uaaa/session/elevate' }),
+    verifyPermission({ path: '/uaaa/session/elevate' }),
     arktypeValidator(
       'json',
       type({
         type: 'string',
-        targetLevel: 'number',
-        payload: 'any'
+        targetLevel: tSecurityLevel,
+        payload: 'unknown'
       })
     ),
     async (ctx) => {
@@ -97,13 +105,13 @@ export const sessionApi = new Hono()
   )
   .post(
     '/derive',
-    verifyPermission({ path: 'uaaa/session/derive' }),
+    verifyPermission({ path: '/uaaa/session/derive' }),
     arktypeValidator(
       'json',
       type({
         'targetAppId?': 'string',
         clientAppId: 'string',
-        securityLevel: 'number'
+        securityLevel: tSecurityLevel
       })
     ),
     async (ctx) => {
@@ -142,7 +150,10 @@ export const sessionApi = new Hono()
 
       const session = await app.db.sessions.findOneAndUpdate(
         { _id: token.sid },
-        { $inc: { tokenCount: 1 } },
+        {
+          $inc: { tokenCount: 1 },
+          $addToSet: { authorizedApps: clientAppId }
+        },
         { returnDocument: 'before' }
       )
       if (!session) throw new HTTPException(401)

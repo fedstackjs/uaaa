@@ -4,28 +4,53 @@
       <VCardTitle class="d-flex justify-center justify-between">
         <div class="flex-1 flex justify-start">
           <VBtn
-            v-if="!isHome"
+            v-if="type"
             icon="i-mdi:arrow-left"
             size="sm"
             variant="tonal"
             color="info"
-            to="/auth/signin"
+            @click="type = ''"
           />
         </div>
-        <div>{{ $t('pages.signin') }}</div>
+        <div>{{ t('pages.auth.signin') }}</div>
         <div class="flex-1 flex justify-start"></div>
       </VCardTitle>
       <VDivider />
-      <NuxtPage />
+      <template v-if="!type">
+        <VCardText class="flex flex-col gap-2" v-if="data">
+          <VBtn
+            v-for="loginType of data.types"
+            :key="loginType"
+            variant="tonal"
+            class="justify-start"
+            prepend-icon="i-mdi:lock"
+            :text="t('msg.login-by', [t(`credentials.${loginType}`)])"
+            @click="type = loginType"
+          />
+        </VCardText>
+      </template>
+      <CredentialForm v-else action="login" :type="type" @updated="postLogin" />
     </VCard>
   </VContainer>
 </template>
 
 <script setup lang="ts">
 definePageMeta({
-  layout: 'plain'
+  layout: 'plain',
+  middleware: 'noauth'
 })
 
+const { t } = useI18n()
 const route = useRoute()
-const isHome = computed(() => route.path.replace(/\/$/, '') === '/auth/signin')
+const router = useRouter()
+const type = useRouteQuery<string>('type', '')
+
+const { data } = await useAsyncData(async () => {
+  const resp = await api.public.login.$get()
+  return resp.json()
+})
+
+function postLogin() {
+  router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
+}
 </script>

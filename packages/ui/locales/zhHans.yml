@@ -1,0 +1,45 @@
+current_locale: 简体中文
+
+pages:
+  index: 首页
+  current: 当前会话
+  session: 会话管理
+  app: 应用管理
+  credential: 凭据管理
+  setting: 用户设置
+  auth:
+    signin: 登录
+    signout: 登出
+    verify: 验证
+  console:
+    index: 后台管理
+    user: 用户管理
+    app: 应用管理
+    setting: 系统设置
+
+credentials:
+  password: 密码
+  passkey: 密钥
+  phone: 手机
+  email: 邮箱
+
+actions:
+  submit: 提交
+  login: 登录
+  verify: 验证
+  bind: 绑定
+  unbind: 解绑
+  rebind: 重新绑定
+  edit-remark: 编辑备注
+  cancel: 取消
+  save: 保存
+  add-credential: 添加凭据
+
+msg:
+  login-by: 通过{0}登录
+  verify-by: 通过{0}验证
+  credential-type: '{0}凭据'
+  current-security-level: 安全级别：{0}
+  credential-id: 凭据ID
+  unbind-confirm: 确认解绑凭据？
+  unknown-credential-type: 不支持的凭据类别

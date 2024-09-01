@@ -1,3 +1,5 @@
+import type { SecurityLevel } from '../../util/index.js'
+
 export interface ICredentialTypeMap {}
 
 export interface ICredentialDoc {
@@ -36,5 +38,5 @@ export interface ICredentialDoc {
 
   disabled?: true | undefined
   /** Max security level can be provided by authenticating with this credential */
-  securityLevel: number
+  securityLevel: SecurityLevel
 }

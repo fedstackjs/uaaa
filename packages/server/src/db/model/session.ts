@@ -6,5 +6,7 @@ export interface ISessionDoc {
 
   tokenCount: number
 
+  authorizedApps: string[]
+
   terminated?: true | boolean
 }

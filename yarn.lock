@@ -42,19 +42,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ark/schema@npm:0.3.2":
-  version: 0.3.2
-  resolution: "@ark/schema@npm:0.3.2"
+"@ark/schema@npm:0.6.0":
+  version: 0.6.0
+  resolution: "@ark/schema@npm:0.6.0"
   dependencies:
-    "@ark/util": "npm:0.2.1"
-  checksum: 10/2f800ccf84c3640f103cd847e3d700ec28e6b7ddd686f4582211b3280228e91fdc0baae8dd8c78337a804beeca72dc57db2ba79085088f2b29ee264a091c4774
+    "@ark/util": "npm:0.6.0"
+  checksum: 10/d1acbc861dcfb263cca2e75df31dc09a9bcbd8d9f98123b4ff142fd0baab26807777152ebf9ff3192e770e501a7959dd442cb9685a834155e61bd3a3647a1d88
   languageName: node
   linkType: hard
 
-"@ark/util@npm:0.2.1":
-  version: 0.2.1
-  resolution: "@ark/util@npm:0.2.1"
-  checksum: 10/e973245883a2ea31d42e8170bdc9a2d7c29679d17d3df4b3c7bb60e9c2c92ae2c1fcb420385faa6c3b4aa74acf2944f6dc65d04fa2a2aeb37a133732d4937c9f
+"@ark/util@npm:0.6.0":
+  version: 0.6.0
+  resolution: "@ark/util@npm:0.6.0"
+  checksum: 10/8e264a22bd0ca2e89ab3689bb51858898e780b68b680e1bdaf3e32992b9707abea7311e371815c878f3466ea1c958842f73f0d9d6790f1ab5dff0e570701d000
   languageName: node
   linkType: hard
 
@@ -2147,7 +2147,7 @@ __metadata:
     "@types/ms": "npm:^0.7.34"
     "@types/node": "npm:^20.11.17"
     "@types/nodemailer": "npm:^6"
-    arktype: "npm:2.0.0-beta.5"
+    arktype: "npm:^2.0.0-rc.4"
     bcrypt: "npm:^5.1.1"
     clipanion: "npm:^4.0.0-rc.3"
     dotenv: "npm:^16.4.5"
@@ -2180,6 +2180,7 @@ __metadata:
     "@unocss/preset-icons": "npm:^0.62.3"
     "@vueuse/core": "npm:^10.11.0"
     "@vueuse/nuxt": "npm:^10.11.0"
+    "@vueuse/router": "npm:^11.0.3"
     hono: "npm:^4.5.8"
     nuxt: "npm:^3.12.3"
     unocss: "npm:^0.61.3"
@@ -2890,12 +2891,33 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vueuse/router@npm:^11.0.3":
+  version: 11.0.3
+  resolution: "@vueuse/router@npm:11.0.3"
+  dependencies:
+    "@vueuse/shared": "npm:11.0.3"
+    vue-demi: "npm:>=0.14.10"
+  peerDependencies:
+    vue-router: ">=4.0.0-rc.1"
+  checksum: 10/4d08be7db4227458f5cd9f6c371c3ae891690c730141290717feba8a309de4d4b543909c65cee4d592ce823cd85c71dae865166f07e08780a147e0c226545946
+  languageName: node
+  linkType: hard
+
 "@vueuse/shared@npm:10.11.1":
   version: 10.11.1
   resolution: "@vueuse/shared@npm:10.11.1"
   dependencies:
     vue-demi: "npm:>=0.14.8"
   checksum: 10/5d8c28ed441a66b200c76ab44b6dbc6af152a6cecc527a1f4f645d95547e1de65e4b99e16d25f77609cb146e9e4b4961b260fe723043b08ab198e88ed1d47f4e
+  languageName: node
+  linkType: hard
+
+"@vueuse/shared@npm:11.0.3":
+  version: 11.0.3
+  resolution: "@vueuse/shared@npm:11.0.3"
+  dependencies:
+    vue-demi: "npm:>=0.14.10"
+  checksum: 10/ce818aadcee7e3ff2959f6179757fade02d25f163ea44d9b5911cfcb8db0998fc02b3cd048495a860f1da756c41a830a28dc646eb2cd32c38ff00ff0bc2ef438
   languageName: node
   linkType: hard
 
@@ -3103,13 +3125,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"arktype@npm:2.0.0-beta.5":
-  version: 2.0.0-beta.5
-  resolution: "arktype@npm:2.0.0-beta.5"
+"arktype@npm:^2.0.0-rc.4":
+  version: 2.0.0-rc.4
+  resolution: "arktype@npm:2.0.0-rc.4"
   dependencies:
-    "@ark/schema": "npm:0.3.2"
-    "@ark/util": "npm:0.2.1"
-  checksum: 10/c1abeecf3bd3f5edcd7364bf9e594f9500a57e22edb49beb68843e709f7cf471c7ae4e884d0f71c7d1282ac95c7590a2fd12a4de8dc6534813b5b487e24d9af6
+    "@ark/schema": "npm:0.6.0"
+    "@ark/util": "npm:0.6.0"
+  checksum: 10/da162ea28d01679cc408ebc6ece286d8f9bfee4f38c4fe3f9587a560baa5c0f0a50c8a5d09bb03d8f2bbcb197c769102fafa1921ffd1118be4ab5033302a332f
   languageName: node
   linkType: hard
 
@@ -9063,7 +9085,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vue-demi@npm:>=0.14.8":
+"vue-demi@npm:>=0.14.10, vue-demi@npm:>=0.14.8":
   version: 0.14.10
   resolution: "vue-demi@npm:0.14.10"
   peerDependencies:

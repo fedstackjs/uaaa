@@ -5,8 +5,9 @@ import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
 import { HTTPException } from 'hono/http-exception'
+import { tSecurityLevel } from '../util/index.js'
 import type { App } from '../index.js'
-import { ITokenDoc } from '../db/model/token.js'
+import type { ITokenDoc } from '../db/model/token.js'
 
 export const tTokenPayload = type({
   iss: 'string',
@@ -16,7 +17,7 @@ export const tTokenPayload = type({
   sid: 'string',
   jti: 'string',
   perm: 'string[]',
-  level: 'number',
+  level: tSecurityLevel,
   exp: 'number',
   iat: 'number'
 })
@@ -112,6 +113,13 @@ export class TokenManager extends Hookable<{}> {
       { ignoreUndefined: true }
     )
 
+    const signOptions: jwt.SignOptions = {
+      subject: tokenDoc.userId,
+      jwtid: tokenDoc._id
+    }
+    if (tokenDoc.clientAppId) {
+      signOptions.audience = tokenDoc.clientAppId
+    }
     const token = await this.sign(
       {
         client_id: tokenDoc.clientAppId,
@@ -121,11 +129,7 @@ export class TokenManager extends Hookable<{}> {
         iat: Math.floor(now / 1000),
         exp: Math.floor(tokenExpiresAt / 1000)
       },
-      {
-        subject: tokenDoc.userId,
-        audience: tokenDoc.targetAppId,
-        jwtid: tokenDoc._id
-      }
+      signOptions
     )
     return { token, refreshToken }
   }

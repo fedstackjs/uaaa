@@ -1,11 +1,12 @@
-import { IClaimNames } from '../../claim/index.js'
+import type { SecurityLevel } from '../../util/index.js'
+import type { IClaimNames } from '../../claim/index.js'
 
 export interface IClaim {
   value: string
   verified?: true | undefined
 }
 
-export type UserClaims = {
+export type IUserClaims = {
   [key in keyof IClaimNames]: IClaimNames[key] extends infer T
     ? T extends string
       ? IClaim
@@ -18,12 +19,12 @@ export interface IUserDoc {
   _id: string
 
   /** User attributes */
-  claims: UserClaims
+  claims: IUserClaims
 
   salt: string
 
   disabled?: true | undefined
 
   /** Max security level can be provided by authenticating with this user */
-  securityLevel: number
+  securityLevel: SecurityLevel
 }

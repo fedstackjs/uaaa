@@ -2,7 +2,7 @@
   <VContainer>
     <VRow>
       <VCol cols="12">
-        <SessionInfoCard />
+        <VCard title="app" />
       </VCol>
     </VRow>
   </VContainer>

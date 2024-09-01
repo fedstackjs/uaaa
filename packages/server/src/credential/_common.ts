@@ -1,6 +1,6 @@
 import { Hookable } from 'hookable'
 import { Context } from 'hono'
-import type { App } from '../index.js'
+import type { App, SecurityLevel } from '../index.js'
 import { HTTPException } from 'hono/http-exception'
 
 export class CredentialContext {
@@ -19,14 +19,14 @@ export interface ICredentialLoginResult {
   /** Used Credential ID */
   credentialId: string
   /** Session Security Level */
-  securityLevel: number
+  securityLevel: SecurityLevel
   /** Seconds */
   expiresIn: number
 }
 
 export interface ICredentialVerifyResult {
   credentialId: string
-  securityLevel: number
+  securityLevel: SecurityLevel
   /** Seconds */
   expiresIn: number
 }
@@ -42,12 +42,18 @@ export abstract class CredentialImpl {
 
   login?(ctx: CredentialContext, payload: unknown): Promise<ICredentialLoginResult>
 
-  abstract canElevate(ctx: CredentialContext, userId: string, targetLevel: number): Promise<boolean>
+  abstract canElevate(
+    ctx: CredentialContext,
+    userId: string,
+    targetLevel: SecurityLevel
+  ): Promise<boolean>
+
+  abstract canBindNew(ctx: CredentialContext, userId: string): Promise<boolean>
 
   abstract verify(
     ctx: CredentialContext,
     userId: string,
-    targetLevel: number,
+    targetLevel: SecurityLevel,
     payload: unknown
   ): Promise<ICredentialVerifyResult>
 
@@ -91,10 +97,20 @@ export class CredentialManager extends Hookable<{}> {
     return impl.login(new CredentialContext(this, ctx), payload)
   }
 
-  async getVerifyTypes(ctx: Context, userId: string, targetLevel: number) {
+  async getVerifyTypes(ctx: Context, userId: string, targetLevel: SecurityLevel) {
     const types: string[] = []
     for (const impl of Object.values(this.impls)) {
       if (await impl.canElevate(new CredentialContext(this, ctx), userId, targetLevel)) {
+        types.push(impl.type)
+      }
+    }
+    return types
+  }
+
+  async getBindTypes(ctx: Context, userId: string) {
+    const types: string[] = []
+    for (const impl of Object.values(this.impls)) {
+      if (await impl.canBindNew(new CredentialContext(this, ctx), userId)) {
         types.push(impl.type)
       }
     }
@@ -105,7 +121,7 @@ export class CredentialManager extends Hookable<{}> {
     ctx: Context,
     type: string,
     userId: string,
-    targetLevel: number,
+    targetLevel: SecurityLevel,
     payload: unknown
   ) {
     const impl = this.impls[type]

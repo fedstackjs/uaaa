@@ -37,7 +37,7 @@ export const publicApi = new Hono()
       'json',
       type({
         type: 'string',
-        payload: 'any'
+        payload: 'unknown'
       })
     ),
     async (ctx) => {
@@ -47,35 +47,41 @@ export const publicApi = new Hono()
       const { insertedId: sessionId } = await db.sessions.insertOne({
         _id: nanoid(),
         userId,
-        tokenCount: securityLevel > 0 ? 2 : 1
+        tokenCount: securityLevel > 0 ? 2 : 1,
+        authorizedApps: []
       })
-      const tokens: string[] = []
+      const tokens: Array<{
+        token: string
+        refreshToken?: string | undefined
+      }> = []
       const timestamp = Date.now()
-      const { token: loginToken } = await token.createAndSignToken({
-        sessionId,
-        userId,
-        index: 0,
-        permissions: ['uaaa/**/*'],
-        securityLevel: 0,
-        createdAt: timestamp,
-        expiresAt: timestamp + ms(config.get('sessionTimeout')),
-        tokenTimeout: ms(config.get('tokenTimeout')),
-        refreshTimeout: ms(config.get('refreshTimeout'))
-      })
-      tokens.push(loginToken)
-      if (securityLevel > 0) {
-        const { token: elevatedToken } = await token.createAndSignToken({
+      tokens.push(
+        await token.createAndSignToken({
           sessionId,
           userId,
-          index: 1,
+          index: 0,
           permissions: ['uaaa/**/*'],
-          securityLevel,
+          securityLevel: 0,
           createdAt: timestamp,
-          expiresAt: timestamp + expiresIn,
+          expiresAt: timestamp + ms(config.get('sessionTimeout')),
           tokenTimeout: ms(config.get('tokenTimeout')),
           refreshTimeout: ms(config.get('refreshTimeout'))
         })
-        tokens.push(elevatedToken)
+      )
+      if (securityLevel > 0) {
+        tokens.push(
+          await token.createAndSignToken({
+            sessionId,
+            userId,
+            index: 1,
+            permissions: ['uaaa/**/*'],
+            securityLevel,
+            createdAt: timestamp,
+            expiresAt: timestamp + expiresIn,
+            tokenTimeout: ms(config.get('tokenTimeout')),
+            refreshTimeout: ms(config.get('refreshTimeout'))
+          })
+        )
       }
       return ctx.json({ tokens })
     }
@@ -100,7 +106,7 @@ export const publicApi = new Hono()
           throw new HTTPException(401)
         }
       }
-      return ctx.json(app.token.refreshToken(refreshToken, clientId))
+      return ctx.json(await app.token.refreshToken(refreshToken, clientId))
     }
   )
 

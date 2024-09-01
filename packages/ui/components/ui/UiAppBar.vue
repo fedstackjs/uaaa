@@ -7,17 +7,15 @@
           <VIcon size="48">i-mdi:lock</VIcon>
         </template>
         <div v-if="mdAndUp" class="text-none pl-4 font-mono text-3xl">
-          {{ $config.public.appName }}
-          <span v-if="console">{{ $t('pages.console.index') }}</span>
+          {{ config.public.appName }}
+          <span v-if="console">{{ t('pages.console.index') }}</span>
         </div>
       </VBtn>
     </VToolbarItems>
 
     <VSpacer></VSpacer>
 
-    <VToolbarItems>
-      <UiUserMenu />
-    </VToolbarItems>
+    <UiUserMenu />
   </VAppBar>
 </template>
 
@@ -29,6 +27,7 @@ defineProps<{
   console?: boolean
 }>()
 
+const config = useRuntimeConfig()
+const { t } = useLocale()
 const { mdAndUp } = useDisplay()
-const { isLoggedIn } = useAppState()
 </script>

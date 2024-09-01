@@ -9,6 +9,7 @@ import {
   ICredentialUnbindResult
 } from '../../../credential/_common.js'
 import { nanoid } from 'nanoid'
+import { SecurityLevel } from '../../../index.js'
 
 const tPasswordConfig = type({
   'passwordExpiration?': 'number|string',
@@ -58,14 +59,14 @@ class PasswordImpl extends CredentialImpl {
     }
 
     const user = await ctx.app.db.users.findOne({
-      _id: payload.id
+      $or: [{ 'claims.username.value': payload.id }]
     })
     if (!user) {
       throw new HTTPException(401)
     }
 
     const credential = await ctx.app.db.credentials.findOne({
-      userId: payload.id,
+      userId: user._id,
       type: 'password',
       disabled: { $ne: true }
     })
@@ -78,6 +79,7 @@ class PasswordImpl extends CredentialImpl {
       throw new HTTPException(401)
     }
 
+    await ctx.manager.checkCredentialUse(credential._id)
     return {
       userId: user._id,
       credentialId: credential._id,
@@ -86,7 +88,7 @@ class PasswordImpl extends CredentialImpl {
     }
   }
 
-  override async canElevate(ctx: CredentialContext, userId: string, targetLevel: number) {
+  override async canElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
       userId,
       type: 'password',
@@ -96,10 +98,18 @@ class PasswordImpl extends CredentialImpl {
     return !!credential
   }
 
+  override async canBindNew(ctx: CredentialContext, userId: string) {
+    const credential = await ctx.app.db.credentials.findOne({
+      userId,
+      type: 'password'
+    })
+    return !credential
+  }
+
   override async verify(
     ctx: CredentialContext,
     userId: string,
-    targetLevel: number,
+    targetLevel: SecurityLevel,
     _payload: unknown
   ) {
     const payload = PasswordImpl.tPasswordVerifyPayload(_payload)
@@ -118,6 +128,8 @@ class PasswordImpl extends CredentialImpl {
     if (!match) {
       throw new HTTPException(401)
     }
+
+    await ctx.manager.checkCredentialUse(credential._id)
     return {
       credentialId: credential._id,
       securityLevel: credential.securityLevel,
@@ -136,6 +148,7 @@ class PasswordImpl extends CredentialImpl {
       throw new HTTPException(400, { cause: payload.summary })
     }
     const hashed = await bcrypt.hash(payload.password, 10)
+    const now = Date.now()
     const { upsertedId } = await ctx.app.db.credentials.updateOne(
       {
         _id: credentialId as string,
@@ -148,19 +161,21 @@ class PasswordImpl extends CredentialImpl {
           data: '',
           remark: '',
           // TODO: securityLevel
-          securityLevel: 1
+          securityLevel: 1,
+          createdAt: now
         },
         $set: {
           secret: hashed,
-          validAfter: Date.now(),
-          validBefore: Date.now() + this.passwordExpiration,
-          validCount: Infinity
+          validAfter: now,
+          validBefore: now + this.passwordExpiration,
+          validCount: Infinity,
+          updatedAt: now
         },
         $unset: {
           disabled: ''
         }
       },
-      { ignoreUndefined: true }
+      { ignoreUndefined: true, upsert: true }
     )
     credentialId = (upsertedId ?? credentialId) as string
     return {
@@ -190,6 +205,12 @@ export default definePlugin({
           type: 'password'
         },
         name: 'password_userId'
+      }
+    )
+    await ctx.app.db.users.createIndex(
+      { 'claims.username.value': 1 },
+      {
+        unique: true
       }
     )
     ctx.app.credential.provide(new PasswordImpl(ctx.app.config.getAll()))
