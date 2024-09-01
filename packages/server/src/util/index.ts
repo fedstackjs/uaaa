@@ -14,3 +14,6 @@ export * from './errors.js'
 export * from './logger.js'
 export * from './permission.js'
 export * from './types.js'
+
+import * as arktype from 'arktype'
+export { arktype }

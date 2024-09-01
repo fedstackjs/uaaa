@@ -12,6 +12,7 @@ declare module '../../../index.js' {
   interface IConfig extends IOidcConfig {}
   interface IClaimDescriptor {
     oidcAlias?: string
+    oidcVerifiable?: boolean
   }
 }
 
@@ -23,8 +24,10 @@ export default definePlugin({
       router.route('/', oauthRouter)
     })
     ctx.app.claim.registry['username'].oidcAlias = 'preferred_username'
-    ctx.app.claim.registry['realname'].oidcAlias = 'email'
+    ctx.app.claim.registry['realname'].oidcAlias = 'name'
     ctx.app.claim.registry['email'].oidcAlias = 'email'
+    ctx.app.claim.registry['email'].oidcVerifiable = true
     ctx.app.claim.registry['phone'].oidcAlias = 'phone_number'
+    ctx.app.claim.registry['phone'].oidcVerifiable = true
   }
 })

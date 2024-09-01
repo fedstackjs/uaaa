@@ -38,6 +38,7 @@ export class EmailImpl extends CredentialImpl {
     if (!credential) {
       throw new HTTPException(401)
     }
+    await ctx.manager.checkCredentialUse(credential._id)
     return { credential }
   }
 
@@ -164,7 +165,7 @@ export class EmailImpl extends CredentialImpl {
         },
         $set: {
           data: email,
-          validAfter: Date.now(),
+          validAfter: now,
           validBefore: Infinity,
           validCount: Infinity,
           updatedAt: now

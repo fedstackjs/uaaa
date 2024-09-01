@@ -92,7 +92,7 @@ export const sessionApi = new Hono()
         token: await token.createAndSignToken({
           sessionId: ctx.var.token.sid,
           userId: ctx.var.token.sub,
-          permissions: ['uaaa/**/*'],
+          permissions: ['uaaa/**'],
           index: session.tokenCount,
           securityLevel,
           createdAt: timestamp,

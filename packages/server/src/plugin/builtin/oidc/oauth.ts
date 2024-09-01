@@ -52,7 +52,7 @@ async function generateIDToken(ctx: Context, appId: string, userId: string) {
     const descriptor = app.claim.getClaimDescriptor(key as ClaimName)
     const alias = descriptor.oidcAlias ?? key
     mappedClaims[alias] = value?.value
-    if (value?.verified) mappedClaims[`${alias}_verified`] = true
+    if (value?.verified && descriptor.oidcVerifiable) mappedClaims[`${alias}_verified`] = true
   }
   const now = Date.now()
   return app.token.sign({

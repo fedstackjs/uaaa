@@ -12,6 +12,7 @@ pages:
     signin: 登录
     signout: 登出
     verify: 验证
+    redirect: 重定向
   console:
     index: 后台管理
     user: 用户管理
@@ -24,6 +25,7 @@ credentials:
   phone: 手机
   email: 邮箱
   webauthn: 密钥
+  iaaa: 北京大学统一身份认证
 
 actions:
   submit: 提交
@@ -73,6 +75,7 @@ msg:
   authorize-warn: 点击授权，将赋予该应用您设置的权限，是否继续？
   bad-arguments: 参数错误
   app-not-installed: 应用未安装
+  redirecting: 正在重定向...
 
 claims:
   username: 用户名

@@ -5,6 +5,7 @@
 
 <script setup lang="ts">
 import CredentialFormEmail from './CredentialFormEmail.vue'
+import CredentialFormIAAA from './CredentialFormIAAA.vue'
 import CredentialFormPassword from './CredentialFormPassword.vue'
 import CredentialFormWebauthn from './CredentialFormWebauthn.vue'
 
@@ -17,6 +18,7 @@ const { t } = useI18n()
 const components: Record<string, Component> = {
   email: CredentialFormEmail,
   password: CredentialFormPassword,
-  webauthn: CredentialFormWebauthn
+  webauthn: CredentialFormWebauthn,
+  iaaa: CredentialFormIAAA
 }
 </script>
