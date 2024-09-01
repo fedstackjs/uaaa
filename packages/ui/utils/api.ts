@@ -1,4 +1,11 @@
-import type { IPublicApi, ISessionApi, IUserApi, IConsoleApi, ITokenPayload } from '@uaaa/server'
+import type {
+  IPublicApi,
+  ISessionApi,
+  IUserApi,
+  IConsoleApi,
+  ITokenPayload,
+  IClaim
+} from '@uaaa/server'
 import type { IEmailApi } from '@uaaa/server/lib/plugin/builtin/email'
 import { hc } from 'hono/client'
 
@@ -6,6 +13,10 @@ export interface IClientToken {
   token: string
   refreshToken?: string
   decoded: ITokenPayload
+}
+
+export interface IUserClaim extends IClaim {
+  name: string
 }
 
 const serializer = {
@@ -19,6 +30,7 @@ export class ApiManager {
   tokens
   effectiveToken
   isLoggedIn
+  isAdmin
 
   public
   session
@@ -30,6 +42,7 @@ export class ApiManager {
   constructor() {
     this.tokens = useLocalStorage<Record<string, IClientToken>>('tokens', {}, options)
     this.effectiveToken = useLocalStorage<IClientToken | null>('effectiveToken', null, options)
+    this.isAdmin = ref(false)
     this.isLoggedIn = computed(() => !!this.effectiveToken.value)
 
     this.public = hc<IPublicApi>('/api/public')
@@ -157,6 +170,13 @@ export class ApiManager {
       this.tokens.value = {}
       this.effectiveToken.value = null
     })
+  }
+
+  async getUserClaims(): Promise<IUserClaim[]> {
+    const resp = await api.user.claims.$get()
+    const { claims } = await resp.json()
+    this.isAdmin.value = claims.is_admin?.value === 'true'
+    return Object.entries(claims).map(([name, claim]) => ({ name, ...claim }))
   }
 
   static parseJWT(token: string) {

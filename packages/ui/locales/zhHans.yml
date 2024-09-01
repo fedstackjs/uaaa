@@ -34,12 +34,26 @@ actions:
   cancel: 取消
   save: 保存
   add-credential: 添加凭据
+  edit: 编辑{0}
+  reset: 重置
+  back: 返回
 
 msg:
   login-by: 通过{0}登录
   verify-by: 通过{0}验证
   credential-type: '{0}凭据'
   current-security-level: 安全级别：{0}
+  upgrade-security-level-to: 提升安全级别至：{0}
   credential-id: 凭据ID
   unbind-confirm: 确认解绑凭据？
   unknown-credential-type: 不支持的凭据类别
+  user-settings: 用户设置
+  task-succeeded: 操作成功
+  task-failed: 操作失败
+  manage-session: 会话管理
+  tips: 提示
+  not-implemented: 功能尚未实现
+  no-verify-methods: 没有可用的验证方式
+
+claims:
+  username: 用户名

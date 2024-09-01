@@ -2,7 +2,7 @@
   <VNavigationDrawer v-model="model">
     <VList nav>
       <VListItem v-for="(link, i) of links" :key="i" v-bind="link" :title="t(link.title)" />
-      <VListGroup value="Users">
+      <VListGroup v-if="isAdmin" value="Admin">
         <template v-slot:activator="{ props }">
           <VListItem v-bind="{ ...props, ...adminLinks[0] }" :title="t(adminLinks[0].title)" />
         </template>
@@ -49,4 +49,6 @@ const adminLinks = [
   { to: '/console/app', title: 'pages.console.app' },
   { to: '/console/setting', title: 'pages.console.setting' }
 ]
+
+const { isAdmin } = api
 </script>

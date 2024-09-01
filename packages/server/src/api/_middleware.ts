@@ -48,3 +48,15 @@ export const verifyPermission = ({ path, securityLevel }: IVerifyPermissionOptio
     }
     await next()
   })
+
+export const verifyAdmin = createMiddleware(async (ctx, next) => {
+  const { app, token } = ctx.var
+  const user = await app.db.users.findOne(
+    { _id: token.sub },
+    { projection: { 'claims.is_admin': 1 } }
+  )
+  if (!user || user.claims.is_admin?.value !== 'true') {
+    throw new BusinessError('REQUIRE_ADMIN', {})
+  }
+  await next()
+})

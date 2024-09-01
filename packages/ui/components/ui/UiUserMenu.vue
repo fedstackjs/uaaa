@@ -1,13 +1,26 @@
 <template>
-  <VBtn
-    v-if="!dense"
-    prepend-icon="i-mdi:security"
-    class="text-none mr-2"
-    variant="tonal"
-    color="warning"
-  >
-    {{ t('msg.current-security-level', [t(`securityLevel.${effectiveToken?.decoded.level}`)]) }}
-  </VBtn>
+  <VMenu v-if="!dense">
+    <template v-slot:activator="{ props }">
+      <VBtn
+        v-bind="props"
+        prepend-icon="i-mdi:security"
+        class="text-none mr-2"
+        variant="tonal"
+        color="warning"
+      >
+        {{ t('msg.current-security-level', [t(`securityLevel.${effectiveToken?.decoded.level}`)]) }}
+      </VBtn>
+    </template>
+    <VList>
+      <VListItem
+        v-for="level of higherLevels"
+        :key="level"
+        :title="t('msg.upgrade-security-level-to', [t(`securityLevel.${level}`)])"
+        :to="{ path: '/auth/verify', query: { redirect: route.fullPath, targetLevel: level } }"
+      />
+    </VList>
+  </VMenu>
+
   <VMenu>
     <template v-slot:activator="{ props }">
       <VBtn
@@ -33,18 +46,31 @@ defineProps<{
 }>()
 
 const { t } = useI18n()
+const route = useRoute()
 
 const links = [
-  { to: '/user/setting', title: 'pages.setting', prependIcon: 'i-mdi:account-cog-outline' },
+  { to: '/setting', title: 'pages.setting', prependIcon: 'i-mdi:account-cog-outline' },
   { to: '/auth/signout', title: 'pages.auth.signout', prependIcon: 'i-mdi:logout' }
 ]
 
-const { data, status } = await useAsyncData(async () => {
+const higherLevels = computed(() =>
+  new Array(3 - (effectiveToken.value?.decoded.level ?? 0))
+    .fill(0)
+    .map((_, i) => 3 - i)
+    .reverse()
+)
+
+const { data, status, refresh } = await useAsyncData(async () => {
   const resp = await api.session.claims.$get()
   return resp.json()
 })
 
 const { effectiveToken } = api
+
+watch(
+  () => effectiveToken.value?.decoded.level,
+  () => refresh()
+)
 </script>
 
 <i18n>
