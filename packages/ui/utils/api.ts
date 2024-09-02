@@ -5,7 +5,8 @@ import type {
   IConsoleApi,
   ITokenPayload,
   IClaim,
-  ErrorName
+  ErrorName,
+  IErrorMap
 } from '@uaaa/server'
 import type { IEmailApi } from '@uaaa/server/lib/plugin/builtin/email'
 import type { IWebauthnApi } from '@uaaa/server/lib/plugin/builtin/webauthn'
@@ -20,6 +21,13 @@ export interface IClientToken {
 export interface IUserClaim extends IClaim {
   name: string
 }
+
+export type APIError = {
+  [T in ErrorName | 'UNKNOWN_ERROR']: {
+    code: T
+    data: T extends ErrorName ? IErrorMap[T] : { msg: string }
+  }
+}[ErrorName | 'UNKNOWN_ERROR']
 
 const serializer = {
   read: JSON.parse,
@@ -192,13 +200,13 @@ export class ApiManager {
     return Object.entries(claims).map(([name, claim]) => ({ name, ...claim }))
   }
 
-  async getError(resp: Response): Promise<{ error: ErrorName | 'UNKNOWN_ERROR'; data: any }> {
+  async getError(resp: Response): Promise<APIError> {
     try {
-      const { error, data } = await resp.json()
-      return { error, data }
+      const { code, data } = await resp.json()
+      return { code, data }
     } catch (err) {
       return {
-        error: 'UNKNOWN_ERROR',
+        code: 'UNKNOWN_ERROR',
         data: { msg: this.formatError(err) }
       }
     }

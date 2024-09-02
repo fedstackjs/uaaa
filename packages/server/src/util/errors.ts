@@ -40,7 +40,7 @@ export class BusinessError<T extends ErrorName> extends HTTPException {
     options?: { cause?: unknown }
   ) {
     super(ErrorStatusMap[code], {
-      res: new Response(JSON.stringify({ error: code, data }), {
+      res: new Response(JSON.stringify({ code, data }), {
         status: ErrorStatusMap[code],
         headers: {
           'Content-Type': 'application/json'

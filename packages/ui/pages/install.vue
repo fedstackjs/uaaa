@@ -108,7 +108,20 @@ async function install() {
     toast.success(t('msg.task-succeeded'))
     router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
   } else {
-    toast.error(t('msg.task-failed'))
+    const err = await api.getError(resp)
+    switch (err.code) {
+      case 'MISSING_REQUIRED_CLAIMS':
+        toast.error(t('missing-required-claims', [err.data.claims.join(', ')]))
+        break
+      case 'MISSING_VERIFIED_CLAIMS':
+        toast.error(t('missing-verified-claims', [err.data.claims.join(', ')]))
+        break
+      case 'MISSING_REQUIRED_PERMISSIONS':
+        toast.error(t('missing-required-permissions', [err.data.perms.join(', ')]))
+        break
+      default:
+        toast.error(t('task-failed-with', [err.code]))
+    }
   }
 }
 
@@ -116,3 +129,11 @@ function cancel() {
   router.back()
 }
 </script>
+
+<i18n>
+zhHans:
+  missing-required-claims: '缺少必要的信息：{0}'
+  missing-verified-claims: '缺少已验证的信息：{0}'
+  missing-required-permissions: '缺少必要的权限：{0}'
+  task-failed-with: '任务失败：{0}'
+</i18n>
