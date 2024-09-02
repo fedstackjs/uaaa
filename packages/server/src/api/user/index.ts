@@ -105,12 +105,17 @@ export const userApi = new Hono()
       const { appId, grantedPermissions, grantedClaims } = ctx.req.valid('json')
       const clientApp = await app.db.apps.findOne({ _id: appId, disabled: { $ne: true } })
       const user = await app.db.users.findOne({ _id: token.sub })
-      if (!clientApp || !user) throw new HTTPException(404)
-      if (clientApp.disabled) throw new HTTPException(400, { message: `App ${appId} is disabled` })
+      if (!clientApp || !user) throw new BusinessError('NOT_FOUND', {})
+      if (clientApp.disabled) {
+        throw new BusinessError('BAD_REQUEST', { msg: `App ${appId} is disabled` })
+      }
 
       const permissionSet = new Set(grantedPermissions)
-      if (clientApp.requestedPermissions.some((p) => p.required && !permissionSet.has(p.perm))) {
-        throw new HTTPException(400, { message: `Missing required permissions` })
+      const missingPermissions = clientApp.requestedPermissions
+        .filter((p) => p.required && !permissionSet.has(p.perm))
+        .map((p) => p.perm)
+      if (missingPermissions.length) {
+        throw new BusinessError('MISSING_REQUIRED_PERMISSIONS', { perms: missingPermissions })
       }
 
       const claims = await app.claim.filterClaimsForApp(

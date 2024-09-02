@@ -1,8 +1,15 @@
 import { Hookable } from 'hookable'
 import { Context } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import type { App, IAppRequestedClaim, IClaim, IUserClaims, SecurityLevel } from '../index.js'
-import { rAvatarHash, rEmail, rPhone, rUsername, SecurityLevels } from '../util/index.js'
+import type { App, IAppRequestedClaim, IUserClaims, SecurityLevel } from '../index.js'
+import {
+  BusinessError,
+  rAvatarHash,
+  rEmail,
+  rPhone,
+  rUsername,
+  SecurityLevels
+} from '../util/index.js'
 
 export const rClaimName = /^(?:[a-z0-9_]{1,32}:)?[a-z0-9_]{1,64}$/
 
@@ -36,7 +43,10 @@ export class ClaimContext {
   app
   securityLevel
 
-  constructor(public manager: ClaimManager, public httpCtx: Context) {
+  constructor(
+    public manager: ClaimManager,
+    public httpCtx: Context
+  ) {
     this.app = manager.app
     this.securityLevel = httpCtx.var.token?.level ?? 0
   }
@@ -96,14 +106,14 @@ export class ClaimManager extends Hookable<{
         const descriptor = this.getClaimDescriptor(name)
         if (claim && descriptor.securityLevel <= ctx.var.token.level) {
           if (options.verified && !claim.verified) {
-            throw new HTTPException(403, { cause: `Claim ${name} is not verified` })
+            throw new BusinessError('MISSING_VERIFIED_CLAIMS', { claims: [name] })
           }
           result[name] = claim
           continue
         }
       }
       if (options.required) {
-        throw new HTTPException(403, { cause: `Claim ${name} is required` })
+        throw new BusinessError('MISSING_REQUIRED_CLAIMS', { claims: [name] })
       }
     }
     return result

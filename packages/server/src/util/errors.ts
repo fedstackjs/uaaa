@@ -10,6 +10,9 @@ export interface IErrorMap {
   NOT_FOUND: { msg?: string }
   BAD_REQUEST: { msg?: string }
   APP_NOT_INSTALLED: {}
+  MISSING_REQUIRED_PERMISSIONS: { perms: string[] }
+  MISSING_REQUIRED_CLAIMS: { claims: string[] }
+  MISSING_VERIFIED_CLAIMS: { claims: string[] }
 }
 
 export type ErrorName = keyof IErrorMap
@@ -24,11 +27,18 @@ export const ErrorStatusMap: {
   INVALID_TYPE: 400,
   NOT_FOUND: 404,
   BAD_REQUEST: 400,
-  APP_NOT_INSTALLED: 400
+  APP_NOT_INSTALLED: 400,
+  MISSING_REQUIRED_PERMISSIONS: 400,
+  MISSING_REQUIRED_CLAIMS: 400,
+  MISSING_VERIFIED_CLAIMS: 400
 }
 
 export class BusinessError<T extends ErrorName> extends HTTPException {
-  constructor(public code: T, public data: IErrorMap[T], options?: { cause?: unknown }) {
+  constructor(
+    public code: T,
+    public data: IErrorMap[T],
+    options?: { cause?: unknown }
+  ) {
     super(ErrorStatusMap[code], {
       res: new Response(JSON.stringify({ error: code, data }), {
         status: ErrorStatusMap[code],
