@@ -2,8 +2,8 @@ import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { Context, Hono } from 'hono'
 import ms from 'ms'
-import { ClaimName } from '../../../claim/_common.js'
 import { BusinessError, checkPermission } from '../../../util/index.js'
+import type { IUserClaims, ClaimName } from '../../../index.js'
 
 const tOIDCAuthorizationRequest = type({
   scope: 'string',
@@ -31,6 +31,22 @@ const tOIDCAccessTokenRequest = type(
   }
 )
 
+function generateAdditionalClaim(claims: Partial<IUserClaims>, template: string) {
+  // template format:
+  // 1. plain: ${claimName}
+  // 2. default: ${claimName|defaultValue}
+  return template.replace(/\${([^}]+)}/g, (_, claimName) => {
+    const [name, defaultValue] = claimName.split('|')
+    const replaced = claims[name as ClaimName]?.value ?? defaultValue
+    if (typeof replaced !== 'string') {
+      throw new BusinessError('BAD_REQUEST', {
+        msg: `Claim ${name} not provided`
+      })
+    }
+    return replaced
+  })
+}
+
 async function generateIDToken(ctx: Context, appId: string, userId: string) {
   const { app } = ctx.var
   const installation = await app.db.installations.findOne({
@@ -53,6 +69,10 @@ async function generateIDToken(ctx: Context, appId: string, userId: string) {
     const alias = descriptor.oidcAlias ?? key
     mappedClaims[alias] = value?.value
     if (value?.verified && descriptor.oidcVerifiable) mappedClaims[`${alias}_verified`] = true
+  }
+  const additionalClaims = ctx.var.app.config.get('oidcAdditionalClaims') ?? {}
+  for (const [key, value] of Object.entries(additionalClaims)) {
+    mappedClaims[key] = generateAdditionalClaim(claims, value)
   }
   const now = Date.now()
   return app.token.sign({

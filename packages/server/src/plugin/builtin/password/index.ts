@@ -207,12 +207,6 @@ export default definePlugin({
         name: 'password_userId'
       }
     )
-    await ctx.app.db.users.createIndex(
-      { 'claims.username.value': 1 },
-      {
-        unique: true
-      }
-    )
     ctx.app.credential.provide(new PasswordImpl(ctx.app.config.getAll()))
   }
 })

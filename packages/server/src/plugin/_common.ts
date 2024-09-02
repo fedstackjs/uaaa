@@ -41,7 +41,9 @@ export class PluginContext {
   }
 }
 
-export class PluginManager extends Hookable {
+export class PluginManager extends Hookable<{
+  postSetup(): void | Promise<void>
+}> {
   private _resolver: NodeRequire
   plugins: Record<string, ILoadedPlugin> = Object.create(null)
 
@@ -119,6 +121,7 @@ export class PluginManager extends Hookable {
       plugin.setupPromise = Promise.resolve(plugin.setup(new PluginContext(this, plugin)))
     }
     await Promise.all(Object.values(this.plugins).map((plugin) => plugin.setupPromise))
+    await this.callHook('postSetup')
   }
 
   async waitForPlugin(name: string, fail = true) {
