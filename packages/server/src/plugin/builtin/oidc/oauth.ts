@@ -68,11 +68,12 @@ export const oauthRouter = new Hono()
   // OIDC Discovery
   // https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
   .get('/.well-known/openid-configuration', async (ctx) => {
+    const base = ctx.var.app.config.get('deploymentUrl')
     return ctx.json({
-      issuer: new URL('/', ctx.req.url).toString().replace(/\/$/, ''),
-      authorization_endpoint: new URL('/oauth/authorize', ctx.req.url).toString(),
-      token_endpoint: new URL('/oauth/token', ctx.req.url).toString(),
-      jwks_uri: new URL('/api/public/jwks', ctx.req.url).toString(),
+      issuer: base,
+      authorization_endpoint: new URL('/oauth/authorize', base).toString(),
+      token_endpoint: new URL('/oauth/token', base).toString(),
+      jwks_uri: new URL('/api/public/jwks', base).toString(),
       response_types_supported: ['code', 'id_token', 'id_token token'],
       subject_types_supported: ['public'],
       id_token_signing_alg_values_supported: ['RS256']

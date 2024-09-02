@@ -33,7 +33,10 @@ export interface ILoadedPlugin extends IPluginMetadata {
 export class PluginContext {
   app
 
-  constructor(public manager: PluginManager, public metadata: IPluginMetadata) {
+  constructor(
+    public manager: PluginManager,
+    public metadata: IPluginMetadata
+  ) {
     this.app = manager.app
   }
 }
@@ -60,12 +63,6 @@ export class PluginManager extends Hookable {
   }
 
   private async _loadPlugin(name: string) {
-    try {
-      const path = this._resolver.resolve(name)
-      logger.info(`Resolving plugin: ${name} => ${path}`)
-    } catch {
-      throw new Error(`Cannot resolve plugin: ${name}`)
-    }
     let setup: IPluginSetupFn
     let metadata: IPluginMetadata
     try {
@@ -89,16 +86,26 @@ export class PluginManager extends Hookable {
     logger.info(`Loaded plugin: ${metadata.name}`)
   }
 
-  async loadPlugin(name: string) {
-    logger.info(`Loading plugin: ${name}`)
+  async resolvePlugin(name: string) {
+    logger.info(`Resolving plugin: ${name}`)
     const names = [name, `@uaaa/plugin-${name}`, `./builtin/${name}/index.js`]
     for (const name of names) {
       try {
-        await this._loadPlugin(name)
-        return
+        const path = this._resolver.resolve(name)
+        logger.info(`Resolving plugin: ${name} => ${path}`)
+        return name
       } catch {}
     }
-    throw new Error(`Cannot load plugin: ${name}`)
+    throw new Error(`Cannot resolve plugin: ${name}`)
+  }
+
+  async loadPlugin(name: string) {
+    logger.info(`Loading plugin: ${name}`)
+    try {
+      await this._loadPlugin(await this.resolvePlugin(name))
+    } catch (err) {
+      throw new Error(`Failed to load plugin ${name}`, { cause: err })
+    }
   }
 
   async loadPlugins(names = this.app.config.get('plugins')) {
