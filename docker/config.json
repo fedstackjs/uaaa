@@ -1,0 +1,10 @@
+{
+  "mongoUri": "mongodb://mongo:27017/uaaa",
+  "plugins": ["oidc", "password"],
+  "port": 3030,
+  "sessionTimeout": "1y",
+  "deploymentUrl": "http://localhost:3000",
+  "tokenTimeout": "30min",
+  "refreshTimeout": "7d",
+  "defaultUserSecurityLevel": 3
+}

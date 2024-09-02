@@ -1,0 +1,17 @@
+:80 {
+    handle /api/* {
+        reverse_proxy server:3030
+    }
+    handle /oauth/* {
+        reverse_proxy server:3030
+    }
+    handle /.well-known/* {
+        reverse_proxy server:3030
+    }
+
+    handle {
+        root * /var/www/html
+        try_files {path} /index.html
+        file_server
+    }
+}

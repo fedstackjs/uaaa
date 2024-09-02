@@ -1,0 +1,41 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server.dockerfile
+      args:
+        - SERVER_VERSION=latest
+        - ADD_PLUGINS=@uaaa/plugin-iaaa@latest
+    restart: always
+    expose:
+      - "3030"
+    volumes:
+      - ./config.json:/opt/config.json
+    depends_on:
+      - mongo
+      - redis
+
+  mongo:
+    image: public.ecr.aws/docker/library/mongo:latest
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo:/data/db
+
+  redis:
+    image: public.ecr.aws/docker/library/redis:latest
+    restart: always
+
+  caddy:
+    image: public.ecr.aws/docker/library/caddy:latest
+    restart: always
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./frontend:/var/www/html
+    ports:
+      - "80:80"
+      - "4000:80"
+      - "443:443"
+    depends_on:
+      - server
