@@ -1,7 +1,10 @@
 <template>
   <VContainer class="fill-height justify-center">
     <VCard class="min-w-md">
-      <VCardTitle class="d-flex justify-center">
+      <VCardTitle class="d-flex flex-col items-center">
+        <VIcon size="128">
+          <CommonLogo variant="flat" />
+        </VIcon>
         <div>{{ t('pages.authorize') }}</div>
       </VCardTitle>
       <VDivider />

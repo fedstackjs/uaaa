@@ -1,10 +1,15 @@
 <template>
   <VContainer class="fill-height justify-center">
     <VCard class="min-w-md">
-      <VCardTitle class="d-flex justify-center justify-between">
-        <div class="flex-1 flex justify-start"></div>
-        <div>{{ t('pages.auth.signout') }}</div>
-        <div class="flex-1 flex justify-start"></div>
+      <VCardTitle class="d-flex flex-col items-center">
+        <VIcon size="128">
+          <CommonLogo variant="flat" />
+        </VIcon>
+        <div class="flex self-stretch">
+          <div class="flex-1 flex justify-start"></div>
+          <div>{{ t('pages.auth.signout') }}</div>
+          <div class="flex-1 flex justify-start"></div>
+        </div>
       </VCardTitle>
       <VDivider />
       <VCardText>
