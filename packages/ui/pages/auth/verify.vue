@@ -49,6 +49,9 @@ definePageMeta({
   layout: 'plain',
   middleware: 'verifyauth'
 })
+useHead({
+  title: 'User Verify'
+})
 
 const { t } = useI18n()
 const route = useRoute()

@@ -46,8 +46,8 @@ async function authorize() {
       const { tokenId } = await resp.json()
       await props.connector.onAuthorize(app.value, tokenId)
     } else {
-      const { error } = await api.getError(resp)
-      if (error === 'APP_NOT_INSTALLED') {
+      const { code } = await api.getError(resp)
+      if (code === 'APP_NOT_INSTALLED') {
         toast.error(t('msg.app-not-installed'))
         router.replace({
           path: '/install',

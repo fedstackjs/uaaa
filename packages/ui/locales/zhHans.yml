@@ -21,10 +21,10 @@ pages:
 
 credentials:
   password: 密码
-  passkey: 密钥
+  passkey: 通行密钥
   phone: 手机
   email: 邮箱
-  webauthn: 密钥
+  webauthn: 通行密钥
   iaaa: 北京大学统一身份认证
 
 actions:
@@ -84,6 +84,15 @@ claims:
   phone: 手机
   avatar_hash: 头像标识
   is_admin: 是否管理员
+  'iaaa:name': IAAA姓名
+  'iaaa:status': IAAA状态
+  'iaaa:identity_id': 学工号
+  'iaaa:dept_id': IAAA部门ID
+  'iaaa:dept': IAAA部门
+  'iaaa:identity_type': IAAA身份类型
+  'iaaa:detail_type': IAAA详细类型
+  'iaaa:identity_status': IAAA身份状态
+  'iaaa:campus': 校区
 
 securityLevel:
   0: 低
@@ -95,3 +104,9 @@ securityLevel:
 console:
   app-list: 应用列表
   add-app: 添加应用
+
+errors:
+  api:
+    unknown: API错误{code}
+  error: 发生错误：{message}
+  unknown: 未知错误

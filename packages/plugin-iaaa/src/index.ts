@@ -119,7 +119,7 @@ class IAAAImpl extends CredentialImpl {
       payload.token
     )
     if (!resp.success) {
-      throw new BusinessError('BAD_REQUEST', { msg: 'IAAA auth failed' })
+      throw new BusinessError('BAD_REQUEST', { msg: `IAAA: ${resp.errMsg}` })
     }
     const credential = await ctx.app.db.credentials.findOne({ data: resp.userInfo.identityId })
     if (credential) {
@@ -194,7 +194,7 @@ class IAAAImpl extends CredentialImpl {
       payload.token
     )
     if (!resp.success) {
-      throw new BusinessError('BAD_REQUEST', { msg: 'IAAA auth failed' })
+      throw new BusinessError('BAD_REQUEST', { msg: `IAAA: ${resp.errMsg}` })
     }
     const credential = await ctx.app.db.credentials.findOne({
       data: resp.userInfo.identityId,
@@ -202,7 +202,7 @@ class IAAAImpl extends CredentialImpl {
       disabled: { $ne: true }
     })
     if (!credential) {
-      throw new BusinessError('BAD_REQUEST', { msg: 'IAAA auth failed' })
+      throw new BusinessError('BAD_REQUEST', { msg: 'Not binded' })
     }
     await ctx.manager.checkCredentialUse(credential._id)
     await this.updateUserClaims(ctx, credential.userId, resp)
@@ -232,7 +232,7 @@ class IAAAImpl extends CredentialImpl {
       payload.token
     )
     if (!resp.success) {
-      throw new BusinessError('BAD_REQUEST', { msg: 'IAAA auth failed' })
+      throw new BusinessError('BAD_REQUEST', { msg: `IAAA: ${resp.errMsg}` })
     }
     if (credentialId && !this.allowRebind) {
       throw new BusinessError('BAD_REQUEST', { msg: 'IAAA rebind not allowed' })

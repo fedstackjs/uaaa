@@ -14,6 +14,9 @@
 definePageMeta({
   level: 1
 })
+useHead({
+  title: 'Session Management'
+})
 
 const { t } = useI18n()
 </script>

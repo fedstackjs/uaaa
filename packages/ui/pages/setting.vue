@@ -12,4 +12,7 @@
 definePageMeta({
   level: 1
 })
+useHead({
+  title: 'User Settings'
+})
 </script>

@@ -78,6 +78,6 @@ async function submit() {
 
 <i18n>
 zhHans:
-  do-not-support-rebind: WebAuthn凭据不支持重新绑定
-  verify-passkey: 验证密钥
+  do-not-support-rebind: 通行密钥不支持重新绑定
+  verify-passkey: 验证通行密钥
 </i18n>

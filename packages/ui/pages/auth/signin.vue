@@ -39,6 +39,9 @@ definePageMeta({
   layout: 'plain',
   middleware: 'noauth'
 })
+useHead({
+  title: 'Sign-In'
+})
 
 const { t } = useI18n()
 const route = useRoute()

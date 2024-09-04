@@ -9,15 +9,17 @@ export const useTask = <T extends any[]>(
   const running = ref(false)
   const error = ref<unknown>(null)
   const toast = useToast()
+  const errToast = useErrorToast()
+  const { t } = useI18n()
   const run = async (...args: T) => {
     running.value = true
     error.value = null
     try {
       await task(...args)
-      toast.success('Task completed')
+      toast.success(t('msg.task-succeeded'))
     } catch (e) {
       error.value = e
-      toast.error('Task failed')
+      errToast.notify(e)
     } finally {
       running.value = false
     }

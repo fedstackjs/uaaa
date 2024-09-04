@@ -10,6 +10,11 @@ export default defineNuxtPlugin((app) => {
     locale: {
       fallback: 'zhHans',
       messages: { en, zhHans }
+    },
+    icons: {
+      sets: {
+        svg: {} as never
+      }
     }
   })
   app.vueApp.use(vuetify)

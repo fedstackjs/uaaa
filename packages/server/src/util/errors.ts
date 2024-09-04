@@ -13,6 +13,8 @@ export interface IErrorMap {
   MISSING_REQUIRED_PERMISSIONS: { perms: string[] }
   MISSING_REQUIRED_CLAIMS: { claims: string[] }
   MISSING_VERIFIED_CLAIMS: { claims: string[] }
+  INTERNAL_ERROR: { msg: string }
+  DUPLICATE: { msg: string }
 }
 
 export type ErrorName = keyof IErrorMap
@@ -30,7 +32,9 @@ export const ErrorStatusMap: {
   APP_NOT_INSTALLED: 400,
   MISSING_REQUIRED_PERMISSIONS: 400,
   MISSING_REQUIRED_CLAIMS: 400,
-  MISSING_VERIFIED_CLAIMS: 400
+  MISSING_VERIFIED_CLAIMS: 400,
+  INTERNAL_ERROR: 500,
+  DUPLICATE: 400
 }
 
 export class BusinessError<T extends ErrorName> extends HTTPException {

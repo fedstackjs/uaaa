@@ -1,8 +1,10 @@
-function getClient() {
-  localStorage.setItem('authRedirect', 'false')
-  const win = window.open('/auth/redirect', 'iaaa', 'width=800,height=600')
-  const client = win?.window
-  if (client) return { client, close: () => win?.close() }
+function getWindow(redirectUrl: string) {
+  const url = new URL(redirectUrl)
+  url.searchParams.set('stub', '1')
+  redirectUrl = url.toString()
+
+  const win = window.open(redirectUrl, 'iaaa', 'width=800,height=600')
+  if (win) return { client: win, close: () => win?.close() }
   const iframe = document.createElement('iframe')
   iframe.style.background = 'white'
   iframe.style.zIndex = '9999'
@@ -12,10 +14,12 @@ function getClient() {
   iframe.style.left = '0'
   iframe.style.width = '100%'
   iframe.style.height = '100%'
-  iframe.src = '/auth/redirect'
+  iframe.src = redirectUrl
   document.body.appendChild(iframe)
   return { client: iframe.contentWindow, close: () => iframe.remove() }
 }
+
+const timeout = 60 * 1000 // 1 minute
 
 export async function getIAAAToken() {
   const resp = await fetch('/.well-known/iaaa-configuration')
@@ -27,21 +31,62 @@ export async function getIAAAToken() {
     <input type=hidden name=redirectUrl value="${redirectUrl}" />
   </form>
   `
-  const { client, close } = getClient()
+  const { client, close } = getWindow(redirectUrl)
   if (!client) throw new Error('Failed to open IAAA window')
-  client.document.write(html)
-  client.document.forms[0].submit()
-  for (;;) {
-    try {
-      const params = new URLSearchParams(client.document.location.search)
-      const token = params.get('token') || params.get('code')
+  const { origin } = new URL(redirectUrl)
+  if (origin === window.origin) {
+    client.document.write(html)
+    client.document.forms[0].submit()
+    const start = Date.now()
+    for (; Date.now() - start < timeout; ) {
+      try {
+        const params = new URLSearchParams(client.document.location.search)
+        const token = params.get('token') || params.get('code')
+        if (token) {
+          close()
+          return token
+        }
+      } catch (err) {
+        //
+      }
+      await sleep(200)
+    }
+    close()
+    throw new Error('IAAA timeout')
+  } else {
+    console.log(`[IAAA] Using stub: ${origin}`)
+    let token = ''
+    let ready = false
+    const listener = (e: MessageEvent) => {
+      console.log(e)
+      if (e.origin !== origin) return
+      token ||= e.data.token
+      ready ||= e.data.ready
+    }
+    window.addEventListener('message', listener)
+    const cleanup = () => {
+      window.removeEventListener('message', listener)
+      close()
+    }
+
+    const start = Date.now()
+    for (; Date.now() - start < timeout; ) {
+      client.postMessage({ actions: [{ action: 'init' }] }, origin)
+      if (ready) break
+      await sleep(200)
+    }
+    console.log(`[IAAA] Stub ready`)
+    client.postMessage({ actions: [{ action: 'write', html }] }, origin)
+    console.log(`[IAAA] Sent message to stub`)
+    for (; Date.now() - start < timeout; ) {
+      client.postMessage({ actions: [{ action: 'getToken' }] }, origin)
       if (token) {
-        close()
+        cleanup()
         return token
       }
-    } catch (err) {
-      //
+      await sleep(200)
     }
-    await sleep(200)
+    cleanup()
+    throw new Error('IAAA timeout')
   }
 }

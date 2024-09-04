@@ -54,6 +54,9 @@
 definePageMeta({
   level: 1
 })
+useHead({
+  title: 'Install App'
+})
 
 const { t } = useI18n()
 

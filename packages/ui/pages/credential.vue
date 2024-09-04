@@ -39,6 +39,9 @@
 definePageMeta({
   level: 1
 })
+useHead({
+  title: 'Credential Management'
+})
 
 const { t } = useI18n()
 

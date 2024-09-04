@@ -18,6 +18,9 @@ definePageMeta({
   layout: 'plain',
   middleware: 'verifyauth'
 })
+useHead({
+  title: 'Authorize'
+})
 
 const { t } = useI18n()
 

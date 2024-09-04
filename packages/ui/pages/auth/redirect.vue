@@ -18,6 +18,9 @@
 definePageMeta({
   layout: 'plain'
 })
+useHead({
+  title: 'Redirect Callback'
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -34,7 +37,7 @@ onMounted(() => {
       path,
       query: { ...query, ...route.query }
     })
-  } else {
+  } else if (!route.query.stub) {
     router.replace('/')
   }
 })

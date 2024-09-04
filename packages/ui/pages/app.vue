@@ -29,6 +29,9 @@
 definePageMeta({
   level: 1
 })
+useHead({
+  title: 'App Management'
+})
 
 const { t } = useI18n()
 const route = useRoute()

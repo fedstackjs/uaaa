@@ -26,6 +26,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const toast = useToast()
+
 const manifest = ref<IAppManifest>({
   appId: 'com.example.appid',
   name: 'Example App',

@@ -3,7 +3,7 @@
     <VTable v-if="data">
       <tbody>
         <tr v-for="item of data" :key="item.name">
-          <td>{{ t(item.name) }}</td>
+          <td>{{ t(`claims.${item.name}`) }}</td>
           <td>
             <code>{{ item.value }}</code>
           </td>
@@ -49,8 +49,3 @@ td:last-child {
   white-space: nowrap;
 }
 </style>
-
-<i18n>
-zhHans:
-  username: 用户名
-</i18n>

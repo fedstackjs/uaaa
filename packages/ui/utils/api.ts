@@ -22,11 +22,24 @@ export interface IUserClaim extends IClaim {
   name: string
 }
 
-export type APIError = {
-  [T in ErrorName | 'UNKNOWN_ERROR']: {
-    code: T
-    data: T extends ErrorName ? IErrorMap[T] : { msg: string }
+export class APIError<
+  T extends ErrorName | 'UNKNOWN_ERROR' = ErrorName | 'UNKNOWN_ERROR'
+> extends Error {
+  code: T
+  data: T extends ErrorName ? IErrorMap[T] : { msg: string }
+  constructor(code: T, data: APIError<T>['data']) {
+    super(
+      `${code}: ${Object.entries(data)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(',')}`
+    )
+    this.code = code
+    this.data = data
   }
+}
+
+export type APIErrorType = {
+  [K in ErrorName | 'UNKNOWN_ERROR']: APIError<K>
 }[ErrorName | 'UNKNOWN_ERROR']
 
 const serializer = {
@@ -200,19 +213,21 @@ export class ApiManager {
     return Object.entries(claims).map(([name, claim]) => ({ name, ...claim }))
   }
 
-  async getError(resp: Response): Promise<APIError> {
+  async getError(resp: Response): Promise<APIErrorType> {
     try {
       const { code, data } = await resp.json()
-      return { code, data }
+      return new APIError(code, data)
     } catch (err) {
-      return {
-        code: 'UNKNOWN_ERROR',
-        data: { msg: this.formatError(err) }
-      }
+      return new APIError('UNKNOWN_ERROR', { msg: this._formatError(err) })
     }
   }
 
-  formatError(err: unknown) {
+  async checkResponse(resp: Response) {
+    if (resp.ok) return
+    throw await this.getError(resp)
+  }
+
+  private _formatError(err: unknown) {
     return err instanceof Error ? err.message : `${err}`
   }
 

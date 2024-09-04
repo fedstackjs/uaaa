@@ -20,6 +20,9 @@
 definePageMeta({
   layout: 'plain'
 })
+useHead({
+  title: 'Sign-Out'
+})
 
 const router = useRouter()
 const { t } = useI18n()

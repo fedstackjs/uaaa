@@ -51,6 +51,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const toast = useToast()
+const errToast = useErrorToast()
 
 const requireCode = computed(() => props.action !== 'unbind')
 const email = ref('')
@@ -105,7 +106,7 @@ async function submit(ev?: SubmitEventPromise) {
           code: code.value
         })
         break
-      case 'bind':
+      case 'bind': {
         const resp = await api.user.credential.bind.$put({
           json: {
             type: 'email',
@@ -116,21 +117,24 @@ async function submit(ev?: SubmitEventPromise) {
         const data = await resp.json()
         credentialId = data.credentialId
         break
-      case 'unbind':
+      }
+      case 'unbind': {
         if (!props.credentialId) throw new Error('No credentialId')
-        await api.user.credential.$delete({
+        const resp = await api.user.credential.$delete({
           json: {
             type: 'email',
             payload: { email: email.value, code: code.value },
             credentialId: props.credentialId
           }
         })
+        if (!resp.ok) throw await api.getError(resp)
         break
+      }
     }
     toast.success(t('msg.task-succeeded'))
     emit('updated', credentialId)
   } catch (err) {
-    toast.error(t('hint.wrong-credentials'))
+    errToast.notify(err)
   }
   isLoading.value = false
 }
