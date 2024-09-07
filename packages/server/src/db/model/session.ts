@@ -8,5 +8,8 @@ export interface ISessionDoc {
 
   authorizedApps: string[]
 
+  createdAt: number
+  expiresAt: number
+
   terminated?: true | boolean
 }

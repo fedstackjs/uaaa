@@ -61,6 +61,7 @@ export class WebauthnImpl extends CredentialImpl {
       this.plugin.getCacheKey('verify', userId)
     )
     const credential = await this.app.db.credentials.findOne({
+      _id: { $nin: await ctx.getCredentialIdBlacklist(this.type) },
       userId,
       type: 'webauthn',
       'secret.id': body.id,
@@ -90,9 +91,13 @@ export class WebauthnImpl extends CredentialImpl {
       await ctx.manager.checkCredentialUse(credential._id, {
         'secret.counter': verification.authenticationInfo.newCounter
       })
+      let securityLevel = credential.securityLevel
+      if (!verification.authenticationInfo.userVerified) {
+        securityLevel = Math.min(securityLevel, SecurityLevels.SL2)
+      }
       return {
         credentialId: credential._id,
-        securityLevel: credential.securityLevel,
+        securityLevel,
         expiresIn: ms('30min')
       }
     } catch (err) {
@@ -107,52 +112,44 @@ export class WebauthnImpl extends CredentialImpl {
     payload: unknown
   ): Promise<ICredentialBindResult> {
     if (credentialId) {
-      throw new HTTPException(400, { message: 'CredentialId is not supported' })
+      throw new BusinessError('BAD_REQUEST', { msg: 'Credential already bound' })
     }
-    try {
-      const currentOptions = await this.app.cache.getex<PublicKeyCredentialCreationOptionsJSON>(
-        this.plugin.getCacheKey('bind', userId)
-      )
-      const expectedOrigin = this.plugin.origin || new URL(ctx.httpCtx.req.url).origin
-      const verification = await verifyRegistrationResponse({
-        response: payload as RegistrationResponseJSON,
-        expectedChallenge: currentOptions.challenge,
-        expectedOrigin,
-        expectedRPID: this.plugin.rpId
-      })
-      if (!verification.verified || !verification.registrationInfo) {
-        throw new Error('Verification failed')
-      }
-      const info = verification.registrationInfo
-      const now = Date.now()
-      const { insertedId } = await this.app.db.credentials.insertOne(
+    const currentOptions = await this.app.cache.getex<PublicKeyCredentialCreationOptionsJSON>(
+      this.plugin.getCacheKey('bind', userId)
+    )
+    const expectedOrigin = this.plugin.origin || new URL(ctx.httpCtx.req.url).origin
+    const verification = await verifyRegistrationResponse({
+      response: payload as RegistrationResponseJSON,
+      expectedChallenge: currentOptions.challenge,
+      expectedOrigin,
+      expectedRPID: this.plugin.rpId
+    })
+    if (!verification.verified || !verification.registrationInfo) {
+      throw new Error('Verification failed')
+    }
+    const info = verification.registrationInfo
+    return {
+      credentialId: await ctx.manager.bindCredential(
+        ctx,
+        userId,
+        credentialId,
+        'webauthn',
+        verification.registrationInfo.userVerified ? SecurityLevels.SL3 : SecurityLevels.SL2,
+        createHash('sha256').update(info.credentialID).digest('hex').slice(0, 8),
         {
-          _id: nanoid(),
-          userId,
-          type: 'webauthn',
-          data: createHash('sha256').update(info.credentialID).digest('hex').slice(0, 8),
-          remark: '',
-          secret: {
-            id: info.credentialID,
-            webauthnUserID: currentOptions.user.id,
-            publicKey: Buffer.from(info.credentialPublicKey).toString('base64'),
-            counter: info.counter,
-            deviceType: info.credentialDeviceType,
-            backedUp: info.credentialBackedUp,
-            transports: (payload as RegistrationResponseJSON).response.transports
-          } satisfies IWebauthnKey,
-          validAfter: now,
-          validBefore: Infinity,
-          validCount: Infinity,
-          createdAt: now,
-          updatedAt: now,
-          securityLevel: SecurityLevels.SL3
-        },
-        { ignoreUndefined: true }
+          id: info.credentialID,
+          webauthnUserID: currentOptions.user.id,
+          publicKey: Buffer.from(info.credentialPublicKey).toString('base64'),
+          counter: info.counter,
+          deviceType: info.credentialDeviceType,
+          backedUp: info.credentialBackedUp,
+          transports: (payload as RegistrationResponseJSON).response.transports
+        } as IWebauthnKey,
+        'Passkey',
+        ms('100y'),
+        Number.MAX_SAFE_INTEGER,
+        false
       )
-      return { credentialId: insertedId }
-    } catch (err) {
-      throw new HTTPException(400, { message: `${err}` })
     }
   }
 
@@ -162,16 +159,7 @@ export class WebauthnImpl extends CredentialImpl {
     credentialId: string,
     payload: unknown
   ): Promise<ICredentialUnbindResult> {
-    if (ctx.httpCtx.var.token.level < SecurityLevels.SL3) {
-      throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', {
-        required: SecurityLevels.SL3
-      })
-    }
-    await this.app.db.credentials.deleteOne({
-      _id: credentialId,
-      userId,
-      type: 'webauthn'
-    })
+    await ctx.manager.unbindCredential(ctx, userId, credentialId, 'webauthn')
     return {}
   }
 }

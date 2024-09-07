@@ -3,9 +3,10 @@ import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { HTTPException } from 'hono/http-exception'
 import { verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
-import { idParamValidator } from '../_common.js'
+import { idParamValidator, pageQueryValidator } from '../_common.js'
 import { IAppDoc, IInstallationDoc } from '../../db/index.js'
 import { BusinessError } from '../../util/errors.js'
+import { SecurityLevels } from '../../util/types.js'
 
 export const userApi = new Hono()
   .use(verifyAuthorizationJwt)
@@ -52,15 +53,82 @@ export const userApi = new Hono()
   )
 
   // Session API
-  .get('/session', verifyPermission({ path: '/user/session' }), async (ctx) => {
-    //
+  .get('/session', verifyPermission({ path: '/user/session' }), pageQueryValidator, async (ctx) => {
+    const { app, token } = ctx.var
+    const { skip, limit, count } = ctx.req.valid('query')
+    const sessions = await app.db.sessions.find({ userId: token.sub }, { skip, limit }).toArray()
+    return ctx.json({
+      sessions,
+      count: count ? await app.db.sessions.countDocuments({ userId: token.sub }) : 0
+    })
   })
-  .get('/session/:id', verifyPermission({ path: '/user/session' }), async (ctx) => {
-    //
-  })
-  .post('/session/:id/terminate', verifyPermission({ path: '/user/session/edit' }), async (ctx) => {
-    //
-  })
+  .get(
+    '/session/:id',
+    verifyPermission({ path: '/user/session' }),
+    idParamValidator,
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const { app, token } = ctx.var
+      const session = await app.db.sessions.findOne({ _id: id, userId: token.sub })
+      if (!session) throw new BusinessError('NOT_FOUND', {})
+      return ctx.json({ session })
+    }
+  )
+  .get(
+    '/session/:id/token',
+    verifyPermission({ path: '/user/session/token' }),
+    idParamValidator,
+    pageQueryValidator,
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const { app, token } = ctx.var
+      const { skip, limit, count } = ctx.req.valid('query')
+      const tokens = await app.db.tokens
+        .find(
+          { sessionId: id, userId: token.sub },
+          { skip, limit, projection: { refreshToken: 0 } }
+        )
+        .toArray()
+      return ctx.json({
+        tokens,
+        count: count ? await app.db.tokens.countDocuments({ sessionId: id, userId: token.sub }) : 0
+      })
+    }
+  )
+  .post(
+    '/session/:id/token/:tokenId/terminate',
+    verifyPermission({ path: '/user/session/edit', securityLevel: SecurityLevels.SL2 }),
+    arktypeValidator(
+      'param',
+      type({
+        id: 'string',
+        tokenId: 'string'
+      })
+    ),
+    async (ctx) => {
+      const { id, tokenId } = ctx.req.valid('param')
+      const { app, token } = ctx.var
+      await app.db.tokens.updateOne(
+        { _id: tokenId, sessionId: id, userId: token.sub },
+        { $set: { terminated: true } }
+      )
+      return ctx.json({})
+    }
+  )
+  .post(
+    '/session/:id/terminate',
+    verifyPermission({ path: '/user/session/edit', securityLevel: SecurityLevels.SL2 }),
+    idParamValidator,
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const { app, token } = ctx.var
+      const session = await app.db.sessions.findOne({ _id: id, userId: token.sub })
+      if (!session) throw new BusinessError('NOT_FOUND', {})
+      await app.db.sessions.updateOne({ _id: id }, { $set: { terminated: true } })
+      await app.db.tokens.updateMany({ sessionId: id }, { $set: { terminated: true } })
+      return ctx.json({})
+    }
+  )
 
   // Installation API
   .get('/installation', verifyPermission({ path: '/user/installation' }), async (ctx) => {

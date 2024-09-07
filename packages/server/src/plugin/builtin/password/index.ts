@@ -8,8 +8,8 @@ import {
   CredentialImpl,
   ICredentialUnbindResult
 } from '../../../credential/_common.js'
-import { nanoid } from 'nanoid'
-import { SecurityLevel } from '../../../index.js'
+import { SecurityLevels, BusinessError } from '../../../util/index.js'
+import type { SecurityLevel } from '../../../index.js'
 
 const tPasswordConfig = type({
   'passwordExpiration?': 'number|string',
@@ -35,13 +35,14 @@ class PasswordImpl extends CredentialImpl {
   })
 
   readonly type = 'password'
+  defaultLevel = SecurityLevels.SL1
   passwordExpiration
   passwordTimeout
 
   constructor(config: IPasswordConfig) {
     super()
     this.passwordExpiration = this.parseTimeout(config.passwordExpiration ?? '100y')
-    this.passwordTimeout = this.parseTimeout(config.passwordTimeout ?? '15min')
+    this.passwordTimeout = this.parseTimeout(config.passwordTimeout ?? '60min')
   }
 
   private parseTimeout(timeout: number | string) {
@@ -83,13 +84,14 @@ class PasswordImpl extends CredentialImpl {
     return {
       userId: user._id,
       credentialId: credential._id,
-      securityLevel: credential.securityLevel,
+      securityLevel: SecurityLevels.SL1,
       expiresIn: this.passwordTimeout
     }
   }
 
   override async canElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
+      _id: { $nin: await ctx.getCredentialIdBlacklist('password') },
       userId,
       type: 'password',
       disabled: { $ne: true },
@@ -114,25 +116,27 @@ class PasswordImpl extends CredentialImpl {
   ) {
     const payload = PasswordImpl.tPasswordVerifyPayload(_payload)
     if (payload instanceof type.errors) {
-      throw new HTTPException(400, { cause: payload.summary })
+      throw new BusinessError('INVALID_TYPE', { summary: payload.summary })
     }
     const credential = await ctx.app.db.credentials.findOne({
+      _id: { $nin: await ctx.getCredentialIdBlacklist('password') },
       userId: userId,
       type: 'password',
+      securityLevel: { $gte: targetLevel },
       disabled: { $ne: true }
     })
     if (!credential) {
-      throw new HTTPException(401)
+      throw new BusinessError('NOT_FOUND', {})
     }
     const match = await bcrypt.compare(payload.password, credential.secret as string)
     if (!match) {
-      throw new HTTPException(401)
+      throw new BusinessError('CRED_VALIDATION_FAILED', { msg: 'Bad password' })
     }
 
     await ctx.manager.checkCredentialUse(credential._id)
     return {
       credentialId: credential._id,
-      securityLevel: credential.securityLevel,
+      securityLevel: targetLevel,
       expiresIn: this.passwordTimeout
     }
   }
@@ -148,38 +152,20 @@ class PasswordImpl extends CredentialImpl {
       throw new HTTPException(400, { cause: payload.summary })
     }
     const hashed = await bcrypt.hash(payload.password, 10)
-    const now = Date.now()
-    const { upsertedId } = await ctx.app.db.credentials.updateOne(
-      {
-        _id: credentialId as string,
-        userId,
-        type: 'password'
-      },
-      {
-        $setOnInsert: {
-          _id: nanoid(),
-          data: '',
-          remark: '',
-          // TODO: securityLevel
-          securityLevel: 1,
-          createdAt: now
-        },
-        $set: {
-          secret: hashed,
-          validAfter: now,
-          validBefore: now + this.passwordExpiration,
-          validCount: Infinity,
-          updatedAt: now
-        },
-        $unset: {
-          disabled: ''
-        }
-      },
-      { ignoreUndefined: true, upsert: true }
-    )
-    credentialId = (upsertedId ?? credentialId) as string
     return {
-      credentialId
+      credentialId: await ctx.manager.bindCredential(
+        ctx,
+        userId,
+        credentialId,
+        'password',
+        this.defaultLevel,
+        '',
+        hashed,
+        'Password',
+        this.passwordExpiration,
+        Number.MAX_SAFE_INTEGER,
+        true
+      )
     }
   }
 

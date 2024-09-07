@@ -2,6 +2,8 @@ import type { SecurityLevel } from '../../util/index.js'
 
 export interface ICredentialTypeMap {}
 
+export type CredentialType = keyof ICredentialTypeMap
+
 export interface ICredentialDoc {
   _id: string
 
@@ -9,7 +11,7 @@ export interface ICredentialDoc {
   userId: string
 
   /** the credential type eg. password, otp, email, ... */
-  type: keyof ICredentialTypeMap
+  type: CredentialType
 
   /** The **public** data of the credential, eg. email addr */
   data: string

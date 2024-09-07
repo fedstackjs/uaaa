@@ -44,27 +44,34 @@ export const publicApi = new Hono()
     async (ctx) => {
       const { type, payload } = ctx.req.valid('json')
       const { credential, db, token, config } = ctx.var.app
-      const { userId, securityLevel, expiresIn } = await credential.handleLogin(ctx, type, payload)
+      const { userId, securityLevel, expiresIn, credentialId } = await credential.handleLogin(
+        ctx,
+        type,
+        payload
+      )
+      const now = Date.now()
       const { insertedId: sessionId } = await db.sessions.insertOne({
         _id: nanoid(),
         userId,
         tokenCount: securityLevel > 0 ? 2 : 1,
+        expiresAt: now,
+        createdAt: now,
         authorizedApps: []
       })
       const tokens: Array<{
         token: string
         refreshToken?: string | undefined
       }> = []
-      const timestamp = Date.now()
       tokens.push(
         await token.createAndSignToken({
           sessionId,
           userId,
           index: 0,
           permissions: ['uaaa/**'],
+          credentialId,
           securityLevel: 0,
-          createdAt: timestamp,
-          expiresAt: timestamp + ms(config.get('sessionTimeout')),
+          createdAt: now,
+          expiresAt: now + ms(config.get('sessionTimeout')),
           tokenTimeout: ms(config.get('tokenTimeout')),
           refreshTimeout: ms(config.get('refreshTimeout'))
         })
@@ -76,9 +83,11 @@ export const publicApi = new Hono()
             userId,
             index: 1,
             permissions: ['uaaa/**'],
+            credentialId,
+            parentId: JSON.parse(atob(tokens[0].token.split('.')[1])).jti,
             securityLevel,
-            createdAt: timestamp,
-            expiresAt: timestamp + expiresIn,
+            createdAt: now,
+            expiresAt: now + expiresIn,
             tokenTimeout: ms(config.get('tokenTimeout')),
             refreshTimeout: ms(config.get('refreshTimeout'))
           })

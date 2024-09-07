@@ -9,6 +9,15 @@ export const idParamValidator = arktypeValidator(
   })
 )
 
+export const pageQueryValidator = arktypeValidator(
+  'query',
+  type({
+    skip: 'string.integer.parse',
+    limit: type('string.integer.parse').narrow((v) => 5 <= v && v <= 100),
+    'count?': 'boolean'
+  })
+)
+
 declare module '../index.js' {
   interface IHookMap {
     'route:extendGlobal'(parent: Hono): void

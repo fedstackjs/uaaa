@@ -15,6 +15,9 @@ export interface IErrorMap {
   MISSING_VERIFIED_CLAIMS: { claims: string[] }
   INTERNAL_ERROR: { msg: string }
   DUPLICATE: { msg: string }
+  CRED_NO_BIND_NEW: {}
+  CRED_NO_UNBIND_LAST: {}
+  CRED_VALIDATION_FAILED: { msg: string }
 }
 
 export type ErrorName = keyof IErrorMap
@@ -34,7 +37,10 @@ export const ErrorStatusMap: {
   MISSING_REQUIRED_CLAIMS: 400,
   MISSING_VERIFIED_CLAIMS: 400,
   INTERNAL_ERROR: 500,
-  DUPLICATE: 400
+  DUPLICATE: 400,
+  CRED_NO_BIND_NEW: 400,
+  CRED_NO_UNBIND_LAST: 400,
+  CRED_VALIDATION_FAILED: 403
 }
 
 export class BusinessError<T extends ErrorName> extends HTTPException {

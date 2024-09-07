@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { nanoid } from 'nanoid'
 import ms from 'ms'
 import { CredentialContext, CredentialImpl } from '../../../credential/_common.js'
-import { generateUsername } from '../../../util/index.js'
+import { BusinessError, generateUsername, SecurityLevels } from '../../../util/index.js'
 import type { ICredentialUnbindResult, SecurityLevel } from '../../../index.js'
 import type { EmailPlugin } from './plugin.js'
 
@@ -14,6 +14,7 @@ export class EmailImpl extends CredentialImpl {
   })
 
   readonly type = 'email'
+  defaultLevel = SecurityLevels.SL1
 
   constructor(public plugin: EmailPlugin) {
     super()
@@ -28,20 +29,6 @@ export class EmailImpl extends CredentialImpl {
     return { email: checked.email }
   }
 
-  private async _checkPayloadAndCredential(ctx: CredentialContext, payload: unknown) {
-    const { email } = await this._checkPayload(ctx, payload)
-    const credential = await ctx.app.db.credentials.findOne({
-      data: email,
-      type: 'email',
-      disabled: { $ne: true }
-    })
-    if (!credential) {
-      throw new HTTPException(401)
-    }
-    await ctx.manager.checkCredentialUse(credential._id)
-    return { credential }
-  }
-
   override async login(ctx: CredentialContext, payload: unknown) {
     const { email } = await this._checkPayload(ctx, payload)
     const credential = await ctx.app.db.credentials.findOne({
@@ -54,7 +41,7 @@ export class EmailImpl extends CredentialImpl {
       return {
         userId: credential.userId,
         credentialId: credential._id,
-        securityLevel: credential.securityLevel,
+        securityLevel: SecurityLevels.SL1,
         expiresIn: ms(ctx.app.config.get('tokenTimeout'))
       }
     }
@@ -63,13 +50,8 @@ export class EmailImpl extends CredentialImpl {
       const { insertedId: userId } = await ctx.app.db.users.insertOne({
         _id: nanoid(),
         claims: {
-          username: {
-            value: generateUsername(email.split('@')[0])
-          },
-          email: {
-            value: email,
-            verified: true
-          }
+          username: { value: generateUsername(email.split('@')[0]) },
+          email: { value: email, verified: true }
         },
         salt: nanoid()
       })
@@ -81,17 +63,17 @@ export class EmailImpl extends CredentialImpl {
         secret: '',
         remark: '',
         validAfter: now,
-        validBefore: Infinity,
-        validCount: Infinity,
+        validBefore: now + ms('100y'),
+        validCount: Number.MAX_SAFE_INTEGER,
         createdAt: now,
         updatedAt: now,
-        securityLevel: 1
+        securityLevel: this.defaultLevel
       })
       await ctx.manager.checkCredentialUse(credentialId)
       return {
         userId,
         credentialId,
-        securityLevel: 1,
+        securityLevel: SecurityLevels.SL1,
         expiresIn: ms(ctx.app.config.get('tokenTimeout'))
       }
     }
@@ -100,6 +82,7 @@ export class EmailImpl extends CredentialImpl {
 
   override async canElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
+      _id: { $nin: await ctx.getCredentialIdBlacklist('email') },
       userId,
       type: 'email',
       disabled: { $ne: true },
@@ -120,13 +103,25 @@ export class EmailImpl extends CredentialImpl {
     ctx: CredentialContext,
     userId: string,
     targetLevel: SecurityLevel,
-    _payload: unknown
+    payload: unknown
   ) {
-    const { credential } = await this._checkPayloadAndCredential(ctx, _payload)
+    const { email } = await this._checkPayload(ctx, payload)
+    const credential = await ctx.app.db.credentials.findOne({
+      _id: { $nin: await ctx.getCredentialIdBlacklist('email') },
+      userId,
+      data: email,
+      type: 'email',
+      securityLevel: { $gte: targetLevel },
+      disabled: { $ne: true }
+    })
+    if (!credential) {
+      throw new HTTPException(401)
+    }
+    await ctx.manager.checkCredentialUse(credential._id)
 
     return {
       credentialId: credential._id,
-      securityLevel: credential.securityLevel,
+      securityLevel: targetLevel,
       expiresIn: ms('1d')
     }
   }
@@ -138,7 +133,6 @@ export class EmailImpl extends CredentialImpl {
     _payload: unknown
   ) {
     const { email } = await this._checkPayload(ctx, _payload)
-    const now = Date.now()
     await ctx.app.db.users.updateOne(
       { _id: userId },
       {
@@ -148,37 +142,20 @@ export class EmailImpl extends CredentialImpl {
         }
       }
     )
-    const { upsertedId } = await ctx.app.db.credentials.updateOne(
-      {
-        _id: credentialId as string,
-        userId,
-        type: 'email'
-      },
-      {
-        $setOnInsert: {
-          _id: nanoid(),
-          secret: '',
-          remark: '',
-          // TODO: securityLevel
-          securityLevel: 1,
-          createdAt: now
-        },
-        $set: {
-          data: email,
-          validAfter: now,
-          validBefore: Infinity,
-          validCount: Infinity,
-          updatedAt: now
-        },
-        $unset: {
-          disabled: ''
-        }
-      },
-      { ignoreUndefined: true, upsert: true }
-    )
-    credentialId = (upsertedId ?? credentialId) as string
     return {
-      credentialId
+      credentialId: await ctx.manager.bindCredential(
+        ctx,
+        userId,
+        credentialId,
+        'email',
+        SecurityLevels.SL1,
+        email,
+        '',
+        'Email',
+        ms('100y'),
+        Number.MAX_SAFE_INTEGER,
+        true
+      )
     }
   }
 
@@ -188,6 +165,12 @@ export class EmailImpl extends CredentialImpl {
     credentialId: string,
     _payload: unknown
   ): Promise<ICredentialUnbindResult> {
-    throw new HTTPException(403, { message: 'Cannot unbind email credential' })
+    const { email } = await this._checkPayload(ctx, _payload)
+    await ctx.app.db.users.updateOne(
+      { _id: userId, 'claims.email.value': email },
+      { $set: { 'claims.email.verified': false } }
+    )
+    await ctx.manager.unbindCredential(ctx, userId, credentialId, 'email')
+    return {}
   }
 }

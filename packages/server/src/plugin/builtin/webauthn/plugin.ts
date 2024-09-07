@@ -13,6 +13,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import ms from 'ms'
 import { generateAuthenticationOptions, generateRegistrationOptions } from '@simplewebauthn/server'
+import { arktypeValidator } from '@hono/arktype-validator'
 
 type IWebauthnConfigConfig = typeof WebauthnPlugin.tConfig.infer
 
@@ -34,7 +35,10 @@ export class WebauthnPlugin {
   rpId: string
   origin: string
 
-  constructor(public app: App, config: IWebauthnConfigConfig = app.config.getAll()) {
+  constructor(
+    public app: App,
+    config: IWebauthnConfigConfig = app.config.getAll()
+  ) {
     this.rpName = config.webauthnRpName ?? 'Unified Authentication and Authorization System'
     this.rpId = config.webauthnRpId ?? new URL(this.app.config.get('deploymentUrl')).hostname
     this.origin = config.webauthnOrigin ?? app.config.get('deploymentUrl')
@@ -73,7 +77,15 @@ export class WebauthnPlugin {
           '/bind',
           verifyAuthorizationJwt,
           verifyPermission({ securityLevel: SecurityLevels.SL1 }),
+          arktypeValidator(
+            'json',
+            type({
+              'local?': 'boolean',
+              'userVerification?': 'boolean'
+            })
+          ),
           async (ctx) => {
+            const { local, userVerification } = ctx.req.valid('json')
             const { app, token } = ctx.var
             const user = await app.db.users.findOne({ _id: token.sub })
             if (!user) throw new HTTPException(404)
@@ -91,9 +103,9 @@ export class WebauthnPlugin {
                 id: (secret as IWebauthnKey).id
               })),
               authenticatorSelection: {
-                residentKey: 'preferred',
-                userVerification: 'preferred',
-                authenticatorAttachment: 'platform'
+                residentKey: local ? 'required' : 'preferred',
+                userVerification: userVerification ? 'required' : 'preferred',
+                authenticatorAttachment: local ? 'platform' : 'cross-platform'
               }
             })
             await app.cache.setx(this.getCacheKey('bind', user._id), options, ms('5min'))
@@ -101,24 +113,36 @@ export class WebauthnPlugin {
           }
         )
         // Verify
-        .post('/verify', verifyAuthorizationJwt, async (ctx) => {
-          const { app, token } = ctx.var
-          const user = await app.db.users.findOne({ _id: token.sub })
-          if (!user) throw new HTTPException(404)
-          const credentials = await app.db.credentials
-            .find({ userId: user._id, type: 'webauthn' })
-            .toArray()
-          const { hostname } = new URL(ctx.req.url)
+        .post(
+          '/verify',
+          verifyAuthorizationJwt,
+          arktypeValidator(
+            'json',
+            type({
+              'userVerification?': 'boolean'
+            })
+          ),
+          async (ctx) => {
+            const { userVerification } = ctx.req.valid('json')
+            const { app, token } = ctx.var
+            const user = await app.db.users.findOne({ _id: token.sub })
+            if (!user) throw new HTTPException(404)
+            const credentials = await app.db.credentials
+              .find({ userId: user._id, type: 'webauthn' })
+              .toArray()
+            const { hostname } = new URL(ctx.req.url)
 
-          const options: any = await generateAuthenticationOptions({
-            rpID: this.rpId || hostname,
-            allowCredentials: credentials.map(({ secret }) => ({
-              id: (secret as IWebauthnKey).id
-            }))
-          })
-          await app.cache.setx(this.getCacheKey('verify', user._id), options, ms('5min'))
-          return ctx.json({ options })
-        })
+            const options: any = await generateAuthenticationOptions({
+              rpID: this.rpId || hostname,
+              allowCredentials: credentials.map(({ secret }) => ({
+                id: (secret as IWebauthnKey).id
+              })),
+              userVerification: userVerification ? 'required' : 'preferred'
+            })
+            await app.cache.setx(this.getCacheKey('verify', user._id), options, ms('5min'))
+            return ctx.json({ options })
+          }
+        )
     )
   }
 }

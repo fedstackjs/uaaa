@@ -51,7 +51,7 @@ export const sessionApi = new Hono()
     arktypeValidator(
       'query',
       type({
-        targetLevel: type('string.numeric.parse').to(tSecurityLevel)
+        targetLevel: type('string.integer.parse').to(tSecurityLevel)
       })
     ),
     async (ctx) => {
@@ -74,7 +74,7 @@ export const sessionApi = new Hono()
     async (ctx) => {
       const { type, payload, targetLevel } = ctx.req.valid('json')
       const { credential, db, token, config } = ctx.var.app
-      const { securityLevel, expiresIn } = await credential.handleVerify(
+      const { securityLevel, expiresIn, credentialId } = await credential.handleVerify(
         ctx,
         type,
         ctx.var.token.sub,
@@ -94,6 +94,8 @@ export const sessionApi = new Hono()
           userId: ctx.var.token.sub,
           permissions: ['uaaa/**'],
           index: session.tokenCount,
+          parentId: ctx.var.token.jti,
+          credentialId,
           securityLevel,
           createdAt: timestamp,
           expiresAt: timestamp + expiresIn,
@@ -186,6 +188,7 @@ export const sessionApi = new Hono()
         targetAppId,
         clientAppId,
         permissions,
+        parentId: parentToken._id,
         securityLevel,
         createdAt: timestamp,
         expiresAt: parentToken.expiresAt,

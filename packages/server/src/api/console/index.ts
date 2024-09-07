@@ -2,10 +2,9 @@ import { Hono } from 'hono'
 import { verifyAdmin, verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
 import { SecurityLevels } from '../../util/index.js'
 import { arktypeValidator } from '@hono/arktype-validator'
-import { type } from 'arktype'
 import { randomBytes } from 'crypto'
 import { tAppManifest } from '../../db/index.js'
-import { idParamValidator } from '../_common.js'
+import { idParamValidator, pageQueryValidator } from '../_common.js'
 
 export const consoleApi = new Hono()
   .use(verifyAuthorizationJwt)
@@ -14,6 +13,19 @@ export const consoleApi = new Hono()
   .get('/', verifyPermission({ path: '/console/info' }), async (ctx) => {
     //
   })
+
+  // User api
+  .route(
+    '/user',
+    new Hono()
+      .use(verifyPermission({ path: '/console/user' }))
+      .get('/', pageQueryValidator, async (ctx) => {
+        const { app } = ctx.var
+        const { skip, limit, count } = ctx.req.valid('query')
+        const users = await app.db.users.find({}, { skip, limit }).toArray()
+        return ctx.json({ users, count: count ? await app.db.users.countDocuments() : undefined })
+      })
+  )
 
   // App api
   .route(

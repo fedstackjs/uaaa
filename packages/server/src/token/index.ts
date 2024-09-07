@@ -112,6 +112,10 @@ export class TokenManager extends Hookable<{}> {
       },
       { ignoreUndefined: true }
     )
+    await this.app.db.sessions.updateOne(
+      { _id: tokenDoc.sessionId },
+      { $max: { expiresAt: tokenExpiresAt } }
+    )
 
     const signOptions: jwt.SignOptions = {
       subject: tokenDoc.userId,

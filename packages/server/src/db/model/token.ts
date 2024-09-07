@@ -18,6 +18,9 @@ export interface ITokenDoc {
   /** Token's security level' */
   securityLevel: SecurityLevel
 
+  parentId?: string | undefined
+  credentialId?: string | undefined
+
   /** Token is created at */
   createdAt: number
   /** Token will expire at */
