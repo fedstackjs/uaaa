@@ -19,6 +19,10 @@ export interface IErrorMap {
   CRED_NO_UNBIND_LAST: {}
   CRED_VALIDATION_FAILED: { msg: string }
   FORBIDDEN: { msg: string }
+  TOKEN_INVALID: {}
+  TOKEN_TERMINATED: {}
+  TOKEN_EXPIRED: {}
+  TOKEN_NOT_BEFORE: {}
 }
 
 export type ErrorName = keyof IErrorMap
@@ -42,7 +46,11 @@ export const ErrorStatusMap: {
   CRED_NO_BIND_NEW: 400,
   CRED_NO_UNBIND_LAST: 400,
   CRED_VALIDATION_FAILED: 403,
-  FORBIDDEN: 403
+  FORBIDDEN: 403,
+  TOKEN_INVALID: 403,
+  TOKEN_TERMINATED: 403,
+  TOKEN_EXPIRED: 403,
+  TOKEN_NOT_BEFORE: 403
 }
 
 export class BusinessError<T extends ErrorName> extends HTTPException {

@@ -75,6 +75,16 @@ export class ClaimManager extends Hookable<{
     return this.registry[name]
   }
 
+  getClaimDescriptors() {
+    return Object.values(this.registry)
+  }
+
+  async filterClaimDescriptors(ctx: Context) {
+    return this.getClaimDescriptors().filter(
+      (descriptor) => !descriptor.hidden && descriptor.securityLevel <= ctx.var.token.level
+    )
+  }
+
   async verifyClaim(ctx: Context, name: ClaimName, value: string) {
     await this.callHook(`validate:${name}`, new ClaimContext(this, ctx), value)
   }
@@ -85,9 +95,14 @@ export class ClaimManager extends Hookable<{
   ): Promise<Partial<IUserClaims>> {
     const result: Partial<IUserClaims> = Object.create(null)
     for (const [name, value] of Object.entries(claims)) {
-      if (this.hasClaim(name) && this.getClaimDescriptor(name).basic && value) {
-        result[name] = value
+      if (!value || !this.hasClaim(name)) {
+        continue
       }
+      const descriptor = this.getClaimDescriptor(name)
+      if (!descriptor.basic || descriptor.securityLevel > ctx.var.token.level) {
+        continue
+      }
+      result[name] = value
     }
     return result
   }
@@ -147,7 +162,7 @@ export class ClaimManager extends Hookable<{
     this.addClaimDescriptor({
       name: 'username',
       description: 'User name',
-      editable: true,
+      editable: SecurityLevels.SL2,
       securityLevel: SecurityLevels.SL0,
       basic: true
     })

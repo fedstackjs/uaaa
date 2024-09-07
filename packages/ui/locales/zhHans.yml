@@ -108,5 +108,8 @@ console:
 errors:
   api:
     unknown: API错误{code}
+    INSUFFICIENT_SECURITY_LEVEL: 需要更高的安全级别
+  api-hint:
+    INSUFFICIENT_SECURITY_LEVEL: 正在转向验证页面
   error: 发生错误：{message}
   unknown: 未知错误

@@ -42,6 +42,8 @@ export type APIErrorType = {
   [K in ErrorName | 'UNKNOWN_ERROR']: APIError<K>
 }[ErrorName | 'UNKNOWN_ERROR']
 
+export const isAPIError = (err: unknown): err is APIErrorType => err instanceof APIError
+
 const serializer = {
   read: JSON.parse,
   write: JSON.stringify
@@ -151,6 +153,15 @@ export class ApiManager {
   async getEffectiveToken() {
     await this.updateEffectiveToken()
     return this.effectiveToken.value
+  }
+
+  async dropEffectiveToken() {
+    return navigator.locks.request(`tokens`, async () => {
+      const effectiveId = this.effectiveToken.value?.decoded.jti
+      if (!effectiveId) return
+      delete this.tokens.value[effectiveId]
+      this._updateEffectiveToken()
+    })
   }
 
   async getHeaders() {

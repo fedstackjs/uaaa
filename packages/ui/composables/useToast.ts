@@ -4,16 +4,30 @@ export { useToast }
 
 export const useErrorToast = () => {
   const toast = useToast()
-  const { t, te } = useI18n()
+  const router = useRouter()
+  const route = useRoute()
+  const { t } = useI18n()
   const notify = (err: unknown) => {
-    if (err instanceof APIError) {
-      if (te(`errors.api.${err.code}`)) {
+    if (isAPIError(err)) {
+      if (t(`errors.api.${err.code}`) !== `errors.api.${err.code}`) {
         toast.error(t(`errors.api.${err.code}`, err.data))
-        if (te(`errors.api-hint.${err.code}`)) {
+        if (t(`errors.api-hint.${err.code}`) !== `errors.api-hint.${err.code}`) {
           toast.info(t(`errors.api-hint.${err.code}`, err.data))
         }
       } else {
         toast.error(t('errors.api.unknown', err as { code: string }))
+      }
+      switch (err.code) {
+        case 'INSUFFICIENT_SECURITY_LEVEL': {
+          router.replace({
+            path: '/auth/verify',
+            query: { redirect: route.fullPath, targetLevel: err.data.required }
+          })
+          break
+        }
+        case 'TOKEN_INVALID': {
+          api.dropEffectiveToken()
+        }
       }
       return
     }

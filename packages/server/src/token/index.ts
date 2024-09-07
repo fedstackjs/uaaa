@@ -4,8 +4,7 @@ import { Hookable } from 'hookable'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
-import { HTTPException } from 'hono/http-exception'
-import { tSecurityLevel } from '../util/index.js'
+import { BusinessError, tSecurityLevel } from '../util/index.js'
 import type { App } from '../index.js'
 import type { ITokenDoc } from '../db/model/token.js'
 
@@ -55,6 +54,16 @@ export class TokenManager extends Hookable<{}> {
     return token
   }
 
+  private _mapVerifyError(err: jwt.VerifyErrors | null) {
+    if (err instanceof jwt.TokenExpiredError) {
+      return new BusinessError('TOKEN_EXPIRED', {})
+    }
+    if (err instanceof jwt.NotBeforeError) {
+      return new BusinessError('TOKEN_NOT_BEFORE', {})
+    }
+    return new BusinessError('TOKEN_INVALID', {})
+  }
+
   async verify(token: string) {
     const result = await new Promise<jwt.Jwt>((resolve, reject) =>
       jwt.verify(
@@ -62,14 +71,14 @@ export class TokenManager extends Hookable<{}> {
         async ({ kid }, cb) => {
           try {
             const doc = await this.app.db.jwkpairs.findOne({ _id: new ObjectId(kid) })
-            if (!doc) throw new HTTPException(401)
+            if (!doc) throw new BusinessError('TOKEN_INVALID', {})
             cb(null, createPublicKey({ key: doc.publicKey, format: 'jwk' }))
           } catch (err) {
             cb(err as Error)
           }
         },
         { complete: true },
-        (err, decoded) => (decoded ? resolve(decoded) : reject(err))
+        (err, decoded) => (decoded ? resolve(decoded) : reject(this._mapVerifyError(err)))
       )
     )
     return result
@@ -83,11 +92,11 @@ export class TokenManager extends Hookable<{}> {
 
   async signToken(tokenDoc: ITokenDoc) {
     if (tokenDoc.terminated) {
-      throw new HTTPException(400, { cause: 'Token terminated' })
+      throw new BusinessError('TOKEN_TERMINATED', {})
     }
     const now = Date.now()
     if (now >= tokenDoc.expiresAt) {
-      throw new HTTPException(400, { cause: 'Token expired' })
+      throw new BusinessError('TOKEN_EXPIRED', {})
     }
 
     const tokenExpiresAt = Math.min(tokenDoc.expiresAt, now + tokenDoc.tokenTimeout)
@@ -149,7 +158,7 @@ export class TokenManager extends Hookable<{}> {
       { $unset: { refreshToken: '' } }
     )
     if (!tokenDoc) {
-      throw new HTTPException(401, { cause: 'Invalid refresh token' })
+      throw new BusinessError('TOKEN_INVALID', {})
     }
     return this.signToken(tokenDoc)
   }
@@ -163,7 +172,7 @@ export class TokenManager extends Hookable<{}> {
     const jwt = await this.verify(token)
     const payload = tTokenPayload(jwt.payload)
     if (payload instanceof type.errors) {
-      throw new HTTPException(401, { cause: 'Invalid token' })
+      throw new BusinessError('TOKEN_INVALID', {})
     }
     return {
       jwt,
@@ -174,7 +183,7 @@ export class TokenManager extends Hookable<{}> {
   async verifyUAAAToken(token: string) {
     const { jwt, payload } = await this.verifyToken(token)
     if (Object.hasOwn(payload, 'aud')) {
-      throw new HTTPException(401, { cause: 'Invalid token' })
+      throw new BusinessError('TOKEN_INVALID', {})
     }
     return { jwt, payload }
   }

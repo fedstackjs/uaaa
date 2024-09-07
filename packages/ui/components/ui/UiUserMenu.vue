@@ -1,30 +1,11 @@
 <template>
-  <VMenu v-if="!dense">
-    <template v-slot:activator="{ props }">
-      <VBtn
-        v-bind="props"
-        prepend-icon="mdi-security"
-        class="text-none mr-2"
-        variant="tonal"
-        :color="color"
-        :text="
-          t('msg.current-security-level', [t(`securityLevel.${effectiveToken?.decoded.level}`)])
-        "
-      />
-    </template>
-    <VList>
-      <VListItem
-        v-for="level of higherLevels"
-        :key="level"
-        :title="t('msg.upgrade-security-level-to', [t(`securityLevel.${level}`)])"
-        :to="{ path: '/auth/verify', query: { redirect: route.fullPath, targetLevel: level } }"
-      />
-      <VListItem
-        :title="t('msg.downgrade-security-level')"
-        :to="{ path: '/auth/downgrade', query: { redirect: route.fullPath } }"
-      />
-    </VList>
-  </VMenu>
+  <VBtn
+    prepend-icon="mdi-security"
+    class="text-none mr-2"
+    variant="tonal"
+    :color="color"
+    :text="t('msg.current-security-level', [t(`securityLevel.${effectiveToken?.decoded.level}`)])"
+  />
 
   <VMenu>
     <template v-slot:activator="{ props }">

@@ -22,7 +22,9 @@ export const userApi = new Hono()
     const { app, token } = ctx.var
     const user = await app.db.users.findOne({ _id: token.sub })
     if (!user) throw new HTTPException(404)
-    return ctx.json({ claims: await app.claim.filterClaimsForUser(ctx, user.claims) })
+    const claims = await app.claim.filterClaimsForUser(ctx, user.claims)
+    const descriptors = await app.claim.filterClaimDescriptors(ctx)
+    return ctx.json({ claims, descriptors })
   })
   .patch(
     '/claim/:name',
