@@ -34,15 +34,22 @@ export const userApi = new Hono()
       const { name } = ctx.req.valid('param')
       const { value } = ctx.req.valid('json')
       if (!app.claim.hasClaim(name)) {
-        throw new HTTPException(400, {
-          message: `Claim ${name} does not exist`
+        throw new BusinessError('BAD_REQUEST', {
+          msg: `Claim ${name} does not exist`
         })
       }
-      if (!app.claim.getClaimDescriptor(name).editable) {
-        throw new HTTPException(403, {
-          message: `Claim ${name} is not editable`
-        })
+
+      const editable = app.claim.getClaimDescriptor(name).editable ?? false
+      if (typeof editable === 'boolean') {
+        if (!editable) {
+          throw new BusinessError('FORBIDDEN', { msg: `Claim ${name} is not editable` })
+        }
+      } else {
+        if (token.level < editable) {
+          throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', { required: editable })
+        }
       }
+
       await app.claim.verifyClaim(ctx, name, value)
       await app.db.users.updateOne(
         { _id: token.sub, [`claims.${name}.verified`]: { $ne: true } },

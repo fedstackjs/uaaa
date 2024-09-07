@@ -18,6 +18,7 @@ export interface IErrorMap {
   CRED_NO_BIND_NEW: {}
   CRED_NO_UNBIND_LAST: {}
   CRED_VALIDATION_FAILED: { msg: string }
+  FORBIDDEN: { msg: string }
 }
 
 export type ErrorName = keyof IErrorMap
@@ -40,7 +41,8 @@ export const ErrorStatusMap: {
   DUPLICATE: 400,
   CRED_NO_BIND_NEW: 400,
   CRED_NO_UNBIND_LAST: 400,
-  CRED_VALIDATION_FAILED: 403
+  CRED_VALIDATION_FAILED: 403,
+  FORBIDDEN: 403
 }
 
 export class BusinessError<T extends ErrorName> extends HTTPException {

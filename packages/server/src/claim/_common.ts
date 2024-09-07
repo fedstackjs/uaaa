@@ -30,7 +30,7 @@ export interface IClaimDescriptor {
   /** Claim description */
   description: string
   /** Can claim be edited by its user */
-  editable?: true | undefined
+  editable?: boolean | SecurityLevel
   /** Hidden */
   hidden?: true | undefined
   /** Basic */
