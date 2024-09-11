@@ -147,8 +147,7 @@ export class WebauthnImpl extends CredentialImpl {
         } as IWebauthnKey,
         'Passkey',
         ms('100y'),
-        Number.MAX_SAFE_INTEGER,
-        false
+        Number.MAX_SAFE_INTEGER
       )
     }
   }

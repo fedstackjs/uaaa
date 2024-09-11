@@ -163,8 +163,7 @@ class PasswordImpl extends CredentialImpl {
         hashed,
         'Password',
         this.passwordExpiration,
-        Number.MAX_SAFE_INTEGER,
-        true
+        Number.MAX_SAFE_INTEGER
       )
     }
   }

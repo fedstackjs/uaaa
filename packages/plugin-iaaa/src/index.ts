@@ -247,8 +247,7 @@ class IAAAImpl extends CredentialImpl {
       '',
       'IAAA',
       ms('50y'),
-      Number.MAX_SAFE_INTEGER,
-      true
+      Number.MAX_SAFE_INTEGER
     )
     await this.updateUserClaims(ctx, userId, resp)
     return { credentialId }

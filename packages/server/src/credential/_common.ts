@@ -232,7 +232,7 @@ export class CredentialManager extends Hookable<{}> {
     remark: string,
     expiration: number,
     validCount: number,
-    upsert: boolean
+    upsert: boolean = credentialId ? false : true
   ) {
     const now = Date.now()
     const credential = await ctx.app.db.credentials.findOne(
@@ -245,12 +245,9 @@ export class CredentialManager extends Hookable<{}> {
       throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', { required: securityLevel })
     }
     const { upsertedId } = await ctx.app.db.credentials.updateOne(
-      { _id: credentialId as string, userId, type },
+      { _id: credentialId || nanoid(), userId, type },
       {
-        $setOnInsert: {
-          _id: nanoid(),
-          createdAt: now
-        },
+        $setOnInsert: { createdAt: now },
         $set: {
           data,
           remark,

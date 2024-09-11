@@ -153,8 +153,7 @@ export class EmailImpl extends CredentialImpl {
         '',
         'Email',
         ms('100y'),
-        Number.MAX_SAFE_INTEGER,
-        true
+        Number.MAX_SAFE_INTEGER
       )
     }
   }
