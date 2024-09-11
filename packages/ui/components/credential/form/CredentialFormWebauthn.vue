@@ -2,9 +2,16 @@
   <VAlert v-if="action === 'bind' && credentialId">
     {{ t('do-not-support-rebind') }}
   </VAlert>
-  <VCardActions v-else>
-    <VBtn :text="t('verify-passkey')" color="primary" block variant="flat" @click="submit()" />
-  </VCardActions>
+  <template v-else>
+    <div class="flex justify-center">
+      <div>
+        <VCheckboxBtn v-model="local" :label="t('msg.use-local-authenticator')" />
+      </div>
+    </div>
+    <VCardActions>
+      <VBtn :text="t('verify-passkey')" color="primary" block variant="flat" @click="submit()" />
+    </VCardActions>
+  </template>
 </template>
 
 <script setup lang="ts">
@@ -25,6 +32,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const toast = useToast()
 
+const local = ref(true)
 const isLoading = ref(false)
 
 async function submit() {
@@ -37,14 +45,18 @@ async function submit() {
         // TODO: support login with webauthn
         break
       case 'verify': {
-        const resp = await api.webauthn.verify.$post()
+        const resp = await api.webauthn.verify.$post({
+          json: {}
+        })
         const { options } = await resp.json()
         const payload = await startAuthentication(options)
         await api.verify('webauthn', props.targetLevel ?? 0, payload)
         break
       }
       case 'bind': {
-        const resp = await api.webauthn.bind.$post()
+        const resp = await api.webauthn.bind.$post({
+          json: { local: local.value }
+        })
         const { options } = await resp.json()
         const payload = await startRegistration(options)
         const bindResp = await api.user.credential.bind.$put({

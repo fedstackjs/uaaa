@@ -38,7 +38,7 @@
         <tr v-if="credential.validCount">
           <td>{{ t('validCount') }}</td>
           <td>
-            <code>{{ formatTimestamp(credential.validCount) }}</code>
+            <code>{{ credential.validCount }}</code>
           </td>
         </tr>
         <tr>

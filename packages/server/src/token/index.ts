@@ -130,8 +130,8 @@ export class TokenManager extends Hookable<{}> {
       subject: tokenDoc.userId,
       jwtid: tokenDoc._id
     }
-    if (tokenDoc.clientAppId) {
-      signOptions.audience = tokenDoc.clientAppId
+    if (tokenDoc.targetAppId) {
+      signOptions.audience = tokenDoc.targetAppId
     }
     const token = await this.sign(
       {

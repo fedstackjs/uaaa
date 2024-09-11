@@ -76,6 +76,7 @@ msg:
   bad-arguments: 参数错误
   app-not-installed: 应用未安装
   redirecting: 正在重定向...
+  use-local-authenticator: 使用本地凭据
 
 claims:
   username: 用户名
