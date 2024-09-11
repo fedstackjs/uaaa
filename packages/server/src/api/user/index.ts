@@ -62,18 +62,23 @@ export const userApi = new Hono()
   )
 
   // Session API
-  .get('/session', verifyPermission({ path: '/user/session' }), pageQueryValidator, async (ctx) => {
-    const { app, token } = ctx.var
-    const { skip, limit, count } = ctx.req.valid('query')
-    const sessions = await app.db.sessions.find({ userId: token.sub }, { skip, limit }).toArray()
-    return ctx.json({
-      sessions,
-      count: count ? await app.db.sessions.countDocuments({ userId: token.sub }) : 0
-    })
-  })
+  .get(
+    '/session',
+    verifyPermission({ path: '/user/session', securityLevel: SecurityLevels.SL2 }),
+    pageQueryValidator,
+    async (ctx) => {
+      const { app, token } = ctx.var
+      const { skip, limit, count } = ctx.req.valid('query')
+      const sessions = await app.db.sessions.find({ userId: token.sub }, { skip, limit }).toArray()
+      return ctx.json({
+        sessions,
+        count: count ? await app.db.sessions.countDocuments({ userId: token.sub }) : 0
+      })
+    }
+  )
   .get(
     '/session/:id',
-    verifyPermission({ path: '/user/session' }),
+    verifyPermission({ path: '/user/session', securityLevel: SecurityLevels.SL2 }),
     idParamValidator,
     async (ctx) => {
       const { id } = ctx.req.valid('param')
@@ -85,7 +90,7 @@ export const userApi = new Hono()
   )
   .get(
     '/session/:id/token',
-    verifyPermission({ path: '/user/session/token' }),
+    verifyPermission({ path: '/user/session/token', securityLevel: SecurityLevels.SL2 }),
     idParamValidator,
     pageQueryValidator,
     async (ctx) => {

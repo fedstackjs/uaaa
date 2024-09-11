@@ -23,6 +23,7 @@ export interface IErrorMap {
   TOKEN_TERMINATED: {}
   TOKEN_EXPIRED: {}
   TOKEN_NOT_BEFORE: {}
+  TOKEN_REQUIRED: {}
 }
 
 export type ErrorName = keyof IErrorMap
@@ -50,7 +51,8 @@ export const ErrorStatusMap: {
   TOKEN_INVALID: 403,
   TOKEN_TERMINATED: 403,
   TOKEN_EXPIRED: 403,
-  TOKEN_NOT_BEFORE: 403
+  TOKEN_NOT_BEFORE: 403,
+  TOKEN_REQUIRED: 401
 }
 
 export class BusinessError<T extends ErrorName> extends HTTPException {

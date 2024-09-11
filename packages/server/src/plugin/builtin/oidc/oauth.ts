@@ -3,6 +3,7 @@ import { type } from 'arktype'
 import { Context, Hono } from 'hono'
 import ms from 'ms'
 import { BusinessError, checkPermission } from '../../../util/index.js'
+import { verifyAuthorizationJwt, verifyPermission } from '../../../api/index.js'
 import type { IUserClaims, ClaimName } from '../../../index.js'
 
 const tOIDCAuthorizationRequest = type({
@@ -47,7 +48,7 @@ function generateAdditionalClaim(claims: Partial<IUserClaims>, template: string)
   })
 }
 
-async function generateIDToken(ctx: Context, appId: string, userId: string) {
+async function generateClaims(ctx: Context, appId: string, userId: string) {
   const { app } = ctx.var
   const installation = await app.db.installations.findOne({
     appId,
@@ -63,24 +64,33 @@ async function generateIDToken(ctx: Context, appId: string, userId: string) {
     clientApp.requestedClaims,
     user.claims
   )
+
   const mappedClaims = Object.create(null)
+  mappedClaims['sub'] = userId
+
   for (const [key, value] of Object.entries(claims)) {
     const descriptor = app.claim.getClaimDescriptor(key as ClaimName)
     const alias = descriptor.oidcAlias ?? key
     mappedClaims[alias] = value?.value
     if (value?.verified && descriptor.oidcVerifiable) mappedClaims[`${alias}_verified`] = true
   }
+
   const additionalClaims = ctx.var.app.config.get('oidcAdditionalClaims') ?? {}
   for (const [key, value] of Object.entries(additionalClaims)) {
     mappedClaims[key] = generateAdditionalClaim(claims, value)
   }
+  return mappedClaims
+}
+
+async function generateIDToken(ctx: Context, appId: string, userId: string) {
+  const { app } = ctx.var
+  const mappedClaims = await generateClaims(ctx, appId, userId)
   const now = Date.now()
   return app.token.sign({
-    sub: userId,
+    ...mappedClaims,
     aud: appId,
     exp: now + ms(app.config.get('tokenTimeout')),
-    iat: now,
-    ...mappedClaims
+    iat: now
   })
 }
 
@@ -94,6 +104,7 @@ export const oauthRouter = new Hono()
       authorization_endpoint: new URL('/oauth/authorize', base).toString(),
       token_endpoint: new URL('/oauth/token', base).toString(),
       jwks_uri: new URL('/api/public/jwks', base).toString(),
+      userinfo_endpoint: new URL('/oauth/userinfo', base).toString(),
       response_types_supported: ['code', 'id_token', 'id_token token'],
       subject_types_supported: ['public'],
       id_token_signing_alg_values_supported: ['RS256']
@@ -181,3 +192,21 @@ export const oauthRouter = new Hono()
       })
     }
   })
+  // OIDC UserInfo Endpoint
+  // see https://openid.net/specs/openid-connect-core-1_0-final.html#UserInfo
+  .on(
+    ['GET', 'POST'],
+    '/oauth/userinfo',
+    verifyAuthorizationJwt,
+    verifyPermission({ path: '/session/claim' }),
+    async (ctx) => {
+      const { app, token } = ctx.var
+      if (!token.client_id) {
+        ctx.status(401)
+        ctx.header('WWW-Authenticate', 'error="invalid_token", error_description="Bad Token"')
+        return ctx.body('')
+      }
+      const claims = await generateClaims(ctx, token.client_id, token.sub)
+      return ctx.json(claims)
+    }
+  )

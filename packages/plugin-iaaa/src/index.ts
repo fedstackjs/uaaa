@@ -237,35 +237,21 @@ class IAAAImpl extends CredentialImpl {
     if (credentialId && !this.allowRebind) {
       throw new BusinessError('BAD_REQUEST', { msg: 'IAAA rebind not allowed' })
     }
-    const now = Date.now()
-    const { upsertedId, matchedCount, upsertedCount } = await ctx.app.db.credentials.updateOne(
-      { _id: credentialId as string, userId, type: 'iaaa' },
-      {
-        $set: {
-          data: resp.userInfo.identityId,
-          validAfter: now,
-          validBefore: Infinity,
-          validCount: Infinity,
-          updatedAt: now
-        },
-        $setOnInsert: {
-          _id: nanoid(),
-          secret: '',
-          remark: '',
-          securityLevel: SecurityLevels.SL1,
-          createdAt: now
-        },
-        $unset: { disabled: '' }
-      },
-      { ignoreUndefined: true, upsert: true }
+    credentialId = await ctx.manager.bindCredential(
+      ctx,
+      userId,
+      credentialId,
+      'iaaa',
+      SecurityLevels.SL1,
+      resp.userInfo.identityId,
+      '',
+      'IAAA',
+      ms('50y'),
+      Number.MAX_SAFE_INTEGER,
+      true
     )
-    if (matchedCount + upsertedCount) {
-      await this.updateUserClaims(ctx, userId, resp)
-    }
-    credentialId = (upsertedId ?? credentialId) as string
-    return {
-      credentialId
-    }
+    await this.updateUserClaims(ctx, userId, resp)
+    return { credentialId }
   }
 
   override async unbind(
