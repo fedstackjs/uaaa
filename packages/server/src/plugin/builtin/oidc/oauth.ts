@@ -2,7 +2,7 @@ import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { Context, Hono } from 'hono'
 import ms from 'ms'
-import { BusinessError, checkPermission } from '../../../util/index.js'
+import { BusinessError, checkPermission, logger } from '../../../util/index.js'
 import { verifyAuthorizationJwt, verifyPermission } from '../../../api/index.js'
 import type { IUserClaims, ClaimName } from '../../../index.js'
 
@@ -78,6 +78,19 @@ async function generateClaims(ctx: Context, appId: string, userId: string) {
   const additionalClaims = ctx.var.app.config.get('oidcAdditionalClaims') ?? {}
   for (const [key, value] of Object.entries(additionalClaims)) {
     mappedClaims[key] = generateAdditionalClaim(claims, value)
+  }
+
+  if (Object.hasOwn(clientApp.environment, 'oidc_additional_claims')) {
+    const additionalClaims = type('string.json.parse').to('Record<string,string>')(
+      clientApp.environment.oidc_additional_claims.value
+    )
+    if (additionalClaims instanceof type.errors) {
+      logger.warn(`OIDC: Invalid oidc_additional_claims for app ${appId} value=${additionalClaims}`)
+    } else {
+      for (const [key, value] of Object.entries(additionalClaims)) {
+        mappedClaims[key] = generateAdditionalClaim(claims, value)
+      }
+    }
   }
   return mappedClaims
 }

@@ -1,5 +1,5 @@
 <template>
-  <VDialog activator="parent" max-width="640">
+  <VDialog activator="parent" max-width="1280">
     <template v-slot:activator="{ props }">
       <VBtn :text="t('console.add-app')" variant="tonal" v-bind="props" />
     </template>
@@ -39,6 +39,7 @@ const manifest = ref<IAppManifest>({
   ],
   requestedPermissions: [],
   callbackUrls: [],
+  environment: {},
   promoted: true,
   securityLevel: 1
 })
@@ -47,6 +48,7 @@ async function onSubmit(isActive: Ref<boolean>) {
   const resp = await api.console.app.$post({ json: manifest.value })
   const { appId, secret } = await resp.json()
   copy(secret)
+  toast.info('App secret copied to clipboard')
   emit('updated')
   isActive.value = false
 }

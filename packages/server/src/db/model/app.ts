@@ -23,6 +23,11 @@ export const tAppRequestedPermission = type({
 })
 export type IAppRequestedPermission = typeof tAppRequestedPermission.infer
 
+export const tAppEnv = type({
+  value: 'string'
+})
+export type IAppEnv = typeof tAppEnv.infer
+
 export const tAppManifest = type({
   appId: 'string',
   name: 'string',
@@ -31,6 +36,7 @@ export const tAppManifest = type({
   requestedClaims: tAppRequestedClaim.array(),
   requestedPermissions: tAppRequestedPermission.array(),
   callbackUrls: 'string[]',
+  environment: type.Record('string', tAppEnv),
   'promoted?': 'boolean',
   securityLevel: tSecurityLevel
 })
@@ -49,6 +55,7 @@ export interface IAppDoc {
   requestedPermissions: IAppRequestedPermission[]
 
   callbackUrls: string[]
+  environment: Record<string, IAppEnv>
   secret: string
 
   promoted?: boolean | undefined

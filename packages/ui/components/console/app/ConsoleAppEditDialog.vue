@@ -1,5 +1,5 @@
 <template>
-  <VDialog max-width="640" v-model="model">
+  <VDialog max-width="1280" v-model="model">
     <template v-slot:default="{ isActive }">
       <VCard prepend-icon="mdi-note-edit" :title="t(`actions.edit`, [t(`msg.app`)])">
         <VCardText>

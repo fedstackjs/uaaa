@@ -2309,6 +2309,7 @@ __metadata:
     "@vueuse/core": "npm:^10.11.0"
     "@vueuse/nuxt": "npm:^10.11.0"
     "@vueuse/router": "npm:^11.0.3"
+    confbox: "npm:^0.1.7"
     copy-to-clipboard: "npm:^3.3.3"
     hono: "npm:^4.5.8"
     nuxt: "npm:^3.12.3"
