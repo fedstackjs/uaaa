@@ -2,7 +2,7 @@
   "name": "@uaaa/server",
   "type": "module",
   "main": "lib/index.js",
-  "version": "0.0.12",
+  "version": "0.0.14",
   "publishConfig": {
     "access": "public"
   },
@@ -10,7 +10,8 @@
     "dev": "concurrently yarn:build:watch yarn:dev:server",
     "dev:server": "node --watch ./lib/cli/index.js --config ../../local/config.json",
     "build": "tsc",
-    "build:watch": "tsc -w"
+    "build:watch": "tsc -w",
+    "prepack": "run build"
   },
   "files": [
     "lib"

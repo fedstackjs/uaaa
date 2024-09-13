@@ -7,6 +7,7 @@ import { CacheManager } from './cache/index.js'
 import { PluginManager } from './plugin/index.js'
 import { CredentialManager } from './credential/index.js'
 import { TokenManager } from './token/index.js'
+import { SessionManager } from './session/index.js'
 import { ClaimManager } from './claim/index.js'
 import { rootApi } from './api/index.js'
 import { logger } from './util/index.js'
@@ -27,6 +28,7 @@ export class App extends Hookable<{
   claim
   plugin
   token
+  session
 
   constructor(config: IConfig) {
     super()
@@ -37,6 +39,7 @@ export class App extends Hookable<{
     this.claim = new ClaimManager(this)
     this.plugin = new PluginManager(this)
     this.token = new TokenManager(this)
+    this.session = new SessionManager(this)
   }
 
   async start() {
