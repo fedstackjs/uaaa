@@ -1,6 +1,5 @@
 import { Hookable } from 'hookable'
 import { Context } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import type { App, IAppRequestedClaim, IUserClaims, SecurityLevel } from '../index.js'
 import {
   BusinessError,
@@ -154,8 +153,8 @@ export class ClaimManager extends Hookable<{
 
   private addBuiltinClaims() {
     const reFilter = (re: RegExp, name: string) => async (ctx: ClaimContext, value: string) => {
-      if (!rUsername.test(value)) {
-        throw new HTTPException(400, { cause: `Invalid ${name}` })
+      if (!re.test(value)) {
+        throw new BusinessError('BAD_REQUEST', { msg: `Invalid ${name}` })
       }
     }
 
