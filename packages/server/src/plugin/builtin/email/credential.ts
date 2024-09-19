@@ -149,6 +149,7 @@ export class EmailImpl extends CredentialImpl {
         credentialId,
         'email',
         SecurityLevels.SL1,
+        undefined,
         email,
         '',
         'Email',

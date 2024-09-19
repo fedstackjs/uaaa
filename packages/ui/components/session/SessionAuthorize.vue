@@ -8,8 +8,20 @@
       <VAlert :text="t('msg.authorize-warn')" />
     </VCardText>
     <VCardActions class="flex justify-center">
-      <VBtn variant="tonal" color="primary" :text="t('actions.authorize')" @click="authorize" />
-      <VBtn variant="tonal" color="error" :text="t('actions.cancel')" @click="cancel" />
+      <VBtn
+        variant="tonal"
+        color="primary"
+        :text="t('actions.authorize')"
+        :loading="running"
+        @click="authorize"
+      />
+      <VBtn
+        variant="tonal"
+        color="error"
+        :text="t('actions.cancel')"
+        :disabled="running"
+        @click="cancel"
+      />
     </VCardActions>
   </template>
 </template>
@@ -32,36 +44,34 @@ const { data: app } = await useAsyncData(async () => {
   return app
 })
 
-async function authorize() {
+const { run: authorize, running } = useTask(async () => {
   if (!app.value) return
-  try {
-    await props.connector.checkAuthorize(app.value)
-    const resp = await api.session.derive.$post({
-      json: {
-        clientAppId: props.connector.clientAppId,
-        securityLevel: props.connector.securityLevel
-      }
-    })
-    if (resp.ok) {
-      const { tokenId } = await resp.json()
-      await props.connector.onAuthorize(app.value, tokenId)
-    } else {
-      const { code } = await api.getError(resp)
-      if (code === 'APP_NOT_INSTALLED') {
-        toast.error(t('msg.app-not-installed'))
-        router.replace({
-          path: '/install',
-          query: {
-            appId: props.connector.clientAppId,
-            redirect: route.fullPath
-          }
-        })
-      }
+  await props.connector.checkAuthorize(app.value)
+  const resp = await api.session.derive.$post({
+    json: {
+      clientAppId: props.connector.clientAppId,
+      securityLevel: props.connector.securityLevel
     }
-  } catch {
-    toast.error(t('msg.task-failed'))
+  })
+  if (resp.ok) {
+    const { tokenId } = await resp.json()
+    await props.connector.onAuthorize(app.value, tokenId)
+  } else {
+    const err = await api.getError(resp)
+    if (err.code === 'APP_NOT_INSTALLED') {
+      toast.error(t('msg.app-not-installed'))
+      router.replace({
+        path: '/install',
+        query: {
+          appId: props.connector.clientAppId,
+          redirect: route.fullPath
+        }
+      })
+      return
+    }
+    throw err
   }
-}
+})
 
 function cancel() {
   if (!app.value) return

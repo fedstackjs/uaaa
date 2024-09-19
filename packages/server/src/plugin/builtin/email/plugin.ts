@@ -38,7 +38,10 @@ export class EmailPlugin {
   allowSignupFromLogin = false
   whitelist?: Array<string | RegExp>
 
-  constructor(public app: App, config: IEmailConfig = app.config.getAll()) {
+  constructor(
+    public app: App,
+    config: IEmailConfig = app.config.getAll()
+  ) {
     this.transporter = mailer.createTransport(config.emailTransport as any)
     this.from = config.emailFrom ?? '"UAAA System" <system@uaaa.fedstack.org>'
     this.html = config.emailHtml ?? defaultMailHtml
@@ -58,14 +61,6 @@ export class EmailPlugin {
   }
 
   async setup(ctx: PluginContext) {
-    await ctx.app.db.credentials.createIndex(
-      { userId: 1 },
-      {
-        unique: true,
-        partialFilterExpression: { type: 'email' },
-        name: 'email_userId'
-      }
-    )
     await ctx.app.db.credentials.createIndex(
       { data: 1 },
       {

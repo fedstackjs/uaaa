@@ -110,6 +110,13 @@ errors:
   api:
     unknown: API错误{code}
     INSUFFICIENT_SECURITY_LEVEL: 需要更高的安全级别
+    INSUFFICIENT_PERMISSION: 权限不足
+    REQUIRE_ADMIN: 需要管理员权限
+    INVALID_OPERATION: 无效操作
+    INVALID_TYPE: 无效类型
+    NOT_FOUND: 未找到
+    BAD_REQUEST: 错误请求：{msg}
+    FORBIDDEN: 禁止访问：{msg}
   api-hint:
     INSUFFICIENT_SECURITY_LEVEL: 正在转向验证页面
   error: 发生错误：{message}

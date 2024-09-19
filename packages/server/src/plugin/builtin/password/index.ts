@@ -126,7 +126,7 @@ class PasswordImpl extends CredentialImpl {
       disabled: { $ne: true }
     })
     if (!credential) {
-      throw new BusinessError('NOT_FOUND', {})
+      throw new BusinessError('NOT_FOUND', { msg: 'Password credential not found' })
     }
     const match = await bcrypt.compare(payload.password, credential.secret as string)
     if (!match) {
@@ -159,6 +159,7 @@ class PasswordImpl extends CredentialImpl {
         credentialId,
         'password',
         this.defaultLevel,
+        undefined,
         '',
         hashed,
         'Password',
@@ -182,16 +183,6 @@ export default definePlugin({
   name: 'password',
   configType: tPasswordConfig,
   setup: async (ctx) => {
-    await ctx.app.db.credentials.createIndex(
-      { userId: 1 },
-      {
-        unique: true,
-        partialFilterExpression: {
-          type: 'password'
-        },
-        name: 'password_userId'
-      }
-    )
     ctx.app.credential.provide(new PasswordImpl(ctx.app.config.getAll()))
   }
 })

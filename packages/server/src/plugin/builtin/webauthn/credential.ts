@@ -64,11 +64,11 @@ export class WebauthnImpl extends CredentialImpl {
       _id: { $nin: await ctx.getCredentialIdBlacklist(this.type) },
       userId,
       type: 'webauthn',
-      'secret.id': body.id,
+      identifier: body.id,
       securityLevel: { $gte: targetLevel }
     })
     if (!credential) {
-      throw new BusinessError('NOT_FOUND', {})
+      throw new BusinessError('NOT_FOUND', { msg: 'Credential not found' })
     }
     const passkey = credential.secret as IWebauthnKey
     try {
@@ -135,6 +135,7 @@ export class WebauthnImpl extends CredentialImpl {
         credentialId,
         'webauthn',
         verification.registrationInfo.userVerified ? SecurityLevels.SL3 : SecurityLevels.SL2,
+        info.credentialID,
         createHash('sha256').update(info.credentialID).digest('hex').slice(0, 8),
         {
           id: info.credentialID,

@@ -3,7 +3,7 @@
     {{ t('do-not-support-rebind') }}
   </VAlert>
   <template v-else>
-    <div class="flex justify-center">
+    <div v-if="action === 'bind'" class="flex justify-center">
       <div>
         <VCheckboxBtn v-model="local" :label="t('msg.use-local-authenticator')" />
       </div>

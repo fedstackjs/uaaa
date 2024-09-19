@@ -13,6 +13,8 @@ export interface ICredentialDoc {
   /** the credential type eg. password, otp, email, ... */
   type: CredentialType
 
+  identifier?: string | undefined
+
   /** The **public** data of the credential, eg. email addr */
   data: string
 

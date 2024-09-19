@@ -227,6 +227,7 @@ export class CredentialManager extends Hookable<{}> {
     credentialId: string | undefined,
     type: CredentialType,
     securityLevel: SecurityLevel,
+    identifier: string | undefined,
     data: string,
     secret: unknown,
     remark: string,
@@ -249,6 +250,7 @@ export class CredentialManager extends Hookable<{}> {
       {
         $setOnInsert: { createdAt: now },
         $set: {
+          identifier,
           data,
           remark,
           secret,

@@ -7,8 +7,8 @@ export interface IErrorMap {
   REQUIRE_ADMIN: {}
   INVALID_OPERATION: {}
   INVALID_TYPE: { summary: string }
-  NOT_FOUND: { msg?: string }
-  BAD_REQUEST: { msg?: string }
+  NOT_FOUND: { msg: string }
+  BAD_REQUEST: { msg: string }
   APP_NOT_INSTALLED: {}
   MISSING_REQUIRED_PERMISSIONS: { perms: string[] }
   MISSING_REQUIRED_CLAIMS: { claims: string[] }

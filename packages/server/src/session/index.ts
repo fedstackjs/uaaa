@@ -59,7 +59,7 @@ export class SessionManager extends Hookable<{
     }
 
     const clientApp = await this.app.db.apps.findOne({ _id: clientAppId, disabled: { $ne: true } })
-    if (!clientApp) throw new BusinessError('NOT_FOUND', {})
+    if (!clientApp) throw new BusinessError('NOT_FOUND', { msg: 'Client app not found' })
     if (securityLevel > clientApp.securityLevel) {
       throw new BusinessError('BAD_REQUEST', { msg: 'Security level higher than client app' })
     }

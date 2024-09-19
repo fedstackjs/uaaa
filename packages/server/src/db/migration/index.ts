@@ -7,32 +7,54 @@ import { logger, wait } from '../../util/index.js'
 
 export const databaseVersion = 1
 
-export class MigrationManager extends Hookable {
+export interface IMigrationImpl {
+  (this: MigrationManager): Promise<void>
+}
+
+export class MigrationManager extends Hookable<{
+  preMigration: (currentVersion: number) => void
+  postMigration: (currentVersion: number) => void
+}> {
+  private migrations = new Map<number, IMigrationImpl>()
+
   constructor(public db: DbManager) {
     super()
+    this._loadMigrations()
   }
 
-  private async _initDb() {
-    // Create indexes
-    await this.db.installations.createIndex({ userId: 1, appId: 1 }, { unique: true })
-    await this.db.tokens.createIndex(
-      { refreshToken: 1 },
-      { unique: true, partialFilterExpression: { refreshToken: { $exists: true } } }
-    )
-    await this.db.users.createIndex({ 'claims.username.value': 1 }, { unique: true })
+  private _loadMigrations() {
+    this.migrations.set(0, async function () {
+      await this.db.installations.createIndex({ userId: 1, appId: 1 }, { unique: true })
+      await this.db.tokens.createIndex(
+        { refreshToken: 1 },
+        { unique: true, partialFilterExpression: { refreshToken: { $exists: true } } }
+      )
+      await this.db.users.createIndex({ 'claims.username.value': 1 }, { unique: true })
+      await this.db.credentials.createIndex({ userId: 1, type: 1, identifier: 1 }, { unique: true })
 
-    const { privateKey, publicKey } = await promisify(generateKeyPair)('rsa', {
-      modulusLength: 2048
+      const { privateKey, publicKey } = await promisify(generateKeyPair)('rsa', {
+        modulusLength: 2048
+      })
+      await this.db.jwkpairs.insertOne({
+        publicKey: publicKey.export({ format: 'jwk' }),
+        privateKey: privateKey.export({ format: 'jwk' })
+      })
+      await this.db.setSystemConfig('version', databaseVersion)
     })
-    await this.db.jwkpairs.insertOne({
-      publicKey: publicKey.export({ format: 'jwk' }),
-      privateKey: privateKey.export({ format: 'jwk' })
-    })
-    await this.db.setSystemConfig('version', databaseVersion)
   }
 
   private async _startMigration() {
-    await this._initDb()
+    do {
+      const currentVersion = await this.db.getSystemConfig('version', 0)
+      logger.info(`Migrating database from ${currentVersion}`)
+      const migrationImpl = this.migrations.get(currentVersion)
+      if (!migrationImpl) {
+        throw new Error(`No migration found for version ${currentVersion}`)
+      }
+      await this.callHook('preMigration', currentVersion)
+      await migrationImpl.call(this)
+      await this.callHook('postMigration', currentVersion)
+    } while (databaseVersion !== (await this.db.getSystemConfig('version', 0)))
   }
 
   async startMigration() {
@@ -43,6 +65,7 @@ export class MigrationManager extends Hookable {
         logger.info('Starting database migration')
         await this._startMigration()
         await this.db.delSystemConfig('migration')
+        logger.info('Database migration completed')
       } catch (e) {
         if (e instanceof MongoServerError && e.code === 11000) {
           logger.info('Waiting for database migration')

@@ -84,7 +84,7 @@ export const userApi = new Hono()
       const { id } = ctx.req.valid('param')
       const { app, token } = ctx.var
       const session = await app.db.sessions.findOne({ _id: id, userId: token.sub })
-      if (!session) throw new BusinessError('NOT_FOUND', {})
+      if (!session) throw new BusinessError('NOT_FOUND', { msg: `Session ${id} not found` })
       return ctx.json({ session })
     }
   )
@@ -137,7 +137,7 @@ export const userApi = new Hono()
       const { id } = ctx.req.valid('param')
       const { app, token } = ctx.var
       const session = await app.db.sessions.findOne({ _id: id, userId: token.sub })
-      if (!session) throw new BusinessError('NOT_FOUND', {})
+      if (!session) throw new BusinessError('NOT_FOUND', { msg: `Session ${id} not found` })
       await app.db.sessions.updateOne({ _id: id }, { $set: { terminated: true } })
       await app.db.tokens.updateMany({ sessionId: id }, { $set: { terminated: true } })
       return ctx.json({})
@@ -187,7 +187,7 @@ export const userApi = new Hono()
       const { appId, grantedPermissions, grantedClaims } = ctx.req.valid('json')
       const clientApp = await app.db.apps.findOne({ _id: appId, disabled: { $ne: true } })
       const user = await app.db.users.findOne({ _id: token.sub })
-      if (!clientApp || !user) throw new BusinessError('NOT_FOUND', {})
+      if (!clientApp || !user) throw new BusinessError('NOT_FOUND', { msg: 'App not found' })
       if (clientApp.disabled) {
         throw new BusinessError('BAD_REQUEST', { msg: `App ${appId} is disabled` })
       }

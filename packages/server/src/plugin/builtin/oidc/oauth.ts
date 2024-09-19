@@ -57,7 +57,9 @@ async function generateClaims(ctx: Context, appId: string, userId: string) {
   })
   const clientApp = await app.db.apps.findOne({ _id: appId, disabled: { $ne: true } })
   const user = await app.db.users.findOne({ _id: userId })
-  if (!installation || !clientApp || !user) throw new BusinessError('NOT_FOUND', {})
+  if (!installation || !clientApp || !user) {
+    throw new BusinessError('NOT_FOUND', { msg: 'Installation not found' })
+  }
   const claims = await app.claim.filterClaimsForApp(
     ctx,
     installation.grantedClaims,

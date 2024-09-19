@@ -51,14 +51,6 @@ export class WebauthnPlugin {
     if (!this.origin) {
       logger.warn('WebauthnPlugin: origin is set to empty which is a bad SecOp!')
     }
-    await ctx.app.db.credentials.createIndex(
-      { 'secret.id': 1 },
-      {
-        unique: true,
-        partialFilterExpression: { type: 'webauthn' },
-        name: 'webauthn'
-      }
-    )
     ctx.app.credential.provide(new WebauthnImpl(this))
     ctx.app.hook('extendApp', (router) => {
       router.route('/api/plugin/webauthn', this.getApiRouter())
