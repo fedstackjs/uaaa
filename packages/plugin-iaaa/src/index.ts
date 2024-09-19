@@ -243,6 +243,7 @@ class IAAAImpl extends CredentialImpl {
       credentialId,
       'iaaa',
       SecurityLevels.SL1,
+      undefined,
       resp.userInfo.identityId,
       '',
       'IAAA',
@@ -269,14 +270,6 @@ export default definePlugin({
   setup: async (ctx) => {
     const { app } = ctx
     const { db, credential, claim } = app
-    await db.credentials.createIndex(
-      { userId: 1 },
-      {
-        unique: true,
-        partialFilterExpression: { type: 'iaaa' },
-        name: 'iaaa_userId'
-      }
-    )
     await db.credentials.createIndex(
       { data: 1 },
       {
