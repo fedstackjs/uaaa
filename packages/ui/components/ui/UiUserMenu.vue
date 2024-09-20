@@ -32,7 +32,7 @@ defineProps<{
 }>()
 
 const { t } = useI18n()
-const route = useRoute()
+const router = useRouter()
 
 const links = [
   { to: '/setting', title: 'pages.setting', prependIcon: 'mdi-account-cog-outline' },
@@ -67,5 +67,10 @@ const color = computed(() => {
 watch(
   () => effectiveToken.value?.decoded.level,
   () => refresh()
+)
+
+watch(
+  () => effectiveToken.value,
+  () => effectiveToken.value || router.replace('/auth/signin')
 )
 </script>

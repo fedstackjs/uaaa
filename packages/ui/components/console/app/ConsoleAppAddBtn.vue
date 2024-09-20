@@ -5,9 +5,7 @@
     </template>
     <template v-slot:default="{ isActive }">
       <VCard prepend-icon="mdi-plus" :title="t(`console.add-app`)">
-        <VCardText>
-          <AppManifestEditor v-model="manifest" />
-        </VCardText>
+        <AppManifestEditor v-model="manifest" />
 
         <VCardActions>
           <VBtn :text="t('actions.submit')" @click="onSubmit(isActive)" />
@@ -39,7 +37,8 @@ const manifest = ref<IAppManifest>({
   ],
   requestedPermissions: [],
   callbackUrls: [],
-  environment: {},
+  variables: {},
+  secrets: {},
   promoted: true,
   securityLevel: 1
 })

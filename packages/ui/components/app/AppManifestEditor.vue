@@ -1,60 +1,43 @@
 <template>
-  <div class="flex justify-center">
-    <div class="flex-1" />
-    <VFileInput
-      v-model="file"
-      label="Import manifest file"
-      prepend-icon="mdi-file-upload-outline"
-      :loading="running"
-    />
-    <div class="flex-1" />
+  <div class="d-flex flex-row">
+    <VTabs v-model="tab" direction="vertical">
+      <VTab :value="0" text="Manifest File" />
+      <VTab :value="1" text="Basic Info" />
+      <VTab :value="2" text="Provided Permissions" />
+      <VTab :value="3" text="Requested Permissions" />
+      <VTab :value="4" text="Requested Claims" />
+      <VTab :value="5" text="Variables" />
+      <VTab :value="6" text="Secrets" />
+      <VTab :value="7" text="Misc" />
+    </VTabs>
+    <VDivider vertical />
+    <VTabsWindow v-model="tab" class="flex-1">
+      <VTabsWindowItem :value="0">
+        <AppManifestFile v-model="manifest" />
+      </VTabsWindowItem>
+      <VTabsWindowItem :value="1">
+        <AppManifestBasic v-model="manifest" />
+      </VTabsWindowItem>
+      <VTabsWindowItem :value="2">
+        <AppManifestProvidedPerm v-model="manifest" />
+      </VTabsWindowItem>
+      <VTabsWindowItem :value="3">
+        <AppManifestRequestedPerm v-model="manifest" />
+      </VTabsWindowItem>
+      <VTabsWindowItem :value="4">
+        <AppManifestRequestedClaim v-model="manifest" />
+      </VTabsWindowItem>
+      <VTabsWindowItem :value="5">
+        <AppManifestVariable v-model="manifest" />
+      </VTabsWindowItem>
+      <VTabsWindowItem :value="6">
+        <AppManifestSecret v-model="manifest" />
+      </VTabsWindowItem>
+      <VTabsWindowItem :value="7">
+        <AppManifestMisc v-model="manifest" />
+      </VTabsWindowItem>
+    </VTabsWindow>
   </div>
-  <VTextField v-model="manifest.appId" label="App ID" />
-  <VTextField v-model="manifest.name" label="Name" />
-  <VTextarea v-model="manifest.description" label="Description" />
-  <CommonSecurityLevelInput v-model="manifest.securityLevel" />
-  <CommonListEditor
-    v-model="manifest.providedPermissions"
-    label="Provided Permissions"
-    :factory="newProvidedPermission"
-  >
-    <template #item="scoped">
-      <AppProvidedPermissionInput v-bind="scoped" />
-    </template>
-  </CommonListEditor>
-  <CommonListEditor
-    v-model="manifest.requestedClaims"
-    label="Requested Claims"
-    :factory="newRequestedClaim"
-  >
-    <template #item="scoped">
-      <AppRequestedClaimInput v-bind="scoped" />
-    </template>
-  </CommonListEditor>
-  <CommonListEditor
-    v-model="manifest.requestedPermissions"
-    label="Requested Permissions"
-    :factory="newRequestedPermission"
-  >
-    <template #item="scoped">
-      <AppRequestedPermissionInput v-bind="scoped" />
-    </template>
-  </CommonListEditor>
-  <CommonListEditor v-model="manifest.callbackUrls" label="Callback URLs" :factory="() => ''">
-    <template #item="scoped">
-      <VTextField v-bind="scoped" label="Callback URL" />
-    </template>
-  </CommonListEditor>
-  <CommonDictEditor
-    v-model="manifest.environment"
-    label="Environment"
-    :factory="() => ({ value: '' })"
-  >
-    <template #item="scoped">
-      <AppEnvInput v-bind="scoped" />
-    </template>
-  </CommonDictEditor>
-  <VCheckbox v-model="manifest.promoted" label="Promoted" />
 </template>
 
 <script setup lang="ts">
@@ -64,10 +47,7 @@ import { parseJSON5, parseJSONC, parseYAML, parseTOML } from 'confbox'
 const manifest = defineModel<IAppManifest>({ required: true })
 
 const file = ref<File | null>(null)
-
-const newProvidedPermission = () => ({ name: '', description: '', path: '' })
-const newRequestedClaim = () => ({ name: '', reason: '' })
-const newRequestedPermission = () => ({ reason: '', perm: '' })
+const tab = ref(0)
 
 const { run, running } = useTask(async (file: File) => {
   const ext = file.name.split('.').pop()

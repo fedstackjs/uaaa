@@ -6,6 +6,7 @@ import ms from 'ms'
 import { HTTPException } from 'hono/http-exception'
 import { idParamValidator } from '../_common.js'
 import { IAppDoc } from '../../db/index.js'
+import { BusinessError } from '../../util/errors.js'
 
 /** Public API */
 export const publicApi = new Hono()
@@ -17,19 +18,51 @@ export const publicApi = new Hono()
   .get('/jwks', async (ctx) => {
     return ctx.json(await ctx.var.app.token.getJWKS())
   })
-  // Supported login methods
-  .get('/login', (ctx) => {
-    return ctx.json({ types: ctx.var.app.credential.getLoginTypes() })
+  // List promoted applications
+  .get('/app', async (ctx) => {
+    const apps: Array<null | Omit<IAppDoc, 'secret' | 'secrets' | 'callbackUrls'>> =
+      await ctx.var.app.db.apps
+        .find({ promoted: true }, { projection: { secret: 0, secrets: 0, callbackUrls: 0 } })
+        .toArray()
+    return ctx.json({ apps })
   })
   // Get Application info
   .get('/app/:id', idParamValidator, async (ctx) => {
     const { id } = ctx.req.valid('param')
-    const app: null | Omit<IAppDoc, 'secret'> = await ctx.var.app.db.apps.findOne(
-      { _id: id },
-      { projection: { secret: 0 } }
-    )
-    if (!app) throw new HTTPException(404)
+    const app: null | Omit<IAppDoc, 'secret' | 'secrets' | 'callbackUrls'> =
+      await ctx.var.app.db.apps.findOne(
+        { _id: id },
+        { projection: { secret: 0, secrets: 0, callbackUrls: 0 } }
+      )
+    if (!app) {
+      throw new BusinessError('NOT_FOUND', { msg: 'App not found' })
+    }
     return ctx.json({ app })
+  })
+  // Check redirect url
+  .post(
+    '/app/:id/check_redirect',
+    idParamValidator,
+    arktypeValidator('json', type({ url: 'string' })),
+    async (ctx) => {
+      const { id } = ctx.req.valid('param')
+      const { url } = ctx.req.valid('json')
+      const app = await ctx.var.app.db.apps.findOne(
+        { _id: id },
+        { projection: { callbackUrls: 1 } }
+      )
+      if (!app) {
+        throw new BusinessError('NOT_FOUND', { msg: 'App not found' })
+      }
+      if (!app.callbackUrls.includes(url)) {
+        throw new BusinessError('BAD_REQUEST', { msg: 'Invalid redirect url' })
+      }
+      return ctx.json({})
+    }
+  )
+  // Supported login methods
+  .get('/login', (ctx) => {
+    return ctx.json({ types: ctx.var.app.credential.getLoginTypes() })
   })
   // Login
   .post(

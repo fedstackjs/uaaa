@@ -2,9 +2,7 @@
   <VDialog max-width="1280" v-model="model">
     <template v-slot:default="{ isActive }">
       <VCard prepend-icon="mdi-note-edit" :title="t(`actions.edit`, [t(`msg.app`)])">
-        <VCardText>
-          <AppManifestEditor v-model="value" />
-        </VCardText>
+        <AppManifestEditor v-model="value" />
         <VCardActions>
           <VBtn :text="t('actions.cancel')" color="secondary" @click="model = false" />
           <VBtn

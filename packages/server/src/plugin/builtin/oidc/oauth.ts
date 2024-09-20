@@ -82,9 +82,9 @@ async function generateClaims(ctx: Context, appId: string, userId: string) {
     mappedClaims[key] = generateAdditionalClaim(claims, value)
   }
 
-  if (Object.hasOwn(clientApp.environment, 'oidc_additional_claims')) {
+  if (Object.hasOwn(clientApp.secrets, 'oidc_additional_claims')) {
     const additionalClaims = type('string.json.parse').to('Record<string,string>')(
-      clientApp.environment.oidc_additional_claims.value
+      clientApp.secrets.oidc_additional_claims
     )
     if (additionalClaims instanceof type.errors) {
       logger.warn(`OIDC: Invalid oidc_additional_claims for app ${appId} value=${additionalClaims}`)

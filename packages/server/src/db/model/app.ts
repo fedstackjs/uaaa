@@ -1,5 +1,5 @@
 import { type } from 'arktype'
-import { tSecurityLevel, type SecurityLevel } from '../../util/index.js'
+import { rAppId, tSecurityLevel, type SecurityLevel } from '../../util/index.js'
 
 export const tAppProvidedPermission = type({
   name: 'string',
@@ -23,20 +23,16 @@ export const tAppRequestedPermission = type({
 })
 export type IAppRequestedPermission = typeof tAppRequestedPermission.infer
 
-export const tAppEnv = type({
-  value: 'string'
-})
-export type IAppEnv = typeof tAppEnv.infer
-
 export const tAppManifest = type({
-  appId: 'string',
+  appId: type('string').narrow((id) => rAppId.test(id)),
   name: 'string',
   'description?': 'string',
   providedPermissions: tAppProvidedPermission.array(),
   requestedClaims: tAppRequestedClaim.array(),
   requestedPermissions: tAppRequestedPermission.array(),
   callbackUrls: 'string[]',
-  environment: type.Record('string', tAppEnv),
+  variables: 'Record<string,string>',
+  secrets: 'Record<string,string>',
   'promoted?': 'boolean',
   securityLevel: tSecurityLevel
 })
@@ -55,12 +51,15 @@ export interface IAppDoc {
   requestedPermissions: IAppRequestedPermission[]
 
   callbackUrls: string[]
-  environment: Record<string, IAppEnv>
-  secret: string
+  variables: Record<string, string>
+  secrets: Record<string, string>
 
   promoted?: boolean | undefined
 
-  disabled?: boolean | undefined
   /** Max security level can be hold by this app */
   securityLevel: SecurityLevel
+
+  /** Managed properties */
+  disabled?: boolean | undefined
+  secret: string
 }

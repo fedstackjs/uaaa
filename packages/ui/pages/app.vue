@@ -3,7 +3,7 @@
     <VRow>
       <VCol cols="12">
         <VCard :title="t('msg.manage-app')">
-          <VList>
+          <VList v-if="apps?.length">
             <VListItem
               v-for="app in apps"
               :key="app.appId"
@@ -19,6 +19,7 @@
               </template>
             </VListItem>
           </VList>
+          <VAlert v-else type="info" :text="t('msg.no-app-installed')" />
         </VCard>
       </VCol>
     </VRow>

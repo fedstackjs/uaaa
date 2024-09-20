@@ -86,6 +86,10 @@ async function submit() {
   }
   isLoading.value = false
 }
+
+if (['login', 'verify'].includes(props.action)) {
+  submit()
+}
 </script>
 
 <i18n>

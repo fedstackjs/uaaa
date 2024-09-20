@@ -9,7 +9,8 @@ export class SessionManager extends Hookable<{
     token: ITokenPayload,
     targetAppId: string | undefined,
     clientAppId: string,
-    securityLevel: SecurityLevel
+    securityLevel: SecurityLevel,
+    dryRun: boolean
   ): void | Promise<void>
 }> {
   constructor(public app: App) {
@@ -47,7 +48,8 @@ export class SessionManager extends Hookable<{
     token: ITokenPayload,
     targetAppId: string | undefined,
     clientAppId: string,
-    securityLevel: SecurityLevel
+    securityLevel: SecurityLevel,
+    dryRun = false
   ) {
     if (token.client_id && !targetAppId) {
       throw new BusinessError('BAD_REQUEST', {
@@ -64,7 +66,7 @@ export class SessionManager extends Hookable<{
       throw new BusinessError('BAD_REQUEST', { msg: 'Security level higher than client app' })
     }
 
-    await this.callHook('preDerive', token, targetAppId, clientAppId, securityLevel)
+    await this.callHook('preDerive', token, targetAppId, clientAppId, securityLevel, dryRun)
 
     const installation = await this.app.db.installations.findOne({
       userId: token.sub,
@@ -91,6 +93,9 @@ export class SessionManager extends Hookable<{
     })
     if (!parentToken) {
       throw new BusinessError('BAD_REQUEST', { msg: 'Parent token not found' })
+    }
+    if (dryRun) {
+      return { tokenId: '' }
     }
 
     const session = await this.app.db.sessions.findOneAndUpdate(

@@ -34,17 +34,19 @@ export class OpenIDConnector extends Connector {
     this.state = this.params.state
   }
 
-  checkRedirect(app: IAppDTO, redirect: string) {
-    return app.callbackUrls.some((url) => url === redirect)
+  async checkRedirect(app: IAppDTO, redirect: string) {
+    const resp = await api.public.app[':id'].check_redirect.$post({
+      param: { id: app._id },
+      json: { url: redirect }
+    })
+    await api.checkResponse(resp)
   }
 
-  override checkAuthorize(app: IAppDTO): void {
-    if (!this.checkRedirect(app, this.redirect_uri)) {
-      throw new Error('Invalid redirect_uri')
-    }
+  override async checkAuthorize(app: IAppDTO) {
     if (this.response_type !== 'code') {
       throw new Error('Invalid response_type')
     }
+    await this.checkRedirect(app, this.redirect_uri)
   }
 
   override onAuthorize(app: IAppDTO, tokenId: string): void {
