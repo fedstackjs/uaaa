@@ -1,9 +1,8 @@
 import { createMiddleware } from 'hono/factory'
-import { HTTPException } from 'hono/http-exception'
-import micromatch from 'micromatch'
 import type jwt from 'jsonwebtoken'
-import { BusinessError, checkPermission, UAAA } from '../util/index.js'
+import { BusinessError, checkPermission } from '../util/index.js'
 import { ITokenPayload } from '../token/index.js'
+export { arktypeValidator } from '@hono/arktype-validator'
 
 declare module 'hono' {
   interface ContextVariableMap {

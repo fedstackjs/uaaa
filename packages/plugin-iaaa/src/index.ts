@@ -121,7 +121,10 @@ class IAAAImpl extends CredentialImpl {
     if (!resp.success) {
       throw new BusinessError('BAD_REQUEST', { msg: `IAAA: ${resp.errMsg}` })
     }
-    const credential = await ctx.app.db.credentials.findOne({ data: resp.userInfo.identityId })
+    const credential = await ctx.app.db.credentials.findOne({
+      type: 'iaaa',
+      data: resp.userInfo.identityId
+    })
     if (credential) {
       await ctx.manager.checkCredentialUse(credential._id)
       await this.updateUserClaims(ctx, credential.userId, resp)
@@ -169,8 +172,8 @@ class IAAAImpl extends CredentialImpl {
 
   override async canBindNew(ctx: CredentialContext, userId: string) {
     const credential = await ctx.app.db.credentials.findOne({
-      userId,
-      type: 'iaaa'
+      type: 'iaaa',
+      userId
     })
     return !credential
   }
@@ -197,6 +200,7 @@ class IAAAImpl extends CredentialImpl {
       throw new BusinessError('BAD_REQUEST', { msg: `IAAA: ${resp.errMsg}` })
     }
     const credential = await ctx.app.db.credentials.findOne({
+      type: 'iaaa',
       data: resp.userInfo.identityId,
       securityLevel: { $gte: targetLevel },
       disabled: { $ne: true }
