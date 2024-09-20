@@ -27,6 +27,7 @@ export const tAppManifest = type({
   appId: type('string').narrow((id) => rAppId.test(id)),
   name: 'string',
   'description?': 'string',
+  'icon?': 'string',
   providedPermissions: tAppProvidedPermission.array(),
   requestedClaims: tAppRequestedClaim.array(),
   requestedPermissions: tAppRequestedPermission.array(),
@@ -44,6 +45,7 @@ export interface IAppDoc {
 
   name: string
   description?: string
+  icon?: string
 
   providedPermissions: IAppProvidedPermission[]
 

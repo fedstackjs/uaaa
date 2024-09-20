@@ -21,15 +21,10 @@
               </div>
             </div>
           </VCardTitle>
-          <VDivider />
-          <VCardText>
-            <VRow v-if="credentials">
-              <VCol v-for="credential in credentials" :key="credential._id" cols="12">
-                <CredentialCard :credential="credential" @updated="refresh()" />
-              </VCol>
-            </VRow>
-          </VCardText>
         </VCard>
+      </VCol>
+      <VCol v-for="credential in credentials" :key="credential._id" cols="12">
+        <CredentialCard :credential="credential" @updated="refresh()" />
       </VCol>
     </VRow>
   </VContainer>
@@ -57,9 +52,3 @@ const { data: types } = await useAsyncData(async () => {
   return types
 })
 </script>
-
-<i18n>
-zhHans:
-  msg:
-    credentials: 凭证列表
-</i18n>

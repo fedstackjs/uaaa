@@ -9,6 +9,7 @@
         :key="i"
         :title="t('current_locale', [], { locale: code })"
         @click="locale = code"
+        :append-icon="code === current ? 'mdi-check' : undefined"
       />
     </VList>
   </VMenu>

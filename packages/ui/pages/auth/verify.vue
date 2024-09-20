@@ -47,7 +47,13 @@
             />
           </VAlert>
         </template>
-        <CredentialForm v-else action="verify" :type="type" @updated="onUpdated" />
+        <CredentialForm
+          v-else
+          action="verify"
+          :type="type"
+          :target-level="+targetLevel"
+          @updated="onUpdated"
+        />
       </VFadeTransition>
     </VCard>
   </VContainer>

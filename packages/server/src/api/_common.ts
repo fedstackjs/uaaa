@@ -14,7 +14,9 @@ export const pageQueryValidator = arktypeValidator(
   type({
     skip: 'string.integer.parse',
     limit: type('string.integer.parse').narrow((v) => 5 <= v && v <= 100),
-    'count?': 'boolean'
+    'count?': type('string.integer.parse')
+      .narrow((v) => 0 <= v && v <= 1)
+      .pipe((v) => !!v)
   })
 )
 

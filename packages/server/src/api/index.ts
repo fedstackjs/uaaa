@@ -27,6 +27,7 @@ export type IRootApi = typeof rootApi
 
 export * from './_common.js'
 export * from './_middleware.js'
+export * from './_helper.js'
 export * from './console/index.js'
 export * from './public/index.js'
 export * from './session/index.js'

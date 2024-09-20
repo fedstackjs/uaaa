@@ -1,5 +1,8 @@
 current_locale: 简体中文
 
+uaaa: UAAA系统
+client-for: '{0}客户端'
+
 pages:
   index: 首页
   current: 当前会话
@@ -46,12 +49,16 @@ actions:
   authorize: 授权
 
 msg:
+  actions: 操作
   login-by: 通过{0}登录
   verify-by: 通过{0}验证
+  credentials: 凭据管理
   credential-type: '{0}凭据'
   current-security-level: 安全级别：{0}
   upgrade-security-level-to: 提升安全级别至：{0}
   credential-id: 凭据ID
+  credential-user-identifier: 用户标识
+  credential-global-identifier: 全局标识
   unbind-confirm: 确认解绑凭据？
   unknown-credential-type: 不支持的凭据类别
   user-settings: 用户设置
@@ -78,6 +85,22 @@ msg:
   redirecting: 正在重定向...
   use-local-authenticator: 使用本地凭据
   no-app-installed: 没有安装任何应用
+  session-list: 会话列表
+  session-id: 会话ID
+  session-token-count: 令牌数量
+  session-authorized-apps: 已授权应用
+  terminated: 已终止
+  expired: 已过期
+  active: 活跃
+  inactive: 未激活
+  expires-at: 过期时间
+  created-at: 创建时间
+  view: 查看
+  token-list: 令牌列表
+  token-id: 令牌ID
+  token-index: 序号
+  target-app: 目标应用
+  client-app: 客户端应用
 
 claims:
   username: 用户名

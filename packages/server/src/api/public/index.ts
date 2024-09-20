@@ -7,6 +7,7 @@ import { HTTPException } from 'hono/http-exception'
 import { idParamValidator } from '../_common.js'
 import { IAppDoc } from '../../db/index.js'
 import { BusinessError } from '../../util/errors.js'
+import { getRemoteIP, getUserAgent } from '../_helper.js'
 
 /** Public API */
 export const publicApi = new Hono()
@@ -89,7 +90,11 @@ export const publicApi = new Hono()
         tokenCount: securityLevel > 0 ? 2 : 1,
         expiresAt: now,
         createdAt: now,
-        authorizedApps: []
+        authorizedApps: [],
+        environment: {
+          ip: getRemoteIP(ctx),
+          ua: getUserAgent(ctx)
+        }
       })
       const tokens: Array<{
         token: string

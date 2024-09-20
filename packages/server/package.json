@@ -2,7 +2,7 @@
   "name": "@uaaa/server",
   "type": "module",
   "main": "lib/index.js",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "publishConfig": {
     "access": "public"
   },

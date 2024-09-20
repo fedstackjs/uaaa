@@ -9,7 +9,8 @@ const tAppConfig = type({
   deploymentUrl: type('string').narrow((s) => !s.endsWith('/')),
   sessionTimeout: 'string',
   tokenTimeout: 'string',
-  refreshTimeout: 'string'
+  refreshTimeout: 'string',
+  'realIpHeader?': 'string'
 })
 
 type IAppConfig = typeof tAppConfig.infer
@@ -19,7 +20,10 @@ export interface IConfig extends IAppConfig {}
 export class ConfigManager extends Hookable<{
   validateConfig(config: IConfig): void | Promise<void>
 }> {
-  constructor(public app: App, private _config: IConfig) {
+  constructor(
+    public app: App,
+    private _config: IConfig
+  ) {
     super()
     this.hook('validateConfig', this._validateAppConfig.bind(this))
   }

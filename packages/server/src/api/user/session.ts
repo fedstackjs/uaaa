@@ -13,7 +13,9 @@ export const userSessionApi = new Hono()
     async (ctx) => {
       const { app, token } = ctx.var
       const { skip, limit, count } = ctx.req.valid('query')
-      const sessions = await app.db.sessions.find({ userId: token.sub }, { skip, limit }).toArray()
+      const sessions = await app.db.sessions
+        .find({ userId: token.sub }, { skip, limit, sort: { expiresAt: -1 } })
+        .toArray()
       return ctx.json({
         sessions,
         count: count ? await app.db.sessions.countDocuments({ userId: token.sub }) : 0
@@ -44,7 +46,7 @@ export const userSessionApi = new Hono()
       const tokens = await app.db.tokens
         .find(
           { sessionId: id, userId: token.sub },
-          { skip, limit, projection: { refreshToken: 0 } }
+          { skip, limit, sort: { index: -1 }, projection: { refreshToken: 0 } }
         )
         .toArray()
       return ctx.json({

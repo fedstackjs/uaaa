@@ -1,3 +1,8 @@
+export interface ISessionEnvironment {
+  ip?: string
+  ua?: string
+}
+
 export interface ISessionDoc {
   _id: string
 
@@ -7,6 +12,7 @@ export interface ISessionDoc {
   tokenCount: number
 
   authorizedApps: string[]
+  environment: ISessionEnvironment
 
   createdAt: number
   expiresAt: number

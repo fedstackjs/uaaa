@@ -1,15 +1,8 @@
 <template>
   <VCard>
-    <VCardTitle>
-      <div class="flex justify-between items-center">
-        <div>{{ t(`msg.credential-type`, [t(`credentials.${credential.type}`)]) }}</div>
-        <div class="text-sm">
-          {{ t('msg.credential-id') }}:
-          <code>{{ credential._id }}</code>
-        </div>
-      </div>
-    </VCardTitle>
-    <VTable>
+    <CredentialItem :credential="credential" />
+    <VDivider />
+    <VTable density="compact">
       <tbody>
         <tr>
           <td>{{ t('data') }}</td>
@@ -79,34 +72,6 @@
         </tr>
       </tbody>
     </VTable>
-    <VCardActions class="justify-end">
-      <VBtn prepend-icon="mdi-shield-remove" color="error">
-        {{ t('actions.unbind') }}
-        <CredentialBindDialog
-          action="unbind"
-          :id="credential._id"
-          :type="credential.type"
-          @updated="() => emit('updated')"
-        />
-      </VBtn>
-      <VBtn prepend-icon="mdi-shield-edit">
-        {{ t('actions.rebind') }}
-        <CredentialBindDialog
-          action="bind"
-          :id="credential._id"
-          :type="credential.type"
-          @updated="() => emit('updated')"
-        />
-      </VBtn>
-      <VBtn prepend-icon="mdi-note-edit" color="info">
-        {{ t('actions.edit-remark') }}
-        <CredentialRemarkUpdateDialog
-          :id="credential._id"
-          :remark="credential.remark"
-          @updated="() => emit('updated')"
-        />
-      </VBtn>
-    </VCardActions>
   </VCard>
 </template>
 

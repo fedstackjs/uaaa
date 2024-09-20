@@ -123,7 +123,7 @@ class IAAAImpl extends CredentialImpl {
     }
     const credential = await ctx.app.db.credentials.findOne({
       type: 'iaaa',
-      data: resp.userInfo.identityId
+      globalIdentifier: resp.userInfo.identityId
     })
     if (credential) {
       await ctx.manager.checkCredentialUse(credential._id)
@@ -201,7 +201,8 @@ class IAAAImpl extends CredentialImpl {
     }
     const credential = await ctx.app.db.credentials.findOne({
       type: 'iaaa',
-      data: resp.userInfo.identityId,
+      globalIdentifier: resp.userInfo.identityId,
+      userId,
       securityLevel: { $gte: targetLevel },
       disabled: { $ne: true }
     })
@@ -241,19 +242,16 @@ class IAAAImpl extends CredentialImpl {
     if (credentialId && !this.allowRebind) {
       throw new BusinessError('BAD_REQUEST', { msg: 'IAAA rebind not allowed' })
     }
-    credentialId = await ctx.manager.bindCredential(
-      ctx,
-      userId,
-      credentialId,
-      'iaaa',
-      SecurityLevels.SL1,
-      undefined,
-      resp.userInfo.identityId,
-      '',
-      'IAAA',
-      ms('50y'),
-      Number.MAX_SAFE_INTEGER
-    )
+    credentialId = await ctx.manager.bindCredential(ctx, 'iaaa', userId, credentialId, {
+      userIdentifier: '',
+      globalIdentifier: resp.userInfo.identityId,
+      data: resp.userInfo.identityId,
+      secret: '',
+      remark: '',
+      expiration: ms('100y'),
+      validCount: Number.MAX_SAFE_INTEGER,
+      securityLevel: SecurityLevels.SL1
+    })
     await this.updateUserClaims(ctx, userId, resp)
     return { credentialId }
   }
@@ -274,14 +272,7 @@ export default definePlugin({
   setup: async (ctx) => {
     const { app } = ctx
     const { db, credential, claim } = app
-    await db.credentials.createIndex(
-      { data: 1 },
-      {
-        unique: true,
-        partialFilterExpression: { type: 'iaaa' },
-        name: 'iaaa_iaaaId'
-      }
-    )
+
     credential.provide(new IAAAImpl(app))
     claim.addClaimDescriptor({
       name: 'iaaa:name',
