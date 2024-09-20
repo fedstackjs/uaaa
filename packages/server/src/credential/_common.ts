@@ -223,16 +223,28 @@ export class CredentialManager extends Hookable<{}> {
 
   async bindCredential(
     ctx: CredentialContext,
+    type: CredentialType,
     userId: string,
     credentialId: string | undefined,
-    type: CredentialType,
-    securityLevel: SecurityLevel,
-    identifier: string | undefined,
-    data: string,
-    secret: unknown,
-    remark: string,
-    expiration: number,
-    validCount: number,
+    {
+      userIdentifier,
+      globalIdentifier,
+      data,
+      secret,
+      remark,
+      expiration,
+      validCount,
+      securityLevel
+    }: {
+      userIdentifier?: string | undefined
+      globalIdentifier?: string | undefined
+      data: string
+      secret: unknown
+      remark: string
+      expiration: number
+      validCount: number
+      securityLevel: SecurityLevel
+    },
     upsert: boolean = credentialId ? false : true
   ) {
     const now = Date.now()
@@ -250,7 +262,8 @@ export class CredentialManager extends Hookable<{}> {
       {
         $setOnInsert: { createdAt: now },
         $set: {
-          identifier,
+          userIdentifier,
+          globalIdentifier,
           data,
           remark,
           secret,
@@ -271,9 +284,9 @@ export class CredentialManager extends Hookable<{}> {
 
   async unbindCredential(
     ctx: CredentialContext,
+    type: CredentialType,
     userId: string,
-    credentialId: string,
-    type: CredentialType
+    credentialId: string
   ) {
     const loginTypes = this.getLoginTypes()
     const loginCredentialCount = await ctx.app.db.credentials.countDocuments({

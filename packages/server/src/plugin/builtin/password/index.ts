@@ -153,19 +153,15 @@ class PasswordImpl extends CredentialImpl {
     }
     const hashed = await bcrypt.hash(payload.password, 10)
     return {
-      credentialId: await ctx.manager.bindCredential(
-        ctx,
-        userId,
-        credentialId,
-        'password',
-        this.defaultLevel,
-        undefined,
-        '',
-        hashed,
-        'Password',
-        this.passwordExpiration,
-        Number.MAX_SAFE_INTEGER
-      )
+      credentialId: await ctx.manager.bindCredential(ctx, 'password', userId, credentialId, {
+        userIdentifier: '',
+        data: '',
+        secret: hashed,
+        remark: '',
+        expiration: ms('100y'),
+        validCount: Number.MAX_SAFE_INTEGER,
+        securityLevel: this.defaultLevel
+      })
     }
   }
 

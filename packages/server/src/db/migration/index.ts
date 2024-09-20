@@ -30,7 +30,14 @@ export class MigrationManager extends Hookable<{
         { unique: true, partialFilterExpression: { refreshToken: { $exists: true } } }
       )
       await this.db.users.createIndex({ 'claims.username.value': 1 }, { unique: true })
-      await this.db.credentials.createIndex({ userId: 1, type: 1, identifier: 1 }, { unique: true })
+      await this.db.credentials.createIndex(
+        { userId: 1, type: 1, userIdentifier: 1 },
+        { unique: true, partialFilterExpression: { userIdentifier: { $exists: true } } }
+      )
+      await this.db.credentials.createIndex(
+        { type: 1, globalIdentifier: 1 },
+        { unique: true, partialFilterExpression: { globalIdentifier: { $exists: true } } }
+      )
 
       const { privateKey, publicKey } = await promisify(generateKeyPair)('rsa', {
         modulusLength: 2048

@@ -61,14 +61,6 @@ export class EmailPlugin {
   }
 
   async setup(ctx: PluginContext) {
-    await ctx.app.db.credentials.createIndex(
-      { data: 1 },
-      {
-        unique: true,
-        partialFilterExpression: { type: 'email' },
-        name: 'email_email'
-      }
-    )
     ctx.app.credential.provide(new EmailImpl(this))
     ctx.app.hook('extendApp', (router) => {
       router.route('/api/plugin/email', this.getApiRouter())

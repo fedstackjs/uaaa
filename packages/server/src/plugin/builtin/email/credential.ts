@@ -143,19 +143,16 @@ export class EmailImpl extends CredentialImpl {
       }
     )
     return {
-      credentialId: await ctx.manager.bindCredential(
-        ctx,
-        userId,
-        credentialId,
-        'email',
-        SecurityLevels.SL1,
-        undefined,
-        email,
-        '',
-        'Email',
-        ms('100y'),
-        Number.MAX_SAFE_INTEGER
-      )
+      credentialId: await ctx.manager.bindCredential(ctx, 'email', userId, credentialId, {
+        userIdentifier: '',
+        globalIdentifier: email,
+        data: email,
+        secret: '',
+        remark: '',
+        expiration: ms('100y'),
+        validCount: Number.MAX_SAFE_INTEGER,
+        securityLevel: this.defaultLevel
+      })
     }
   }
 
@@ -170,7 +167,7 @@ export class EmailImpl extends CredentialImpl {
       { _id: userId, 'claims.email.value': email },
       { $set: { 'claims.email.verified': false } }
     )
-    await ctx.manager.unbindCredential(ctx, userId, credentialId, 'email')
+    await ctx.manager.unbindCredential(ctx, 'email', userId, credentialId)
     return {}
   }
 }

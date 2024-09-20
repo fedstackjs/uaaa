@@ -18,8 +18,6 @@ import { SecurityLevel, SecurityLevels } from '../../../util/types.js'
 import type { WebauthnPlugin } from './plugin.js'
 import { HTTPException } from 'hono/http-exception'
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server'
-import { nanoid } from 'nanoid'
-import { createHash } from 'crypto'
 import { BusinessError } from '../../../util/errors.js'
 import { type } from 'arktype'
 import ms from 'ms'
@@ -62,9 +60,9 @@ export class WebauthnImpl extends CredentialImpl {
     )
     const credential = await this.app.db.credentials.findOne({
       _id: { $nin: await ctx.getCredentialIdBlacklist(this.type) },
-      userId,
       type: 'webauthn',
-      identifier: body.id,
+      userId,
+      userIdentifier: body.id,
       securityLevel: { $gte: targetLevel }
     })
     if (!credential) {
@@ -129,15 +127,11 @@ export class WebauthnImpl extends CredentialImpl {
     }
     const info = verification.registrationInfo
     return {
-      credentialId: await ctx.manager.bindCredential(
-        ctx,
-        userId,
-        credentialId,
-        'webauthn',
-        verification.registrationInfo.userVerified ? SecurityLevels.SL3 : SecurityLevels.SL2,
-        info.credentialID,
-        createHash('sha256').update(info.credentialID).digest('hex').slice(0, 8),
-        {
+      credentialId: await ctx.manager.bindCredential(ctx, 'webauthn', userId, credentialId, {
+        userIdentifier: info.credentialID,
+        globalIdentifier: info.credentialID,
+        data: '',
+        secret: {
           id: info.credentialID,
           webauthnUserID: currentOptions.user.id,
           publicKey: Buffer.from(info.credentialPublicKey).toString('base64'),
@@ -146,10 +140,13 @@ export class WebauthnImpl extends CredentialImpl {
           backedUp: info.credentialBackedUp,
           transports: (payload as RegistrationResponseJSON).response.transports
         } as IWebauthnKey,
-        'Passkey',
-        ms('100y'),
-        Number.MAX_SAFE_INTEGER
-      )
+        remark: '',
+        expiration: ms('100y'),
+        validCount: Number.MAX_SAFE_INTEGER,
+        securityLevel: verification.registrationInfo.userVerified
+          ? SecurityLevels.SL3
+          : SecurityLevels.SL2
+      })
     }
   }
 
@@ -159,7 +156,7 @@ export class WebauthnImpl extends CredentialImpl {
     credentialId: string,
     payload: unknown
   ): Promise<ICredentialUnbindResult> {
-    await ctx.manager.unbindCredential(ctx, userId, credentialId, 'webauthn')
+    await ctx.manager.unbindCredential(ctx, 'webauthn', userId, credentialId)
     return {}
   }
 }
