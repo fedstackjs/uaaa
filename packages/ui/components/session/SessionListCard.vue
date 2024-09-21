@@ -15,6 +15,12 @@
     >
       <template v-slot:[`item._id`]="{ item }">
         <code>{{ item._id }}</code>
+        <VChip
+          v-if="item._id === currentSession"
+          color="info"
+          :text="t('msg.current-session')"
+          class="ml-2"
+        />
       </template>
       <template v-slot:[`item.createdAt`]="{ item }">
         <VChip class="font-mono" :text="new Date(item.createdAt).toLocaleString()" />
@@ -33,6 +39,13 @@
       <template v-slot:[`item._actions`]="{ item }">
         <div class="flex gap-2">
           <VBtn :text="t('msg.view')" variant="tonal" :to="`/session/${item._id}`" />
+          <VBtn
+            :text="t('actions.terminate')"
+            variant="tonal"
+            color="error"
+            :disabled="item.terminated"
+            @click="run(item._id)"
+          />
         </div>
       </template>
     </VDataTableServer>
@@ -50,12 +63,28 @@ const headers = [
   { title: t('msg.actions'), key: '_actions', sortable: false }
 ] as const
 
-const { page, perPage, data, cachedCount, status } = usePagination(async (skip, limit, doCount) => {
-  const resp = await api.user.session.$get({
-    query: { skip: '' + skip, limit: '' + limit, count: doCount ? '1' : '0' }
-  })
+const currentSession = computed(() => api.effectiveToken.value?.decoded.sid)
+
+const { page, perPage, data, cachedCount, status, execute } = usePagination(
+  async (skip, limit, doCount) => {
+    const resp = await api.user.session.$get({
+      query: { skip: '' + skip, limit: '' + limit, count: doCount ? '1' : '0' }
+    })
+    await api.checkResponse(resp)
+    const { sessions, count } = await resp.json()
+    return { items: sessions, count }
+  }
+)
+
+const { run } = useTask(async (id: string) => {
+  if (!confirm(t('msg.confirm-operation'))) return symNoToast
+  const cachedSessionId = currentSession.value
+  const resp = await api.user.session[':id'].terminate.$post({ param: { id } })
   await api.checkResponse(resp)
-  const { sessions, count } = await resp.json()
-  return { items: sessions, count }
+  if (id === cachedSessionId) {
+    api.logout()
+  } else {
+    execute()
+  }
 })
 </script>

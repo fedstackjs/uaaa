@@ -56,6 +56,7 @@ export class ApiManager {
   effectiveToken
   isLoggedIn
   isAdmin
+  securityLevel
 
   public
   session
@@ -70,6 +71,7 @@ export class ApiManager {
     this.effectiveToken = useLocalStorage<IClientToken | null>('effectiveToken', null, options)
     this.isAdmin = ref(false)
     this.isLoggedIn = computed(() => !!this.effectiveToken.value)
+    this.securityLevel = computed(() => this.effectiveToken.value?.decoded.level ?? 0)
 
     const headers = this.getHeaders.bind(this)
     this.public = hc<IPublicApi>('/api/public')

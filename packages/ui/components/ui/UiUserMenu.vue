@@ -39,13 +39,6 @@ const links = [
   { to: '/auth/signout', title: 'pages.auth.signout', prependIcon: 'mdi-logout' }
 ]
 
-const higherLevels = computed(() =>
-  new Array(4 - (effectiveToken.value?.decoded.level ?? 0))
-    .fill(0)
-    .map((_, i) => 4 - i)
-    .reverse()
-)
-
 const { data, status, refresh } = await useAsyncData(async () => {
   try {
     const claims = await api.getSessionClaims()

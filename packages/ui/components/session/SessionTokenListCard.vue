@@ -15,6 +15,15 @@
     >
       <template v-slot:[`item._id`]="{ item }">
         <code>{{ item._id }}</code>
+        <VChip
+          v-if="effectiveTokens.includes(item._id)"
+          color="info"
+          :text="t('msg.current-session')"
+          class="ml-2"
+        />
+      </template>
+      <template v-slot:[`item.securityLevel`]="{ item }">
+        {{ t(`securityLevel.${item.securityLevel}`) }}
       </template>
       <template v-slot:[`item.targetAppId`]="{ item }">
         <AppAvatar v-if="item.targetAppId" :appId="item.targetAppId" />
@@ -44,7 +53,13 @@
       </template>
       <template v-slot:[`item._actions`]="{ item }">
         <div class="flex gap-2">
-          <VBtn :text="t('msg.view')" variant="tonal" />
+          <VBtn
+            :text="t('actions.terminate')"
+            variant="tonal"
+            color="error"
+            :disabled="item.terminated"
+            @click="run(item._id)"
+          />
         </div>
       </template>
     </VDataTableServer>
@@ -59,6 +74,7 @@ const { t } = useI18n()
 const headers = [
   { title: t('msg.token-id'), key: '_id', sortable: false },
   { title: t('msg.token-index'), key: 'index', sortable: false },
+  { title: t('msg.security-level'), key: 'securityLevel', sortable: false },
   { title: t('msg.target-app'), key: 'targetAppId', sortable: false },
   { title: t('msg.client-app'), key: 'clientAppId', sortable: false },
   { title: t('msg.created-at'), key: 'createdAt', sortable: false },
@@ -66,13 +82,34 @@ const headers = [
   { title: t('msg.actions'), key: '_actions', sortable: false }
 ] as const
 
-const { page, perPage, data, cachedCount, status } = usePagination(async (skip, limit, doCount) => {
-  const resp = await api.user.session[':id'].token.$get({
-    param: { id: props.sessionId },
-    query: { skip: '' + skip, limit: '' + limit, count: doCount ? '1' : '0' }
+const effectiveTokens = computed(() =>
+  Object.values(api.tokens.value).map((token) => token.decoded.jti)
+)
+const effectiveToken = computed(() => api.effectiveToken.value?.decoded.jti)
+
+const { page, perPage, data, cachedCount, status, execute } = usePagination(
+  async (skip, limit, doCount) => {
+    const resp = await api.user.session[':id'].token.$get({
+      param: { id: props.sessionId },
+      query: { skip: '' + skip, limit: '' + limit, count: doCount ? '1' : '0' }
+    })
+    await api.checkResponse(resp)
+    const { tokens, count } = await resp.json()
+    return { items: tokens, count }
+  }
+)
+
+const { run } = useTask(async (id: string) => {
+  if (!confirm(t('msg.confirm-operation'))) return symNoToast
+  const cachedTokenId = effectiveToken.value
+  const resp = await api.user.session[':id'].token[':tokenId'].terminate.$post({
+    param: { id: props.sessionId, tokenId: id }
   })
   await api.checkResponse(resp)
-  const { tokens, count } = await resp.json()
-  return { items: tokens, count }
+  if (id === cachedTokenId) {
+    api.dropEffectiveToken()
+  } else {
+    execute()
+  }
 })
 </script>

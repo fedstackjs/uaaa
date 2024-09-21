@@ -13,7 +13,7 @@ export const userInstallationApi = new Hono()
     const installations = await app.db.installations
       .aggregate<
         Pick<IInstallationDoc, 'appId' | 'createdAt' | 'updatedAt' | 'disabled'> & {
-          app: Pick<IAppDoc, 'name' | 'description'>
+          app: Pick<IAppDoc, 'name' | 'description' | 'icon'>
         }
       >([
         { $match: { userId: token.sub } },
@@ -24,6 +24,7 @@ export const userInstallationApi = new Hono()
             appId: 1,
             'app.name': 1,
             'app.description': 1,
+            'app.icon': 1,
             'app.disabled': 1,
             createdAt: 1,
             updatedAt: 1,

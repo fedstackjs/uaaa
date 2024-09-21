@@ -10,6 +10,9 @@
               :title="app.app.name"
               :subtitle="app.app.description"
             >
+              <template #prepend>
+                <AppAvatar :appId="app.appId" :icon="app.app.icon" :name="app.app.name" />
+              </template>
               <template #append>
                 <VBtn
                   icon="mdi-pencil"

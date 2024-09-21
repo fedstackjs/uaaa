@@ -47,6 +47,7 @@ actions:
   add: 添加
   install: 安装
   authorize: 授权
+  terminate: 吊销
 
 msg:
   actions: 操作
@@ -67,7 +68,7 @@ msg:
   manage-session: 会话管理
   tips: 提示
   not-implemented: 功能尚未实现
-  no-verify-methods: 没有可用的验证方式
+  no-verify-methods: 没有可用的验证方式，请在凭据管理页面绑定其他凭据后重试
   downgrade-security-level: 降低安全级别
   security-level: 安全级别
   app: 应用
@@ -109,6 +110,10 @@ msg:
   will-grant-permission-for: 将授予下列权限，用途为：
   will-grant-claim-for: 将授予该信息，用途为：
   required: 必选
+  show-grant: 显示授权细节
+  hide-grant: 隐藏授权细节
+  current-session: 当前会话
+  confirm-operation: 确认进行操作？该操作无法撤销！
 
 claims:
   username: 用户名

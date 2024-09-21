@@ -1,6 +1,6 @@
 <template>
   <VCard>
-    <CredentialItem :credential="credential" />
+    <CredentialItem :credential="credential" @updated="() => emit('updated')" />
     <VDivider />
     <VTable density="compact">
       <tbody>

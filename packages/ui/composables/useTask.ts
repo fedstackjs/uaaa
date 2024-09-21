@@ -2,8 +2,10 @@ export interface IUseTaskOptions {
   //
 }
 
-export const useTask = <T extends any[]>(
-  task: (...args: T) => Promise<void>,
+export const symNoToast = Symbol('noToast')
+
+export const useTask = <T extends any[], R>(
+  task: (...args: T) => Promise<R | typeof symNoToast>,
   options?: IUseTaskOptions
 ) => {
   const running = ref(false)
@@ -15,8 +17,11 @@ export const useTask = <T extends any[]>(
     running.value = true
     error.value = null
     try {
-      await task(...args)
-      toast.success(t('msg.task-succeeded'))
+      const result = await task(...args)
+      if (result !== symNoToast) {
+        toast.success(t('msg.task-succeeded'))
+      }
+      return result
     } catch (e) {
       error.value = e
       errToast.notify(e)

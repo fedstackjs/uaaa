@@ -36,6 +36,7 @@ const local = ref(true)
 const isLoading = ref(false)
 
 async function submit() {
+  if (isLoading.value) return
   isLoading.value = true
 
   try {
@@ -48,6 +49,7 @@ async function submit() {
         const resp = await api.webauthn.verify.$post({
           json: {}
         })
+        await api.checkResponse(resp)
         const { options } = await resp.json()
         const payload = await startAuthentication(options)
         await api.verify('webauthn', props.targetLevel ?? 0, payload)
@@ -57,24 +59,27 @@ async function submit() {
         const resp = await api.webauthn.bind.$post({
           json: { local: local.value }
         })
+        await api.checkResponse(resp)
         const { options } = await resp.json()
         const payload = await startRegistration(options)
         const bindResp = await api.user.credential.bind.$put({
           json: { type: 'webauthn', payload, credentialId: props.credentialId }
         })
+        await api.checkResponse(bindResp)
         const data = await bindResp.json()
         credentialId = data.credentialId
         break
       }
       case 'unbind': {
         if (!props.credentialId) throw new Error('No credentialId')
-        await api.user.credential.$delete({
+        const resp = await api.user.credential.$delete({
           json: {
             type: 'webauthn',
             payload: {},
             credentialId: props.credentialId
           }
         })
+        await api.checkResponse(resp)
         break
       }
     }

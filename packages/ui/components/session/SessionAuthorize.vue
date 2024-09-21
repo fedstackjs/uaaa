@@ -11,7 +11,15 @@
     <VCardText>
       <VAlert :text="t('msg.authorize-warn')" />
     </VCardText>
-    <VCardActions class="flex justify-center">
+    <AppGrantEditor v-if="showGrant" :app="app" readonly />
+    <VCardActions class="grid! grid-flow-col grid-auto-cols-[1fr]">
+      <VBtn
+        variant="tonal"
+        color="info"
+        :text="t(`msg.${showGrant ? 'hide' : 'show'}-grant`)"
+        :disabled="running"
+        @click="doShowGrant"
+      />
       <VBtn
         variant="tonal"
         color="primary"
@@ -45,6 +53,7 @@ const { t } = useI18n()
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()
+const showGrant = ref(false)
 
 const { data: app } = await useAsyncData(async () => {
   const resp = await api.public.app[':id'].$get({ param: { id: props.connector.clientAppId } })
@@ -81,6 +90,17 @@ const { run: authorize, running } = useTask(async () => {
 function cancel() {
   if (!app.value) return
   props.connector.onCancel(app.value)
+}
+
+function doShowGrant() {
+  if (api.securityLevel.value < 1) {
+    router.replace({
+      path: '/auth/verify',
+      query: { redirect: route.fullPath, targetLevel: 1 }
+    })
+  } else {
+    showGrant.value = !showGrant.value
+  }
 }
 
 const {

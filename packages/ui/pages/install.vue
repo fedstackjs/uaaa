@@ -13,59 +13,12 @@
           <VDivider />
           <VCardTitle class="text-center">{{ t('msg.grants') }}</VCardTitle>
           <VDivider />
-          <div class="flex">
-            <div class="flex-1">
-              <VCardSubtitle class="text-center">{{ t('msg.permissions') }}</VCardSubtitle>
-              <div class="px-4">
-                <div v-for="(permission, i) of app.requestedPermissions" :key="'p' + i">
-                  <VCheckbox
-                    v-model="permissions[permission.perm]"
-                    :label="permission.perm"
-                    :readonly="permission.required"
-                    hide-details
-                    color="primary"
-                    class="font-mono"
-                  />
-                  <div class="px-4">
-                    <b
-                      v-if="permission.required"
-                      class="text-red pr-1"
-                      v-text="t('msg.required')"
-                    />
-                    <span class="pr-1" v-text="t('msg.will-grant-permission-for')" />
-                    <b v-text="permission.reason" />
-                  </div>
-                  <AppPermissionList :permission="permission.perm" />
-                </div>
-              </div>
-            </div>
-            <VDivider vertical />
-            <div class="flex-1">
-              <VCardSubtitle class="text-center">{{ t('msg.claims') }}</VCardSubtitle>
-              <div class="px-4">
-                <div v-for="(claim, i) of app.requestedClaims" :key="'c' + i">
-                  <VCheckbox
-                    density="compact"
-                    v-model="claims[claim.name]"
-                    :append-icon="claim.verified ? 'mdi-shield-check' : undefined"
-                    :readonly="claim.required"
-                    hide-details
-                    color="primary"
-                    class="font-mono"
-                  >
-                    <template #label>
-                      <b v-text="t(`claims.${claim.name}`, [], { default: claim.name })" />
-                    </template>
-                  </VCheckbox>
-                  <div class="m-t-[-12px] text-sm">
-                    <b v-if="claim.required" class="text-red pr-1" v-text="t('msg.required')" />
-                    <span class="pr-1" v-text="t('msg.will-grant-claim-for')" />
-                    <b v-text="claim.reason" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AppGrantEditor
+            v-model:claims="claims"
+            v-model:permissions="permissions"
+            :app="app"
+            fill-required
+          />
           <VDivider />
           <VCardActions class="flex justify-center">
             <VBtn variant="tonal" color="primary" :text="t('actions.install')" @click="install" />
@@ -97,28 +50,6 @@ const claims = ref<Record<string, boolean>>({})
 const { data: app } = await useAsyncData(async () => {
   const resp = await api.public.app[':id'].$get({ param: { id: appId.value } })
   const { app } = await resp.json()
-  try {
-    const resp = await api.user.installation[':id'].$get({ param: { id: appId.value } })
-    if (resp.ok) {
-      const { installation } = await resp.json()
-      console.log(installation)
-      permissions.value = Object.fromEntries(installation.grantedPermissions.map((p) => [p, true]))
-      claims.value = Object.fromEntries(installation.grantedClaims.map((c) => [c, true]))
-    }
-  } catch {
-    permissions.value = {}
-    claims.value = {}
-  }
-  for (const permission of app.requestedPermissions) {
-    if (permission.required) {
-      permissions.value[permission.perm] = true
-    }
-  }
-  for (const claim of app.requestedClaims) {
-    if (claim.required) {
-      claims.value[claim.name] = true
-    }
-  }
   return app
 })
 
