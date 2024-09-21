@@ -4,9 +4,10 @@ import { Hookable } from 'hookable'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
-import { BusinessError, tSecurityLevel } from '../util/index.js'
+import { BusinessError, logger, SecurityLevels, tSecurityLevel } from '../util/index.js'
 import type { App } from '../index.js'
 import type { ITokenDoc } from '../db/model/token.js'
+import ms from 'ms'
 
 export const tTokenPayload = type({
   iss: 'string',
@@ -27,8 +28,22 @@ export const tTokenPayload = type({
 export type ITokenPayload = typeof tTokenPayload.infer
 
 export class TokenManager extends Hookable<{}> {
+  tokenTimeouts: number[]
+  refreshTimeouts: number[]
+
   constructor(public app: App) {
     super()
+    this.tokenTimeouts = this._loadTimeouts(app.config.get('tokenTimeout'))
+    this.refreshTimeouts = this._loadTimeouts(app.config.get('refreshTimeout'))
+  }
+
+  private _loadTimeouts(config: string | string[]): number[] {
+    if (!Array.isArray(config)) {
+      logger.warn('Token timeout set to a single value for all security levels')
+      return new Array(5).fill(ms(config))
+    }
+    if (config.length !== 5) throw new Error('Invalid config: timeout must be an array of 5 values')
+    return config.map(ms)
   }
 
   async getJWKS() {
@@ -189,5 +204,10 @@ export class TokenManager extends Hookable<{}> {
       throw new BusinessError('TOKEN_INVALID', {})
     }
     return { jwt, payload }
+  }
+
+  getTokenTimeout(securityLevel: SecurityLevels, suggested?: number) {
+    //
+    // this.getTokenTimeout()
   }
 }

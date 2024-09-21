@@ -1,6 +1,6 @@
 import { type } from 'arktype'
 
-export enum SecurityLevels {
+export enum SecurityLevel {
   /** Actor may hold some of user's credentials */
   SL0 = 0,
   /** Actor hold some of user's credentials and passed verification */
@@ -12,5 +12,9 @@ export enum SecurityLevels {
   /** Actor operates device with admin-registrated passkey */
   SL4 = 4
 }
-export const tSecurityLevel = type('0<=number.integer<=4')
-export type SecurityLevel = typeof tSecurityLevel.infer
+
+export function isSecurityLevel(level: number): level is SecurityLevel {
+  return Number.isInteger(level) && level >= 0 && level <= 4
+}
+
+export const tSecurityLevel = type('number').narrow(isSecurityLevel)

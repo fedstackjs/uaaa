@@ -2305,7 +2305,6 @@ __metadata:
     "@mdi/font": "npm:^7.4.47"
     "@nuxtjs/i18n": "npm:^8.3.1"
     "@simplewebauthn/browser": "npm:^10.0.0"
-    "@types/micromatch": "npm:^4.0.9"
     "@types/whatwg-url": "npm:^11.0.5"
     "@unocss/nuxt": "npm:^0.61.3"
     "@vueuse/core": "npm:^10.11.0"
@@ -2314,7 +2313,7 @@ __metadata:
     confbox: "npm:^0.1.7"
     copy-to-clipboard: "npm:^3.3.3"
     hono: "npm:^4.5.8"
-    micromatch: "npm:^4.0.8"
+    minimatch: "npm:^10.0.1"
     nuxt: "npm:^3.12.3"
     typescript: "npm:^5.6.2"
     unocss: "npm:^0.61.3"
@@ -6367,6 +6366,15 @@ __metadata:
   version: 4.0.0
   resolution: "mimic-fn@npm:4.0.0"
   checksum: 10/995dcece15ee29aa16e188de6633d43a3db4611bcf93620e7e62109ec41c79c0f34277165b8ce5e361205049766e371851264c21ac64ca35499acb5421c2ba56
+  languageName: node
+  linkType: hard
+
+"minimatch@npm:^10.0.1":
+  version: 10.0.1
+  resolution: "minimatch@npm:10.0.1"
+  dependencies:
+    brace-expansion: "npm:^2.0.1"
+  checksum: 10/082e7ccbc090d5f8c4e4e029255d5a1d1e3af37bda837da2b8b0085b1503a1210c91ac90d9ebfe741d8a5f286ece820a1abb4f61dc1f82ce602a055d461d93f3
   languageName: node
   linkType: hard
 

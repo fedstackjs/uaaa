@@ -8,8 +8,8 @@ const tAppConfig = type({
   port: 'number',
   deploymentUrl: type('string').narrow((s) => !s.endsWith('/')),
   sessionTimeout: 'string',
-  tokenTimeout: 'string',
-  refreshTimeout: 'string',
+  tokenTimeout: 'string|string[]',
+  refreshTimeout: 'string|string[]',
   'realIpHeader?': 'string'
 })
 

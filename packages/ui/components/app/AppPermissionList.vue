@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { URL } from 'whatwg-url'
-import { isMatch } from 'micromatch'
+import { minimatch } from 'minimatch'
 
 const props = defineProps<{
   permission: string
@@ -29,6 +29,6 @@ const { data } = await useAsyncData(async () => {
   })
   await api.checkResponse(resp)
   const { permissions } = await resp.json()
-  return permissions.filter((p) => isMatch(p.path, url.pathname || '/'))
+  return permissions.filter((p) => minimatch(p.path, url.pathname || '/'))
 })
 </script>

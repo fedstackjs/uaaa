@@ -53,12 +53,16 @@ export interface ICredentialLoginResult {
   /** Session Security Level */
   securityLevel: SecurityLevel
   expiresIn: number
+  tokenTimeout?: number
+  refreshTimeout?: number
 }
 
 export interface ICredentialVerifyResult {
   credentialId: string
   securityLevel: SecurityLevel
   expiresIn: number
+  tokenTimeout?: number
+  refreshTimeout?: number
 }
 
 export interface ICredentialBindResult {
