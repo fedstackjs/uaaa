@@ -50,6 +50,9 @@ actions:
   terminate: 吊销
 
 msg:
+  id: ID
+  value: 值
+  system-settings: 系统设置
   actions: 操作
   login-by: 通过{0}登录
   verify-by: 通过{0}验证
@@ -113,7 +116,12 @@ msg:
   show-grant: 显示授权细节
   hide-grant: 隐藏授权细节
   current-session: 当前会话
+  current-user: 当前用户
   confirm-operation: 确认进行操作？该操作无法撤销！
+  user-id: 用户ID
+  user-list: 用户列表
+  username: 用户名
+  is-disabled: 是否禁用
 
 claims:
   username: 用户名

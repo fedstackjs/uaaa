@@ -47,7 +47,7 @@ const adminLinks = [
   { title: 'pages.console.index', prependIcon: 'mdi-console' },
   { to: '/console/user', title: 'pages.console.user' },
   { to: '/console/app', title: 'pages.console.app' },
-  { to: '/console/setting', title: 'pages.console.setting' }
+  { to: '/console/system', title: 'pages.console.setting' }
 ]
 
 const { isAdmin } = api

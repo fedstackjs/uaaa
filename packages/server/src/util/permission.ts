@@ -64,7 +64,8 @@ export const UAAAPermissionDescriptionMap = {
   '/user/session/edit': { name: 'Edit user sessions', description: '' },
   '/console/info': { name: 'Get system info', description: '' },
   '/console/user': { name: 'Manage users', description: '' },
-  '/console/app': { name: 'Manage apps', description: '' }
+  '/console/app': { name: 'Manage apps', description: '' },
+  '/console/system': { name: 'Manage system', description: '' }
 } as const satisfies Record<string, Omit<IAppProvidedPermission, 'path'>>
 export type UAAAPermissionPath = keyof typeof UAAAPermissionDescriptionMap
 export const UAAAProvidedPermissions: IAppProvidedPermission[] = Object.entries(
