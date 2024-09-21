@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
-import { tSecurityLevel } from '../../util/index.js'
+import { Permission, tSecurityLevel, UAAA } from '../../util/index.js'
 
 export const sessionApi = new Hono()
   .use(verifyAuthorizationJwt)
@@ -90,16 +90,41 @@ export const sessionApi = new Hono()
       type({
         'targetAppId?': 'string',
         clientAppId: 'string',
-        securityLevel: tSecurityLevel,
-        'dryRun?': 'boolean'
+        securityLevel: tSecurityLevel
       })
     ),
     async (ctx) => {
-      const { targetAppId, clientAppId, securityLevel, dryRun } = ctx.req.valid('json')
+      const { targetAppId, clientAppId, securityLevel } = ctx.req.valid('json')
       const { session } = ctx.var.app
-      return ctx.json(
-        await session.derive(ctx.var.token, targetAppId, clientAppId, securityLevel, dryRun)
+      return ctx.json(await session.derive(ctx.var.token, targetAppId, clientAppId, securityLevel))
+    }
+  )
+  .post(
+    '/try_derive',
+    verifyPermission({ path: '/session/derive' }),
+    arktypeValidator(
+      'json',
+      type({
+        'targetAppId?': 'string',
+        clientAppId: 'string',
+        securityLevel: tSecurityLevel
+      })
+    ),
+    async (ctx) => {
+      const { targetAppId, clientAppId, securityLevel } = ctx.req.valid('json')
+      const { session } = ctx.var.app
+      const { installation } = await session.checkDerive(
+        ctx.var.token,
+        targetAppId,
+        clientAppId,
+        securityLevel
       )
+      const permissions = installation.grantedPermissions
+        .map((p) => Permission.fromCompactString<UAAA>(p))
+        .filter((p) => p.appId === UAAA)
+      return ctx.json({
+        slientAuthorize: permissions.some((p) => p.test('/session/slient_authorize'))
+      })
     }
   )
 

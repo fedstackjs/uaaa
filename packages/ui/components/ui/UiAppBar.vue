@@ -10,7 +10,6 @@
         </template>
         <div v-if="mdAndUp" class="text-none pl-4 font-mono text-3xl">
           {{ config.public.appName }}
-          <span v-if="console">{{ t('pages.console.index') }}</span>
         </div>
       </VBtn>
     </VToolbarItems>

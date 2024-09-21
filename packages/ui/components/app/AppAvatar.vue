@@ -19,9 +19,13 @@
 <script setup lang="ts">
 const props = defineProps<{
   appId: string
+  icon?: string
+  name?: string
 }>()
 
 const { data } = await useAsyncData(props.appId, async () => {
+  if (props.icon) return { icon: props.icon, name: '' }
+  if (props.name) return { name: props.name }
   const resp = await api.public.app[':id'].$get({ param: { id: props.appId } })
   await api.checkResponse(resp)
   const { app } = await resp.json()

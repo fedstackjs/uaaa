@@ -15,7 +15,10 @@ export const tTokenPayload = type({
   'client_id?': 'string|undefined',
   sid: 'string',
   jti: 'string',
-  perm: 'string[]',
+  perm: type('string')
+    // TODO: should be validated as scoped permission
+    .narrow((s) => s.startsWith('/'))
+    .array(),
   level: tSecurityLevel,
   exp: 'number',
   iat: 'number'

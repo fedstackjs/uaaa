@@ -1,4 +1,5 @@
-export const UAAA = 'uaaa'
+export const UAAA = 'uaaa' as const
+export type UAAA = typeof UAAA
 
 export const rAppId = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/
 export const rUsername = /^[a-zA-Z0-9_-]{1,32}$/

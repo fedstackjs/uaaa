@@ -101,6 +101,14 @@ msg:
   token-index: 序号
   target-app: 目标应用
   client-app: 客户端应用
+  do-in-seconds: '{0}秒后执行{1}'
+  missing-required-claims: '缺少必要的信息：{0}'
+  missing-verified-claims: '缺少已验证的信息：{0}'
+  missing-required-permissions: '缺少必要的权限：{0}'
+  task-failed-with: '任务失败：{0}'
+  will-grant-permission-for: 将授予下列权限，用途为：
+  will-grant-claim-for: 将授予该信息，用途为：
+  required: 必选
 
 claims:
   username: 用户名

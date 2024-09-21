@@ -8,6 +8,8 @@ import { idParamValidator } from '../_common.js'
 import { IAppDoc } from '../../db/index.js'
 import { BusinessError } from '../../util/errors.js'
 import { getRemoteIP, getUserAgent } from '../_helper.js'
+import { UAAA } from '../../util/constants.js'
+import { UAAAProvidedPermissions } from '../../util/permission.js'
 
 /** Public API */
 export const publicApi = new Hono()
@@ -39,6 +41,20 @@ export const publicApi = new Hono()
       throw new BusinessError('NOT_FOUND', { msg: 'App not found' })
     }
     return ctx.json({ app })
+  })
+  // Get application provided permissions
+  .get('/app/:id/provided_permissions', idParamValidator, async (ctx) => {
+    const { id } = ctx.req.valid('param')
+    if (id === UAAA) return ctx.json({ permissions: UAAAProvidedPermissions })
+
+    const app = await ctx.var.app.db.apps.findOne(
+      { _id: id },
+      { projection: { providedPermissions: 1 } }
+    )
+    if (!app) {
+      throw new BusinessError('NOT_FOUND', { msg: 'App not found' })
+    }
+    return ctx.json({ permissions: app.providedPermissions })
   })
   // Check redirect url
   .post(
@@ -105,7 +121,7 @@ export const publicApi = new Hono()
           sessionId,
           userId,
           index: 0,
-          permissions: ['uaaa/**'],
+          permissions: ['/**'],
           credentialId,
           securityLevel: 0,
           createdAt: now,
@@ -120,7 +136,7 @@ export const publicApi = new Hono()
             sessionId,
             userId,
             index: 1,
-            permissions: ['uaaa/**'],
+            permissions: ['/**'],
             credentialId,
             parentId: JSON.parse(atob(tokens[0].token.split('.')[1])).jti,
             securityLevel,

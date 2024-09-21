@@ -1,6 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 import type jwt from 'jsonwebtoken'
-import { BusinessError, checkPermission } from '../util/index.js'
+import { BusinessError, Permission, UAAA, UAAAPermissionPath } from '../util/index.js'
 import { ITokenPayload } from '../token/index.js'
 export { arktypeValidator } from '@hono/arktype-validator'
 
@@ -8,7 +8,7 @@ declare module 'hono' {
   interface ContextVariableMap {
     jwt: jwt.Jwt
     token: ITokenPayload
-    matchedPermissions: URL[]
+    matchedPermissions: Permission[]
   }
 }
 
@@ -23,7 +23,7 @@ export const verifyAuthorizationJwt = createMiddleware(async (ctx, next) => {
 })
 
 export interface IVerifyPermissionOptions {
-  path?: string
+  path?: UAAAPermissionPath
   securityLevel?: number
 }
 
@@ -35,7 +35,9 @@ export const verifyPermission = ({ path, securityLevel }: IVerifyPermissionOptio
       })
     }
     if (path !== undefined) {
-      const matchedPermissions = checkPermission(ctx.var.token.perm, path)
+      const matchedPermissions = ctx.var.token.perm
+        .map((p) => Permission.fromScopedString(p, UAAA))
+        .filter((p) => p.test(path))
       if (!matchedPermissions.length) {
         throw new BusinessError('INSUFFICIENT_PERMISSION', {
           required: path

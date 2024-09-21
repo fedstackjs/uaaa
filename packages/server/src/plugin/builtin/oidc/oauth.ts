@@ -2,7 +2,7 @@ import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { Context, Hono } from 'hono'
 import ms from 'ms'
-import { BusinessError, checkPermission, logger } from '../../../util/index.js'
+import { BusinessError, logger, Permission, UAAA } from '../../../util/index.js'
 import { verifyAuthorizationJwt, verifyPermission } from '../../../api/index.js'
 import type { IUserClaims, ClaimName } from '../../../index.js'
 
@@ -181,7 +181,10 @@ export const oauthRouter = new Hono()
       ctx.set('token', JSON.parse(atob(token.split('.')[1])))
 
       let id_token: string | undefined
-      const matchedPermissions = checkPermission(tokenDoc.permissions, '/session/claim')
+
+      const matchedPermissions = tokenDoc.permissions
+        .map((p) => Permission.fromScopedString(p, UAAA))
+        .filter((p) => p.test('/session/claim'))
       if (matchedPermissions.length) {
         id_token = await generateIDToken(ctx, request.client_id, tokenDoc.userId)
       }

@@ -2,7 +2,11 @@
   <VAlert v-if="!app" type="error" :text="t('msg.app-not-found')" />
   <template v-else>
     <VList>
-      <VListItem :title="app.name" :subtitle="app.description" />
+      <VListItem :title="app.name" :subtitle="app.description">
+        <template #prepend>
+          <AppAvatar :appId="app._id" :icon="app.icon" :name="app.name" />
+        </template>
+      </VListItem>
     </VList>
     <VCardText>
       <VAlert :text="t('msg.authorize-warn')" />
@@ -11,7 +15,11 @@
       <VBtn
         variant="tonal"
         color="primary"
-        :text="t('actions.authorize')"
+        :text="
+          timerRunning
+            ? t('msg.do-in-seconds', [rest, t('actions.authorize')])
+            : t('actions.authorize')
+        "
         :loading="running"
         @click="authorize"
       />
@@ -48,10 +56,7 @@ const { run: authorize, running } = useTask(async () => {
   if (!app.value) return
   await props.connector.checkAuthorize(app.value)
   const resp = await api.session.derive.$post({
-    json: {
-      clientAppId: props.connector.clientAppId,
-      securityLevel: props.connector.securityLevel
-    }
+    json: { clientAppId: props.connector.clientAppId, securityLevel: props.connector.securityLevel }
   })
   if (resp.ok) {
     const { tokenId } = await resp.json()
@@ -77,4 +82,39 @@ function cancel() {
   if (!app.value) return
   props.connector.onCancel(app.value)
 }
+
+const {
+  start,
+  rest,
+  running: timerRunning
+} = useTimer({
+  onTimeout: () => authorize()
+})
+
+onMounted(async () => {
+  const resp = await api.session.try_derive.$post({
+    json: { clientAppId: props.connector.clientAppId, securityLevel: props.connector.securityLevel }
+  })
+  try {
+    await api.checkResponse(resp)
+  } catch (err) {
+    if (isAPIError(err) && err.code === 'APP_NOT_INSTALLED') {
+      toast.error(t('msg.app-not-installed'))
+      router.replace({
+        path: '/install',
+        query: {
+          appId: props.connector.clientAppId,
+          redirect: route.fullPath
+        }
+      })
+      return
+    }
+    // Handle error
+    return
+  }
+  const { slientAuthorize } = await resp.json()
+  if (slientAuthorize) {
+    start(5)
+  }
+})
 </script>

@@ -1,5 +1,5 @@
 import { Hookable } from 'hookable'
-import { BusinessError, UAAA } from '../util/index.js'
+import { BusinessError, Permission, UAAA } from '../util/index.js'
 import type { App, ICredentialVerifyResult, ITokenPayload, SecurityLevel } from '../index.js'
 import ms from 'ms'
 
@@ -9,8 +9,7 @@ export class SessionManager extends Hookable<{
     token: ITokenPayload,
     targetAppId: string | undefined,
     clientAppId: string,
-    securityLevel: SecurityLevel,
-    dryRun: boolean
+    securityLevel: SecurityLevel
   ): void | Promise<void>
 }> {
   constructor(public app: App) {
@@ -29,7 +28,7 @@ export class SessionManager extends Hookable<{
     const newToken = await this.app.token.createAndSignToken({
       sessionId: token.sid,
       userId: token.sub,
-      permissions: ['uaaa/**'],
+      permissions: ['/**'],
       index: session.tokenCount,
       parentId: token.jti,
       credentialId: verifyResult.credentialId,
@@ -44,12 +43,11 @@ export class SessionManager extends Hookable<{
     }
   }
 
-  async derive(
+  async checkDerive(
     token: ITokenPayload,
     targetAppId: string | undefined,
     clientAppId: string,
-    securityLevel: SecurityLevel,
-    dryRun = false
+    securityLevel: SecurityLevel
   ) {
     if (token.client_id && !targetAppId) {
       throw new BusinessError('BAD_REQUEST', {
@@ -66,7 +64,7 @@ export class SessionManager extends Hookable<{
       throw new BusinessError('BAD_REQUEST', { msg: 'Security level higher than client app' })
     }
 
-    await this.callHook('preDerive', token, targetAppId, clientAppId, securityLevel, dryRun)
+    await this.callHook('preDerive', token, targetAppId, clientAppId, securityLevel)
 
     const installation = await this.app.db.installations.findOne({
       userId: token.sub,
@@ -77,10 +75,11 @@ export class SessionManager extends Hookable<{
       throw new BusinessError('APP_NOT_INSTALLED', {})
     }
 
-    const permHost = targetAppId ?? UAAA
-    const permissions = installation.grantedPermissions.filter(
-      (perm) => new URL(`uperm://${perm}`).host === permHost
-    )
+    const permTarget = targetAppId ?? UAAA
+    const permissions = installation.grantedPermissions
+      .map((p) => Permission.fromCompactString(p))
+      .filter((p) => p.appId === permTarget)
+      .map((p) => p.toScopedString())
     if (!permissions.length) {
       throw new BusinessError('BAD_REQUEST', { msg: 'No permissions granted for target app' })
     }
@@ -94,9 +93,22 @@ export class SessionManager extends Hookable<{
     if (!parentToken) {
       throw new BusinessError('BAD_REQUEST', { msg: 'Parent token not found' })
     }
-    if (dryRun) {
-      return { tokenId: '' }
-    }
+
+    return { clientApp, installation, parentToken, permissions, timestamp }
+  }
+
+  async derive(
+    token: ITokenPayload,
+    targetAppId: string | undefined,
+    clientAppId: string,
+    securityLevel: SecurityLevel
+  ) {
+    const { parentToken, permissions, timestamp } = await this.checkDerive(
+      token,
+      targetAppId,
+      clientAppId,
+      securityLevel
+    )
 
     const session = await this.app.db.sessions.findOneAndUpdate(
       { _id: token.sid, terminated: { $ne: true } },

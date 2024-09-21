@@ -3,7 +3,7 @@
     <VTable v-if="data">
       <tbody>
         <tr v-for="item of data" :key="item.name">
-          <td>{{ t(`claims.${item.name}`) }}</td>
+          <td>{{ t(`claims.${item.name}`, [], { default: item.name }) }}</td>
           <td>
             <code>{{ item.value }}</code>
           </td>

@@ -4,38 +4,65 @@
       <VCol cols="12">
         <VCard v-if="app" :title="t('msg.install-app')">
           <VList>
-            <VListItem :title="app.name" :subtitle="app.description" />
+            <VListItem :title="app.name" :subtitle="app.description">
+              <template #prepend>
+                <AppAvatar :appId="app._id" :icon="app.icon" :name="app.name" />
+              </template>
+            </VListItem>
           </VList>
           <VDivider />
           <VCardTitle class="text-center">{{ t('msg.grants') }}</VCardTitle>
+          <VDivider />
           <div class="flex">
             <div class="flex-1">
-              <VCardSubtitle>{{ t('msg.permissions') }}</VCardSubtitle>
+              <VCardSubtitle class="text-center">{{ t('msg.permissions') }}</VCardSubtitle>
               <div class="px-4">
-                <VCheckbox
-                  v-for="(permission, i) of app.requestedPermissions"
-                  :key="'p' + i"
-                  v-model="permissions[permission.perm]"
-                  :label="permission.perm"
-                  :messages="t('msg.request-for', [permission.reason])"
-                  :disabled="permission.required"
-                />
+                <div v-for="(permission, i) of app.requestedPermissions" :key="'p' + i">
+                  <VCheckbox
+                    v-model="permissions[permission.perm]"
+                    :label="permission.perm"
+                    :readonly="permission.required"
+                    hide-details
+                    color="primary"
+                    class="font-mono"
+                  />
+                  <div class="px-4">
+                    <b
+                      v-if="permission.required"
+                      class="text-red pr-1"
+                      v-text="t('msg.required')"
+                    />
+                    <span class="pr-1" v-text="t('msg.will-grant-permission-for')" />
+                    <b v-text="permission.reason" />
+                  </div>
+                  <AppPermissionList :permission="permission.perm" />
+                </div>
               </div>
             </div>
             <VDivider vertical />
             <div class="flex-1">
-              <VCardSubtitle>{{ t('msg.claims') }}</VCardSubtitle>
+              <VCardSubtitle class="text-center">{{ t('msg.claims') }}</VCardSubtitle>
               <div class="px-4">
-                <VCheckbox
-                  v-for="(claim, i) of app.requestedClaims"
-                  density="compact"
-                  :key="'c' + i"
-                  v-model="claims[claim.name]"
-                  :label="t(`claims.${claim.name}`, [], { default: claim.name })"
-                  :messages="t('msg.request-for', [claim.reason])"
-                  :disabled="claim.required"
-                  :append-icon="claim.verified ? 'mdi-shield-check' : undefined"
-                />
+                <div v-for="(claim, i) of app.requestedClaims" :key="'c' + i">
+                  <VCheckbox
+                    density="compact"
+                    v-model="claims[claim.name]"
+                    :append-icon="claim.verified ? 'mdi-shield-check' : undefined"
+                    :readonly="claim.required"
+                    hide-details
+                    color="primary"
+                    class="font-mono"
+                  >
+                    <template #label>
+                      <b v-text="t(`claims.${claim.name}`, [], { default: claim.name })" />
+                    </template>
+                  </VCheckbox>
+                  <div class="m-t-[-12px] text-sm">
+                    <b v-if="claim.required" class="text-red pr-1" v-text="t('msg.required')" />
+                    <span class="pr-1" v-text="t('msg.will-grant-claim-for')" />
+                    <b v-text="claim.reason" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -114,16 +141,16 @@ async function install() {
     const err = await api.getError(resp)
     switch (err.code) {
       case 'MISSING_REQUIRED_CLAIMS':
-        toast.error(t('missing-required-claims', [err.data.claims.join(', ')]))
+        toast.error(t('msg.missing-required-claims', [err.data.claims.join(', ')]))
         break
       case 'MISSING_VERIFIED_CLAIMS':
-        toast.error(t('missing-verified-claims', [err.data.claims.join(', ')]))
+        toast.error(t('msg.missing-verified-claims', [err.data.claims.join(', ')]))
         break
       case 'MISSING_REQUIRED_PERMISSIONS':
-        toast.error(t('missing-required-permissions', [err.data.perms.join(', ')]))
+        toast.error(t('msg.missing-required-permissions', [err.data.perms.join(', ')]))
         break
       default:
-        toast.error(t('task-failed-with', [err.code]))
+        toast.error(t('msg.task-failed-with', [err.code]))
     }
   }
 }
@@ -132,11 +159,3 @@ function cancel() {
   router.back()
 }
 </script>
-
-<i18n>
-zhHans:
-  missing-required-claims: '缺少必要的信息：{0}'
-  missing-verified-claims: '缺少已验证的信息：{0}'
-  missing-required-permissions: '缺少必要的权限：{0}'
-  task-failed-with: '任务失败：{0}'
-</i18n>

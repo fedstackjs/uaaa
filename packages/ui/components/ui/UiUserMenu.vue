@@ -47,7 +47,21 @@ const higherLevels = computed(() =>
 )
 
 const { data, status, refresh } = await useAsyncData(async () => {
-  return api.getSessionClaims()
+  try {
+    const claims = await api.getSessionClaims()
+    return claims
+  } catch (err) {
+    if (isAPIError(err)) {
+      switch (err.code) {
+        case 'TOKEN_INVALID': {
+          api.dropEffectiveToken()
+        }
+        case 'FORBIDDEN': {
+          api.logout()
+        }
+      }
+    }
+  }
 })
 
 const { effectiveToken } = api
