@@ -4,6 +4,7 @@
       <VTextField v-model="manifest.appId" label="App ID" />
       <VTextField v-model="manifest.name" label="Name" />
       <VTextarea v-model="manifest.description" label="Description" />
+      <VTextField v-model="manifest.icon" label="Icon" />
       <CommonSecurityLevelInput v-model="manifest.securityLevel" />
       <CommonListEditor v-model="manifest.callbackUrls" label="Callback URLs" :factory="() => ''">
         <template #item="scoped">

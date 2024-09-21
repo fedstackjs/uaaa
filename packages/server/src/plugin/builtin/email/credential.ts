@@ -3,8 +3,8 @@ import { HTTPException } from 'hono/http-exception'
 import { nanoid } from 'nanoid'
 import ms from 'ms'
 import { CredentialContext, CredentialImpl } from '../../../credential/_common.js'
-import { BusinessError, generateUsername, SecurityLevels } from '../../../util/index.js'
-import type { ICredentialUnbindResult, SecurityLevel } from '../../../index.js'
+import { generateUsername, SecurityLevel } from '../../../util/index.js'
+import type { ICredentialUnbindResult } from '../../../index.js'
 import type { EmailPlugin } from './plugin.js'
 
 export class EmailImpl extends CredentialImpl {
@@ -14,7 +14,7 @@ export class EmailImpl extends CredentialImpl {
   })
 
   readonly type = 'email'
-  defaultLevel = SecurityLevels.SL1
+  defaultLevel = SecurityLevel.SL1
 
   constructor(public plugin: EmailPlugin) {
     super()
@@ -41,8 +41,8 @@ export class EmailImpl extends CredentialImpl {
       return {
         userId: credential.userId,
         credentialId: credential._id,
-        securityLevel: SecurityLevels.SL1,
-        expiresIn: ms(ctx.app.config.get('tokenTimeout'))
+        securityLevel: SecurityLevel.SL1,
+        expiresIn: ctx.app.token.getSessionTokenTimeout(SecurityLevel.SL1)
       }
     }
     if (this.plugin.allowSignupFromLogin) {
@@ -73,8 +73,8 @@ export class EmailImpl extends CredentialImpl {
       return {
         userId,
         credentialId,
-        securityLevel: SecurityLevels.SL1,
-        expiresIn: ms(ctx.app.config.get('tokenTimeout'))
+        securityLevel: SecurityLevel.SL1,
+        expiresIn: ctx.app.token.getSessionTokenTimeout(SecurityLevel.SL1)
       }
     }
     throw new HTTPException(401, { message: 'User not found' })

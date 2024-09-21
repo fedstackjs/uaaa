@@ -106,6 +106,7 @@ export class PluginManager extends Hookable<{
     try {
       await this._loadPlugin(await this.resolvePlugin(name))
     } catch (err) {
+      console.error(err)
       throw new Error(`Failed to load plugin ${name}`, { cause: err })
     }
   }

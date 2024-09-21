@@ -1,12 +1,11 @@
 import { type } from 'arktype'
 import {
   logger,
-  SecurityLevels,
+  SecurityLevel,
   verifyAuthorizationJwt,
   verifyPermission,
   type App,
-  type PluginContext,
-  type SecurityLevel
+  type PluginContext
 } from '../../../index.js'
 import { IWebauthnKey, WebauthnImpl } from './credential.js'
 import { Hono } from 'hono'
@@ -68,7 +67,7 @@ export class WebauthnPlugin {
         .post(
           '/bind',
           verifyAuthorizationJwt,
-          verifyPermission({ securityLevel: SecurityLevels.SL1 }),
+          verifyPermission({ securityLevel: SecurityLevel.SL1 }),
           arktypeValidator(
             'json',
             type({

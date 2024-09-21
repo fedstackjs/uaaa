@@ -1,9 +1,9 @@
 <template>
   <VTooltip :text="data?.name">
     <template v-slot:activator="{ props }">
-      <VAvatar v-bind="props" :color="stringToColor(appId)">
+      <VAvatar v-bind="props" :color="data?.icon ? undefined : stringToColor(appId)">
         <template v-if="data">
-          <VImg v-if="data.icon" />
+          <VImg v-if="data.icon" :src="data.icon" />
           <span
             v-else
             class="text-h5"
@@ -24,7 +24,7 @@ const props = defineProps<{
 }>()
 
 const { data } = await useAsyncData(props.appId, async () => {
-  if (props.icon) return { icon: props.icon, name: '' }
+  if (props.icon) return { icon: props.icon, name: props.name ?? '' }
   if (props.name) return { name: props.name }
   const resp = await api.public.app[':id'].$get({ param: { id: props.appId } })
   await api.checkResponse(resp)

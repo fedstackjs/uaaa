@@ -1,13 +1,13 @@
 import { Hookable } from 'hookable'
 import { Context } from 'hono'
-import type { App, IAppRequestedClaim, IUserClaims, SecurityLevel } from '../index.js'
+import type { App, IAppRequestedClaim, IUserClaims } from '../index.js'
 import {
   BusinessError,
   rAvatarHash,
   rEmail,
   rPhone,
   rUsername,
-  SecurityLevels
+  SecurityLevel
 } from '../util/index.js'
 
 export const rClaimName = /^(?:[a-z0-9_]{1,32}:)?[a-z0-9_]{1,64}$/
@@ -161,8 +161,8 @@ export class ClaimManager extends Hookable<{
     this.addClaimDescriptor({
       name: 'username',
       description: 'User name',
-      editable: SecurityLevels.SL2,
-      securityLevel: SecurityLevels.SL0,
+      editable: SecurityLevel.SL2,
+      securityLevel: SecurityLevel.SL0,
       basic: true
     })
     this.hook('validate:username', reFilter(rUsername, 'username'))
@@ -170,7 +170,7 @@ export class ClaimManager extends Hookable<{
     this.addClaimDescriptor({
       name: 'realname',
       description: 'Real name',
-      securityLevel: SecurityLevels.SL0,
+      securityLevel: SecurityLevel.SL0,
       basic: true
     })
 
@@ -178,7 +178,7 @@ export class ClaimManager extends Hookable<{
       name: 'avatar_hash',
       description: 'Avatar hash',
       editable: true,
-      securityLevel: SecurityLevels.SL0,
+      securityLevel: SecurityLevel.SL0,
       basic: true
     })
     this.hook('validate:avatar_hash', reFilter(rAvatarHash, 'avatar hash'))
@@ -187,7 +187,7 @@ export class ClaimManager extends Hookable<{
       name: 'email',
       description: 'Email',
       editable: true,
-      securityLevel: SecurityLevels.SL0,
+      securityLevel: SecurityLevel.SL0,
       basic: true
     })
     this.hook('validate:email', reFilter(rEmail, 'email'))
@@ -196,14 +196,14 @@ export class ClaimManager extends Hookable<{
       name: 'phone',
       description: 'Phone number',
       editable: true,
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     this.hook('validate:phone', reFilter(rPhone, 'phone'))
 
     this.addClaimDescriptor({
       name: 'is_admin',
       description: 'Is admin',
-      securityLevel: SecurityLevels.SL4,
+      securityLevel: SecurityLevel.SL4,
       basic: true
     })
   }

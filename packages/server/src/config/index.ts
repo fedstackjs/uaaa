@@ -10,6 +10,7 @@ const tAppConfig = type({
   sessionTimeout: 'string',
   tokenTimeout: 'string|string[]',
   refreshTimeout: 'string|string[]',
+  'sessionTokenTimeout?': 'string|string[]',
   'realIpHeader?': 'string'
 })
 

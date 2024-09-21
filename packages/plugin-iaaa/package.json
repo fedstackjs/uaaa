@@ -1,6 +1,6 @@
 {
   "name": "@uaaa/plugin-iaaa",
-  "version": "0.0.12",
+  "version": "0.0.15",
   "publishConfig": {
     "access": "public"
   },
@@ -11,7 +11,8 @@
     "lib"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepack": "run build"
   },
   "peerDependencies": {
     "@uaaa/server": "workspace:^"

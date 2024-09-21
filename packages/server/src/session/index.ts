@@ -35,8 +35,14 @@ export class SessionManager extends Hookable<{
       securityLevel: verifyResult.securityLevel,
       createdAt: timestamp,
       expiresAt: timestamp + verifyResult.expiresIn,
-      tokenTimeout: ms(this.app.config.get('tokenTimeout')),
-      refreshTimeout: ms(this.app.config.get('refreshTimeout'))
+      tokenTimeout: this.app.token.getTokenTimeout(
+        verifyResult.securityLevel,
+        verifyResult.tokenTimeout
+      ),
+      refreshTimeout: this.app.token.getRefreshTimeout(
+        verifyResult.securityLevel,
+        verifyResult.refreshTimeout
+      )
     })
     return {
       token: newToken

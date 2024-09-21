@@ -1,13 +1,12 @@
 import {
   definePlugin,
   arktype,
-  SecurityLevels,
+  SecurityLevel,
   CredentialImpl,
   CredentialContext,
   ICredentialLoginResult,
   BusinessError,
   IUserClaims,
-  SecurityLevel,
   ICredentialVerifyResult,
   ICredentialBindResult,
   ICredentialUnbindResult,
@@ -73,7 +72,7 @@ class IAAAImpl extends CredentialImpl {
     this.emailSuffix = app.config.get('iaaaEmailSuffix')
     this.endpoint =
       app.config.get('iaaaEndpoint') ?? 'https://iaaa.pku.edu.cn/iaaa/svc/token/validate.do'
-    this.timeout = ms(app.config.get('tokenTimeout'))
+    this.timeout = app.token.getSessionTokenTimeout(SecurityLevel.SL1)
   }
 
   private iaaaResponseToClaims(resp: IAAAValidateResponse): Partial<IUserClaims> {
@@ -159,13 +158,13 @@ class IAAAImpl extends CredentialImpl {
       validCount: Infinity,
       createdAt: now,
       updatedAt: now,
-      securityLevel: SecurityLevels.SL1
+      securityLevel: SecurityLevel.SL1
     })
     await ctx.manager.checkCredentialUse(credentialId)
     return {
       userId,
       credentialId,
-      securityLevel: SecurityLevels.SL1,
+      securityLevel: SecurityLevel.SL1,
       expiresIn: this.timeout
     }
   }
@@ -250,7 +249,7 @@ class IAAAImpl extends CredentialImpl {
       remark: '',
       expiration: ms('100y'),
       validCount: Number.MAX_SAFE_INTEGER,
-      securityLevel: SecurityLevels.SL1
+      securityLevel: SecurityLevel.SL1
     })
     await this.updateUserClaims(ctx, userId, resp)
     return { credentialId }
@@ -277,47 +276,47 @@ export default definePlugin({
     claim.addClaimDescriptor({
       name: 'iaaa:name',
       description: 'IAAA Name',
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     claim.addClaimDescriptor({
       name: 'iaaa:status',
       description: 'IAAA Status',
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     claim.addClaimDescriptor({
       name: 'iaaa:identity_id',
       description: 'IAAA Identity ID',
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     claim.addClaimDescriptor({
       name: 'iaaa:dept_id',
       description: 'IAAA Department ID',
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     claim.addClaimDescriptor({
       name: 'iaaa:dept',
       description: 'IAAA Department',
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     claim.addClaimDescriptor({
       name: 'iaaa:identity_type',
       description: 'IAAA Identity Type',
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     claim.addClaimDescriptor({
       name: 'iaaa:detail_type',
       description: 'IAAA Detail Type',
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     claim.addClaimDescriptor({
       name: 'iaaa:identity_status',
       description: 'IAAA Identity Status',
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     claim.addClaimDescriptor({
       name: 'iaaa:campus',
       description: 'IAAA Campus',
-      securityLevel: SecurityLevels.SL0
+      securityLevel: SecurityLevel.SL0
     })
     app.hook('extendApp', (router) => {
       router.get('/.well-known/iaaa-configuration', async (ctx) => {

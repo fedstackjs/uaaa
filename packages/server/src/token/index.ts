@@ -4,7 +4,7 @@ import { Hookable } from 'hookable'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
-import { BusinessError, logger, SecurityLevels, tSecurityLevel } from '../util/index.js'
+import { BusinessError, logger, SecurityLevel, tSecurityLevel } from '../util/index.js'
 import type { App } from '../index.js'
 import type { ITokenDoc } from '../db/model/token.js'
 import ms from 'ms'
@@ -28,12 +28,18 @@ export const tTokenPayload = type({
 export type ITokenPayload = typeof tTokenPayload.infer
 
 export class TokenManager extends Hookable<{}> {
+  sessionTimeout: number
   tokenTimeouts: number[]
   refreshTimeouts: number[]
+  sessionTokenTimeouts: number[]
 
   constructor(public app: App) {
     super()
+    this.sessionTimeout = ms(app.config.get('sessionTimeout'))
     this.tokenTimeouts = this._loadTimeouts(app.config.get('tokenTimeout'))
+    this.sessionTokenTimeouts = this._loadTimeouts(
+      app.config.get('sessionTokenTimeout') ?? app.config.get('tokenTimeout')
+    )
     this.refreshTimeouts = this._loadTimeouts(app.config.get('refreshTimeout'))
   }
 
@@ -206,8 +212,15 @@ export class TokenManager extends Hookable<{}> {
     return { jwt, payload }
   }
 
-  getTokenTimeout(securityLevel: SecurityLevels, suggested?: number) {
-    //
-    // this.getTokenTimeout()
+  getTokenTimeout(securityLevel: SecurityLevel, suggested?: number) {
+    return suggested ?? this.tokenTimeouts[securityLevel]
+  }
+
+  getRefreshTimeout(securityLevel: SecurityLevel, suggested?: number) {
+    return suggested ?? this.refreshTimeouts[securityLevel]
+  }
+
+  getSessionTokenTimeout(securityLevel: SecurityLevel, suggested?: number) {
+    return suggested ?? this.sessionTokenTimeouts[securityLevel]
   }
 }

@@ -14,7 +14,7 @@ import {
   type ICredentialUnbindResult,
   type ICredentialVerifyResult
 } from '../../../credential/_common.js'
-import { SecurityLevel, SecurityLevels } from '../../../util/types.js'
+import { SecurityLevel } from '../../../util/types.js'
 import type { WebauthnPlugin } from './plugin.js'
 import { HTTPException } from 'hono/http-exception'
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server'
@@ -91,7 +91,7 @@ export class WebauthnImpl extends CredentialImpl {
       })
       let securityLevel = credential.securityLevel
       if (!verification.authenticationInfo.userVerified) {
-        securityLevel = Math.min(securityLevel, SecurityLevels.SL2)
+        securityLevel = Math.min(securityLevel, SecurityLevel.SL2)
       }
       return {
         credentialId: credential._id,
@@ -144,8 +144,8 @@ export class WebauthnImpl extends CredentialImpl {
         expiration: ms('100y'),
         validCount: Number.MAX_SAFE_INTEGER,
         securityLevel: verification.registrationInfo.userVerified
-          ? SecurityLevels.SL3
-          : SecurityLevels.SL2
+          ? SecurityLevel.SL3
+          : SecurityLevel.SL2
       })
     }
   }

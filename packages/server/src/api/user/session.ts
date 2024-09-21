@@ -1,14 +1,14 @@
 import { arktypeValidator } from '@hono/arktype-validator'
 import { Hono } from 'hono'
 import { type } from 'arktype'
-import { BusinessError, SecurityLevels } from '../../util/index.js'
+import { BusinessError, SecurityLevel } from '../../util/index.js'
 import { pageQueryValidator, idParamValidator } from '../_common.js'
 import { verifyPermission } from '../_middleware.js'
 
 export const userSessionApi = new Hono()
   .get(
     '/',
-    verifyPermission({ path: '/user/session', securityLevel: SecurityLevels.SL2 }),
+    verifyPermission({ path: '/user/session', securityLevel: SecurityLevel.SL2 }),
     pageQueryValidator,
     async (ctx) => {
       const { app, token } = ctx.var
@@ -24,7 +24,7 @@ export const userSessionApi = new Hono()
   )
   .get(
     '/:id',
-    verifyPermission({ path: '/user/session', securityLevel: SecurityLevels.SL2 }),
+    verifyPermission({ path: '/user/session', securityLevel: SecurityLevel.SL2 }),
     idParamValidator,
     async (ctx) => {
       const { id } = ctx.req.valid('param')
@@ -36,7 +36,7 @@ export const userSessionApi = new Hono()
   )
   .get(
     '/:id/token',
-    verifyPermission({ path: '/user/session/token', securityLevel: SecurityLevels.SL2 }),
+    verifyPermission({ path: '/user/session/token', securityLevel: SecurityLevel.SL2 }),
     idParamValidator,
     pageQueryValidator,
     async (ctx) => {
@@ -57,7 +57,7 @@ export const userSessionApi = new Hono()
   )
   .post(
     '/:id/token/:tokenId/terminate',
-    verifyPermission({ path: '/user/session/edit', securityLevel: SecurityLevels.SL2 }),
+    verifyPermission({ path: '/user/session/edit', securityLevel: SecurityLevel.SL2 }),
     arktypeValidator(
       'param',
       type({
@@ -77,7 +77,7 @@ export const userSessionApi = new Hono()
   )
   .post(
     '/:id/terminate',
-    verifyPermission({ path: '/user/session/edit', securityLevel: SecurityLevels.SL2 }),
+    verifyPermission({ path: '/user/session/edit', securityLevel: SecurityLevel.SL2 }),
     idParamValidator,
     async (ctx) => {
       const { id } = ctx.req.valid('param')

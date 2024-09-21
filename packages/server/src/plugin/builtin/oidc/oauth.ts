@@ -2,7 +2,7 @@ import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { Context, Hono } from 'hono'
 import ms from 'ms'
-import { BusinessError, logger, Permission, UAAA } from '../../../util/index.js'
+import { BusinessError, logger, Permission, SecurityLevel, UAAA } from '../../../util/index.js'
 import { verifyAuthorizationJwt, verifyPermission } from '../../../api/index.js'
 import type { IUserClaims, ClaimName } from '../../../index.js'
 
@@ -104,7 +104,7 @@ async function generateIDToken(ctx: Context, appId: string, userId: string) {
   return app.token.sign({
     ...mappedClaims,
     aud: appId,
-    exp: now + ms(app.config.get('tokenTimeout')),
+    exp: now + ctx.var.app.token.getSessionTokenTimeout(SecurityLevel.SL1),
     iat: now
   })
 }
@@ -205,7 +205,7 @@ export const oauthRouter = new Hono()
       return ctx.json({
         access_token: token,
         token_type: 'Bearer',
-        expires_in: Math.floor(ms(app.config.get('tokenTimeout')) / 1000),
+        expires_in: JSON.parse(atob(token.split('.')[1])).exp - Math.floor(Date.now() / 1000),
         refresh_token: refreshToken
       })
     }

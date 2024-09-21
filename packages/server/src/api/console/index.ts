@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { verifyAdmin, verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
-import { SecurityLevels } from '../../util/index.js'
+import { SecurityLevel } from '../../util/index.js'
 import { arktypeValidator } from '@hono/arktype-validator'
 import { randomBytes } from 'crypto'
 import { tAppManifest } from '../../db/index.js'
@@ -8,7 +8,7 @@ import { idParamValidator, pageQueryValidator } from '../_common.js'
 
 export const consoleApi = new Hono()
   .use(verifyAuthorizationJwt)
-  .use(verifyPermission({ securityLevel: SecurityLevels.SL4 }))
+  .use(verifyPermission({ securityLevel: SecurityLevel.SL4 }))
   .use(verifyAdmin)
   .get('/', verifyPermission({ path: '/console/info' }), async (ctx) => {
     //

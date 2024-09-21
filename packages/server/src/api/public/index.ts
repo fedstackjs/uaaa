@@ -94,11 +94,8 @@ export const publicApi = new Hono()
     async (ctx) => {
       const { type, payload } = ctx.req.valid('json')
       const { credential, db, token, config } = ctx.var.app
-      const { userId, securityLevel, expiresIn, credentialId } = await credential.handleLogin(
-        ctx,
-        type,
-        payload
-      )
+      const { userId, securityLevel, expiresIn, credentialId, tokenTimeout, refreshTimeout } =
+        await credential.handleLogin(ctx, type, payload)
       const now = Date.now()
       const { insertedId: sessionId } = await db.sessions.insertOne({
         _id: nanoid(),
@@ -125,9 +122,9 @@ export const publicApi = new Hono()
           credentialId,
           securityLevel: 0,
           createdAt: now,
-          expiresAt: now + ms(config.get('sessionTimeout')),
-          tokenTimeout: ms(config.get('tokenTimeout')),
-          refreshTimeout: ms(config.get('refreshTimeout'))
+          expiresAt: now + token.sessionTimeout,
+          tokenTimeout: token.getTokenTimeout(0, tokenTimeout),
+          refreshTimeout: token.getRefreshTimeout(0, refreshTimeout)
         })
       )
       if (securityLevel > 0) {
@@ -142,8 +139,8 @@ export const publicApi = new Hono()
             securityLevel,
             createdAt: now,
             expiresAt: now + expiresIn,
-            tokenTimeout: ms(config.get('tokenTimeout')),
-            refreshTimeout: ms(config.get('refreshTimeout'))
+            tokenTimeout: token.getTokenTimeout(securityLevel, tokenTimeout),
+            refreshTimeout: token.getRefreshTimeout(securityLevel, refreshTimeout)
           })
         )
       }
