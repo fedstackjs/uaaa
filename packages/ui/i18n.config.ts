@@ -1,3 +1,5 @@
 export default defineI18nConfig(() => ({
-  fallbackLocale: 'zh-Hans'
+  fallbackLocale: 'zh-Hans',
+  missingWarn: false,
+  fallbackWarn: false
 }))

@@ -19,7 +19,8 @@
       <div class="flex items-center">
         <VBtn variant="text" class="text-none text-left px-2" color="text" rounded="sm">
           <div>
-            <div class="text-sm font-mono tracking-tighter">UAAA</div>
+            <div class="text-sm font-mono tracking-tighter">UAAA-UI</div>
+            <div class="text-xs font-mono tracking-tighter mt-[-6px]">v{{ version }}</div>
           </div>
         </VBtn>
         <div class="px-2"></div>
@@ -31,6 +32,8 @@
 </template>
 
 <script setup lang="ts">
+import { version } from '~/package.json'
+
 const model = defineModel<boolean>()
 
 const { t } = useI18n()
@@ -51,4 +54,11 @@ const adminLinks = [
 ]
 
 const { isAdmin } = api
+
+console.log(
+  `%cUAAA-UI%cVersion%c${version}`,
+  'background: #35495e; color: #fff; padding: 2px 4px; border-radius: 4px 0 0 4px',
+  'background: #41b883; color: #fff; padding: 2px 4px',
+  'background: #35495e; color: #fff; padding: 2px 4px; border-radius: 0 4px 4px 0'
+)
 </script>
