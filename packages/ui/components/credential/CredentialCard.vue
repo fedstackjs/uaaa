@@ -98,7 +98,7 @@ td:first-child {
 </style>
 
 <i18n>
-zhHans:
+zh-Hans:
   data: 凭据信息
   remark: 备注
   validAfter: 生效时间

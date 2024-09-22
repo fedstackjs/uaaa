@@ -66,6 +66,6 @@ const { running: isLoading, run: submit } = useTask(async () => {
 </script>
 
 <i18n>
-zhHans:
+zh-Hans:
   redirect-to-iaaa: 转到北京大学统一身份认证
 </i18n>

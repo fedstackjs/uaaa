@@ -2,4 +2,4 @@
 outline: deep
 ---
 
-# 用户指南
+# Getting Started

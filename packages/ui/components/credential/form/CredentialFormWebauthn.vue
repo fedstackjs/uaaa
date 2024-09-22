@@ -98,7 +98,7 @@ if (['login', 'verify'].includes(props.action)) {
 </script>
 
 <i18n>
-zhHans:
+zh-Hans:
   do-not-support-rebind: 通行密钥不支持重新绑定
   verify-passkey: 验证通行密钥
 </i18n>

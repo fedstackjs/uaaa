@@ -56,7 +56,7 @@ td:first-child {
 </style>
 
 <i18n>
-zhHans:
+zh-Hans:
   token-info: 令牌信息
   property: 属性
   value: 值

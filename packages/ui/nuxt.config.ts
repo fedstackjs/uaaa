@@ -44,7 +44,7 @@ export default defineNuxtConfig({
     strategy: 'no_prefix',
     locales: [
       { code: 'en', file: 'en.yml' },
-      { code: 'zhHans', file: 'zhHans.yml', isCatchallLocale: true }
+      { code: 'zh-Hans', file: 'zh-Hans.yml', isCatchallLocale: true }
     ]
   }
 })

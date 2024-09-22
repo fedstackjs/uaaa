@@ -32,6 +32,6 @@ function onUpdated(isActive: Ref<boolean>) {
 </script>
 
 <i18n>
-zhHans:
+zh-Hans:
   remark: 备注  
 </i18n>

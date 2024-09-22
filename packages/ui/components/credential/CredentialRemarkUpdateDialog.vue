@@ -45,6 +45,6 @@ const { run } = useTask(async () => {
 </script>
 
 <i18n>
-zhHans:
+zh-Hans:
   remark: 备注  
 </i18n>

@@ -53,7 +53,7 @@ async function onDelete({ _id }: IAppDoc) {
 </script>
 
 <i18n>
-zhHans:
+zh-Hans:
   id: ID
   name: 名称
   description: 描述

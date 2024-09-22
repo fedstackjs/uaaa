@@ -4,21 +4,24 @@ layout: home
 
 hero:
   name: 'UAAA'
-  text: 'Security made simple.'
-  tagline: Unified Authentication And Authorization
+  text: '接入安全。'
+  tagline: 统一认证授权系统
   actions:
     - theme: brand
-      text: User Guide
+      text: 用户指南
       link: /user-guide
     - theme: alt
-      text: Getting Started
+      text: 开始使用
       link: /getting-started
 
 features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+  - title: 零信任
+    icon: 🔒
+    details: 对用户和应用均应用零信任设计，贯彻最小授权原则，确保沦陷面最小化。
+  - title: 高安全
+    icon: 🛡️
+    details: 所有授权均可用户感知，且可随时吊销，权限切断即使生效。
+  - title: 全支持
+    icon: 🚀
+    details: 插件框架，支持多种认证方式，支持多种应用接入，支持多种授权策略。
 ---

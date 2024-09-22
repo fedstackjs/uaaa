@@ -44,7 +44,7 @@ onMounted(() => {
 en:
   scoped:
     msg: You have successfully signed out, redirecting to home page
-zhHans:
+zh-Hans:
   scoped:
     msg: 您已成功登出，即将跳转到首页
 </i18n>

@@ -149,7 +149,7 @@ en:
     email-send-failed: 'Failed to send email: {msg}'
     wrong-credentials: Wrong email or code
     success: Operation succeeded
-zhHans:
+zh-Hans:
   hint:
     violate-email-rule: 邮箱地址无效
     violate-code-rule: 验证码无效

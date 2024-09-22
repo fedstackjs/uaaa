@@ -8,8 +8,8 @@ export default defineNuxtPlugin((app) => {
   const vuetify = createVuetify({
     blueprint: md3,
     locale: {
-      fallback: 'zhHans',
-      messages: { en, zhHans }
+      fallback: 'zh-Hans',
+      messages: { en, 'zh-Hans': zhHans }
     },
     icons: {
       sets: {
