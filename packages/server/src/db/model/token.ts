@@ -44,4 +44,8 @@ export interface ITokenDoc {
   issuedCount?: number
 
   terminated?: true | boolean
+
+  /** OpenID related */
+  nonce?: string | undefined
+  challenge?: string | undefined
 }

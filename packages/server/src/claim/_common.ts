@@ -36,6 +36,11 @@ export interface IClaimDescriptor {
   basic?: true | undefined
   /** Claim's security level */
   securityLevel: SecurityLevel
+
+  openid?: {
+    alias?: string
+    verifiable?: boolean
+  }
 }
 
 export class ClaimContext {
@@ -55,14 +60,19 @@ export class ClaimManager extends Hookable<{
   [key in `validate:${ClaimName}`]: (ctx: ClaimContext, value: string) => Promise<void>
 }> {
   registry: Record<string, IClaimDescriptor> = Object.create(null)
+  openidConfig
 
   constructor(public app: App) {
     super()
     this.addBuiltinClaims()
+    this.openidConfig = app.config.get('openidClaimConfig')
   }
 
   addClaimDescriptor(descriptor: IClaimDescriptor) {
     if (!rClaimName.test(descriptor.name)) throw new Error('Invalid claim name')
+    if (this.openidConfig?.[descriptor.name]) {
+      descriptor.openid ??= this.openidConfig?.[descriptor.name]
+    }
     this.registry[descriptor.name] = descriptor
   }
 

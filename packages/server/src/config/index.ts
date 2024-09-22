@@ -11,7 +11,15 @@ const tAppConfig = type({
   tokenTimeout: 'string|string[]',
   refreshTimeout: 'string|string[]',
   'sessionTokenTimeout?': 'string|string[]',
-  'realIpHeader?': 'string'
+  'realIpHeader?': 'string',
+  'openidClaimConfig?': type.Record(
+    'string',
+    type({
+      alias: 'string',
+      'verifiable?': 'boolean'
+    })
+  ),
+  'openidAdditionalClaims?': type.Record('string', 'string')
 })
 
 type IAppConfig = typeof tAppConfig.infer

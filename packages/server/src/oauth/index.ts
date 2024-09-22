@@ -1,12 +1,13 @@
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { Context, Hono } from 'hono'
-import ms from 'ms'
-import { BusinessError, logger, Permission, SecurityLevel, UAAA } from '../../../util/index.js'
-import { verifyAuthorizationJwt, verifyPermission } from '../../../api/index.js'
-import type { IUserClaims, ClaimName } from '../../../index.js'
+import { verifyAuthorizationJwt, verifyPermission } from '../api/_middleware.js'
+import { ClaimName } from '../claim/_common.js'
+import { IUserClaims } from '../db/index.js'
+import { UAAA, BusinessError, Permission, SecurityLevel, logger } from '../util/index.js'
+import { createHash } from 'crypto'
 
-const tOIDCAuthorizationRequest = type({
+const tOpenIdAuthorizationRequest = type({
   scope: 'string',
   response_type: "'code' | 'id_token' | 'id_token token'",
   client_id: 'string',
@@ -14,22 +15,38 @@ const tOIDCAuthorizationRequest = type({
   'state?': 'string'
 })
 
-const tOIDCAccessTokenRequest = type(
-  {
-    grant_type: "'authorization_code'",
-    client_id: 'string',
-    client_secret: 'string',
-    code: 'string',
-    'redirect_uri?': 'string|undefined'
-  },
+const AccessTokenRequestClientCredentials = type({
+  grant_type: "'authorization_code'",
+  client_id: 'string',
+  client_secret: 'string',
+  code: 'string',
+  'redirect_uri?': 'string|undefined'
+})
+const AccessTokenRequestPKCE = type({
+  grant_type: "'authorization_code'",
+  client_id: 'string',
+  code_verifier: 'string',
+  code: 'string',
+  'redirect_uri?': 'string|undefined'
+})
+const AccessTokenRequestRefreshClientCredentials = type({
+  grant_type: "'refresh_token'",
+  client_id: 'string',
+  client_secret: 'string',
+  refresh_token: 'string',
+  'scope?': 'string|undefined'
+})
+const AccessTokenRequestRefreshPublic = type({
+  grant_type: "'refresh_token'",
+  client_id: 'string',
+  refresh_token: 'string',
+  'scope?': 'string|undefined'
+})
+
+const tOpenIdAccessTokenRequest = type(
+  type(AccessTokenRequestPKCE, '|', AccessTokenRequestClientCredentials),
   '|',
-  {
-    grant_type: "'refresh_token'",
-    client_id: 'string',
-    client_secret: 'string',
-    refresh_token: 'string',
-    'scope?': 'string|undefined'
-  }
+  type(AccessTokenRequestRefreshPublic, '|', AccessTokenRequestRefreshClientCredentials)
 )
 
 function generateAdditionalClaim(claims: Partial<IUserClaims>, template: string) {
@@ -72,32 +89,26 @@ async function generateClaims(ctx: Context, appId: string, userId: string) {
 
   for (const [key, value] of Object.entries(claims)) {
     const descriptor = app.claim.getClaimDescriptor(key as ClaimName)
-    const alias = descriptor.oidcAlias ?? key
+    const alias = descriptor.openid?.alias ?? key
     mappedClaims[alias] = value?.value
-    if (value?.verified && descriptor.oidcVerifiable) mappedClaims[`${alias}_verified`] = true
+    if (value?.verified && descriptor.openid?.verifiable) mappedClaims[`${alias}_verified`] = true
   }
 
-  const additionalClaims = ctx.var.app.config.get('oidcAdditionalClaims') ?? {}
+  const additionalClaims = ctx.var.app.config.get('openidAdditionalClaims') ?? {}
   for (const [key, value] of Object.entries(additionalClaims)) {
     mappedClaims[key] = generateAdditionalClaim(claims, value)
   }
 
-  if (Object.hasOwn(clientApp.secrets, 'oidc_additional_claims')) {
-    const additionalClaims = type('string.json.parse').to('Record<string,string>')(
-      clientApp.secrets.oidc_additional_claims
-    )
-    if (additionalClaims instanceof type.errors) {
-      logger.warn(`OIDC: Invalid oidc_additional_claims for app ${appId} value=${additionalClaims}`)
-    } else {
-      for (const [key, value] of Object.entries(additionalClaims)) {
-        mappedClaims[key] = generateAdditionalClaim(claims, value)
-      }
+  if (clientApp.openid?.additionalClaims) {
+    const additionalClaims = clientApp.openid?.additionalClaims
+    for (const [key, value] of Object.entries(additionalClaims)) {
+      mappedClaims[key] = generateAdditionalClaim(claims, value)
     }
   }
   return mappedClaims
 }
 
-async function generateIDToken(ctx: Context, appId: string, userId: string) {
+async function generateIDToken(ctx: Context, appId: string, userId: string, nonce?: string) {
   const { app } = ctx.var
   const mappedClaims = await generateClaims(ctx, appId, userId)
   const now = Date.now()
@@ -105,14 +116,28 @@ async function generateIDToken(ctx: Context, appId: string, userId: string) {
     ...mappedClaims,
     aud: appId,
     exp: now + ctx.var.app.token.getSessionTokenTimeout(SecurityLevel.SL1),
-    iat: now
+    iat: now,
+    nonce
   })
 }
 
-export const oauthRouter = new Hono()
+function checkPKCEChallenge(codeVerifier: string, storedChallenge?: string) {
+  if (!storedChallenge) return false
+  const [method, challenge] = storedChallenge.split(':')
+  switch (method) {
+    case 'S256':
+      return challenge === createHash('sha256').update(codeVerifier).digest('base64url')
+    case 'plain':
+      return challenge === codeVerifier
+    default:
+      return false
+  }
+}
+
+export const oauthWellKnownRouter = new Hono()
   // OIDC Discovery
   // https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
-  .get('/.well-known/openid-configuration', async (ctx) => {
+  .get('/openid-configuration', async (ctx) => {
     const base = ctx.var.app.config.get('deploymentUrl')
     return ctx.json({
       issuer: base,
@@ -125,9 +150,11 @@ export const oauthRouter = new Hono()
       id_token_signing_alg_values_supported: ['RS256']
     })
   })
+
+export const oauthRouter = new Hono()
   // OIDC Authorization Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#AuthorizationEndpoint
-  .get('/oauth/authorize', arktypeValidator('query', tOIDCAuthorizationRequest), async (ctx) => {
+  .get('/authorize', arktypeValidator('query', tOpenIdAuthorizationRequest), async (ctx) => {
     const { client_id, ...rest } = ctx.req.valid('query')
     const params = new URLSearchParams({
       clientAppId: client_id,
@@ -137,7 +164,7 @@ export const oauthRouter = new Hono()
     })
     return ctx.redirect(new URL('/authorize?' + params.toString(), ctx.req.url).toString())
   })
-  .post('/oauth/authorize', arktypeValidator('form', tOIDCAuthorizationRequest), async (ctx) => {
+  .post('/authorize', arktypeValidator('form', tOpenIdAuthorizationRequest), async (ctx) => {
     const { client_id, ...rest } = ctx.req.valid('form')
     const params = new URLSearchParams({
       clientAppId: client_id,
@@ -149,26 +176,42 @@ export const oauthRouter = new Hono()
   })
   // OIDC Access Token Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#TokenEndpoint
-  .post('/oauth/token', arktypeValidator('form', tOIDCAccessTokenRequest), async (ctx) => {
+  .post('/token', arktypeValidator('form', tOpenIdAccessTokenRequest), async (ctx) => {
     const request = ctx.req.valid('form')
     const { app } = ctx.var
     const { apps, tokens, sessions } = app.db
     if (request.grant_type === 'authorization_code') {
       const clientApp = await apps.findOne({ _id: request.client_id })
-      if (!clientApp || clientApp.secret !== request.client_secret) {
+      if (!clientApp) {
         return ctx.json({ error: 'invalid_client' }, 400)
       }
-      if (request.redirect_uri && !clientApp.callbackUrls.includes(request.redirect_uri)) {
+      const tokenDoc = await tokens.findOneAndUpdate(
+        {
+          _id: request.code,
+          clientAppId: request.client_id,
+          lastIssuedAt: { $exists: false },
+          terminated: { $ne: true }
+        },
+        { $unset: { challenge: '' } },
+        { returnDocument: 'before' }
+      )
+      if (!tokenDoc) {
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      const tokenDoc = await tokens.findOne({
-        _id: request.code,
-        clientAppId: request.client_id,
-        lastIssuedAt: { $exists: false },
-        terminated: { $ne: true }
-      })
-      if (!tokenDoc) {
+      if ('client_secret' in request) {
+        // Confidential Client
+        if (clientApp.secret !== request.client_secret) {
+          return ctx.json({ error: 'invalid_client' }, 400)
+        }
+      } else {
+        // Public Client, using PKCE
+        if (!checkPKCEChallenge(request.code_verifier, tokenDoc.challenge)) {
+          return ctx.json({ error: 'invalid_grant' }, 400)
+        }
+      }
+
+      if (request.redirect_uri && !clientApp.callbackUrls.includes(request.redirect_uri)) {
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
@@ -186,7 +229,7 @@ export const oauthRouter = new Hono()
         .map((p) => Permission.fromScopedString(p, UAAA))
         .filter((p) => p.test('/session/claim'))
       if (matchedPermissions.length) {
-        id_token = await generateIDToken(ctx, request.client_id, tokenDoc.userId)
+        id_token = await generateIDToken(ctx, request.client_id, tokenDoc.userId, tokenDoc.nonce)
       }
       return ctx.json({
         access_token: token,
@@ -196,11 +239,19 @@ export const oauthRouter = new Hono()
         refresh_token: refreshToken
       })
     } else {
-      const { refresh_token, client_id, client_secret } = request
+      const { refresh_token, client_id } = request
       const client = await app.db.apps.findOne({ _id: client_id }, { projection: { secret: 1 } })
-      if (!client || client.secret !== client_secret) {
+      if (!client) {
         return ctx.json({ error: 'invalid_client' }, 400)
       }
+      if ('client_secret' in request) {
+        if (!client || client.secret !== request.client_secret) {
+          return ctx.json({ error: 'invalid_client' }, 400)
+        }
+      } else {
+        // TODO: check application config
+      }
+
       const { token, refreshToken } = await ctx.var.app.token.refreshToken(refresh_token, client_id)
       return ctx.json({
         access_token: token,
@@ -214,7 +265,7 @@ export const oauthRouter = new Hono()
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#UserInfo
   .on(
     ['GET', 'POST'],
-    '/oauth/userinfo',
+    '/userinfo',
     verifyAuthorizationJwt,
     verifyPermission({ path: '/session/claim' }),
     async (ctx) => {

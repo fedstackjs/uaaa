@@ -23,6 +23,11 @@ export const tAppRequestedPermission = type({
 })
 export type IAppRequestedPermission = typeof tAppRequestedPermission.infer
 
+export const tAppOpenIdConfig = type({
+  additionalClaims: 'Record<string,string>'
+})
+export type IAppOpenIdConfig = typeof tAppOpenIdConfig.infer
+
 export const tAppManifest = type({
   appId: type('string').narrow((id) => rAppId.test(id)),
   name: 'string',
@@ -35,6 +40,7 @@ export const tAppManifest = type({
   variables: 'Record<string,string>',
   secrets: 'Record<string,string>',
   'promoted?': 'boolean',
+  'openid?': tAppOpenIdConfig,
   securityLevel: tSecurityLevel
 })
 export type IAppManifest = typeof tAppManifest.infer
@@ -60,6 +66,8 @@ export interface IAppDoc {
 
   /** Max security level can be hold by this app */
   securityLevel: SecurityLevel
+
+  openid?: IAppOpenIdConfig
 
   /** Managed properties */
   disabled?: boolean | undefined

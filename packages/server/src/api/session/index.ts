@@ -90,13 +90,17 @@ export const sessionApi = new Hono()
       type({
         'targetAppId?': 'string',
         clientAppId: 'string',
-        securityLevel: tSecurityLevel
+        securityLevel: tSecurityLevel,
+        'nonce?': 'string',
+        'challenge?': 'string'
       })
     ),
     async (ctx) => {
-      const { targetAppId, clientAppId, securityLevel } = ctx.req.valid('json')
+      const { targetAppId, clientAppId, securityLevel, ...options } = ctx.req.valid('json')
       const { session } = ctx.var.app
-      return ctx.json(await session.derive(ctx.var.token, targetAppId, clientAppId, securityLevel))
+      return ctx.json(
+        await session.derive(ctx.var.token, targetAppId, clientAppId, securityLevel, options)
+      )
     }
   )
   .post(

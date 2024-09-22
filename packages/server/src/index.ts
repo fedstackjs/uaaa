@@ -11,6 +11,7 @@ import { SessionManager } from './session/index.js'
 import { ClaimManager } from './claim/index.js'
 import { rootApi } from './api/index.js'
 import { logger } from './util/index.js'
+import { oauthRouter, oauthWellKnownRouter } from './oauth/index.js'
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -55,6 +56,8 @@ export class App extends Hookable<{
         await next()
       })
       .route('/api', rootApi)
+      .route('/oauth', oauthRouter)
+      .route('/.well-known', new Hono().route('/', oauthWellKnownRouter))
     await this.callHook('extendApp', app)
     serve({
       fetch: app.fetch,

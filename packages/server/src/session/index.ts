@@ -107,7 +107,8 @@ export class SessionManager extends Hookable<{
     token: ITokenPayload,
     targetAppId: string | undefined,
     clientAppId: string,
-    securityLevel: SecurityLevel
+    securityLevel: SecurityLevel,
+    options?: { nonce?: string; challenge?: string }
   ) {
     const { parentToken, permissions, timestamp } = await this.checkDerive(
       token,
@@ -138,7 +139,9 @@ export class SessionManager extends Hookable<{
       expiresAt: parentToken.expiresAt,
       // TODO: tokenTimeout and refreshTimeout should be configurable
       tokenTimeout: parentToken.tokenTimeout,
-      refreshTimeout: parentToken.refreshTimeout
+      refreshTimeout: parentToken.refreshTimeout,
+      nonce: options?.nonce,
+      challenge: options?.challenge
     })
 
     return {

@@ -17,7 +17,9 @@ export abstract class Connector {
     this.securityLevel = parseInt(`${route.query.securityLevel}`)
     this.params = JSON.parse(route.query.params as string)
   }
-  abstract checkAuthorize(app: IAppDTO): Promise<void> | void
+  abstract checkAuthorize(
+    app: IAppDTO
+  ): Promise<{ nonce?: string; challenge?: string }> | { nonce?: string; challenge?: string }
   abstract onAuthorize(app: IAppDTO, tokenId: string): Promise<void> | void
   abstract onCancel(app: IAppDTO): Promise<void> | void
 }
@@ -47,6 +49,12 @@ export class OpenIDConnector extends Connector {
       throw new Error('Invalid response_type')
     }
     await this.checkRedirect(app, this.redirect_uri)
+    return {
+      nonce: this.params.nonce,
+      challenge:
+        this.params.code_challenge &&
+        `${this.params.code_challenge_method ?? 'plain'}:${this.params.code_challenge}`
+    }
   }
 
   override onAuthorize(app: IAppDTO, tokenId: string): void {

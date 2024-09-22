@@ -79,7 +79,20 @@ const { data } = await useAsyncData(async () => {
   return resp.json()
 })
 
+let redirected = false
+
 function onUpdated() {
+  if (redirected) return
+  redirected = true
   router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
 }
+
+watch(
+  () => api.effectiveToken.value?.decoded.level,
+  (level) => {
+    if ((level ?? 0) >= +targetLevel) {
+      onUpdated()
+    }
+  }
+)
 </script>

@@ -110,7 +110,7 @@ export class TokenManager extends Hookable<{}> {
 
   async createToken(token: Omit<ITokenDoc, '_id'>): Promise<ITokenDoc> {
     const doc = { _id: nanoid(), ...token }
-    await this.app.db.tokens.insertOne(doc)
+    await this.app.db.tokens.insertOne(doc, { ignoreUndefined: true })
     return doc
   }
 

@@ -63,9 +63,14 @@ const { data: app } = await useAsyncData(async () => {
 
 const { run: authorize, running } = useTask(async () => {
   if (!app.value) return
-  await props.connector.checkAuthorize(app.value)
+  const { nonce, challenge } = await props.connector.checkAuthorize(app.value)
   const resp = await api.session.derive.$post({
-    json: { clientAppId: props.connector.clientAppId, securityLevel: props.connector.securityLevel }
+    json: {
+      clientAppId: props.connector.clientAppId,
+      securityLevel: props.connector.securityLevel,
+      nonce,
+      challenge
+    }
   })
   if (resp.ok) {
     const { tokenId } = await resp.json()
