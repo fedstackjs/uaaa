@@ -97,8 +97,9 @@ export class ApiManager {
     if (remaining > lifetime / 2) return
 
     console.log(`[API] Refreshing token ${tokenId}`)
-    const resp = await this.public.refresh.$post({ json: { refreshToken: _refreshToken } })
-    if (resp.ok) {
+    try {
+      const resp = await this.public.refresh.$post({ json: { refreshToken: _refreshToken } })
+      await this.checkResponse(resp)
       const { token, refreshToken } = await resp.json()
       this.tokens.value[tokenId] = {
         token,
@@ -106,9 +107,13 @@ export class ApiManager {
         decoded: ApiManager.parseJWT(token)
       }
       console.log(`[API] Token ${tokenId} refreshed`)
-    } else {
-      delete this.tokens.value[tokenId].refreshToken
-      console.log(`[API] Failed to refresh token ${tokenId}`)
+    } catch (err) {
+      if (isAPIError(err) && err.code === 'INVALID_TOKEN') {
+        delete this.tokens.value[tokenId].refreshToken
+        console.log(`[API] Failed to refresh token ${tokenId}`)
+        return
+      }
+      console.error(err)
     }
   }
 

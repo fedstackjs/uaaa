@@ -46,7 +46,7 @@ const { data, status, refresh } = await useAsyncData(async () => {
   } catch (err) {
     if (isAPIError(err)) {
       switch (err.code) {
-        case 'TOKEN_INVALID': {
+        case 'INVALID_TOKEN': {
           api.dropEffectiveToken()
         }
         case 'FORBIDDEN': {

@@ -85,7 +85,7 @@ export class TokenManager extends Hookable<{}> {
     if (err instanceof jwt.NotBeforeError) {
       return new BusinessError('TOKEN_NOT_BEFORE', {})
     }
-    return new BusinessError('TOKEN_INVALID', {})
+    return new BusinessError('INVALID_TOKEN', {})
   }
 
   async verify(token: string) {
@@ -95,7 +95,7 @@ export class TokenManager extends Hookable<{}> {
         async ({ kid }, cb) => {
           try {
             const doc = await this.app.db.jwkpairs.findOne({ _id: new ObjectId(kid) })
-            if (!doc) throw new BusinessError('TOKEN_INVALID', {})
+            if (!doc) throw new BusinessError('INVALID_TOKEN', {})
             cb(null, createPublicKey({ key: doc.publicKey, format: 'jwk' }))
           } catch (err) {
             cb(err as Error)
@@ -182,7 +182,7 @@ export class TokenManager extends Hookable<{}> {
       { $unset: { refreshToken: '' } }
     )
     if (!tokenDoc) {
-      throw new BusinessError('TOKEN_INVALID', {})
+      throw new BusinessError('INVALID_TOKEN', {})
     }
     return this.signToken(tokenDoc)
   }
@@ -196,7 +196,7 @@ export class TokenManager extends Hookable<{}> {
     const jwt = await this.verify(token)
     const payload = tTokenPayload(jwt.payload)
     if (payload instanceof type.errors) {
-      throw new BusinessError('TOKEN_INVALID', {})
+      throw new BusinessError('INVALID_TOKEN', {})
     }
     return {
       jwt,
@@ -207,7 +207,7 @@ export class TokenManager extends Hookable<{}> {
   async verifyUAAAToken(token: string) {
     const { jwt, payload } = await this.verifyToken(token)
     if (Object.hasOwn(payload, 'aud')) {
-      throw new BusinessError('TOKEN_INVALID', {})
+      throw new BusinessError('INVALID_TOKEN', {})
     }
     return { jwt, payload }
   }
