@@ -7,7 +7,7 @@ import {
   type App,
   type PluginContext
 } from '../../../index.js'
-import { IWebauthnKey, WebauthnImpl } from './credential.js'
+import { type IWebauthnKey, WebauthnImpl } from './credential.js'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import ms from 'ms'

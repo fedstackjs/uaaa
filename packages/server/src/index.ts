@@ -1,7 +1,7 @@
 import { Hookable } from 'hookable'
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
-import { ConfigManager, IConfig } from './config/index.js'
+import { ConfigManager, type IConfig } from './config/index.js'
 import { DbManager } from './db/index.js'
 import { CacheManager } from './cache/index.js'
 import { PluginManager } from './plugin/index.js'

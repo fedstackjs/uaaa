@@ -1,9 +1,9 @@
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
-import { Context, Hono } from 'hono'
+import { type Context, Hono } from 'hono'
 import { verifyAuthorizationJwt, verifyPermission } from '../api/_middleware.js'
-import { ClaimName } from '../claim/_common.js'
-import { IUserClaims } from '../db/index.js'
+import type { ClaimName } from '../claim/_common.js'
+import type { IUserClaims } from '../db/index.js'
 import { UAAA, BusinessError, Permission, SecurityLevel, logger } from '../util/index.js'
 import { createHash } from 'crypto'
 
@@ -245,11 +245,13 @@ export const oauthRouter = new Hono()
         return ctx.json({ error: 'invalid_client' }, 400)
       }
       if ('client_secret' in request) {
-        if (!client || client.secret !== request.client_secret) {
+        if (client.secret !== request.client_secret) {
           return ctx.json({ error: 'invalid_client' }, 400)
         }
       } else {
-        // TODO: check application config
+        if (!client.openid?.allowPublicClient) {
+          return ctx.json({ error: 'invalid_client' }, 400)
+        }
       }
 
       const { token, refreshToken } = await ctx.var.app.token.refreshToken(refresh_token, client_id)

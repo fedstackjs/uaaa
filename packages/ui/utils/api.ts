@@ -125,6 +125,7 @@ export class ApiManager {
           demandRefreshes.push(this._refreshToken(tokenId))
         } else {
           delete this.tokens.value[tokenId]
+          console.log(`[API] Token ${tokenId} dropped`)
         }
         continue
       }
@@ -140,10 +141,9 @@ export class ApiManager {
       console.log(`[API] Waiting for token refreshes`)
       await Promise.any(demandRefreshes)
       return this._updateEffectiveToken()
-    } else {
-      console.log(`[API] Effective token updated to ${bestToken?.decoded.jti}`)
-      this.effectiveToken.value = bestToken
     }
+    console.log(`[API] Effective token updated to ${bestToken?.decoded.jti}`)
+    this.effectiveToken.value = bestToken
   }
 
   async updateEffectiveToken() {

@@ -1,4 +1,4 @@
-import { ICommonDocument } from '../_common.js'
+import type { ICommonDocument } from '../_common.js'
 
 export interface IInstallationDoc extends ICommonDocument {
   appId: string

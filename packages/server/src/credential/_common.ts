@@ -1,5 +1,5 @@
 import { Hookable } from 'hookable'
-import { Context } from 'hono'
+import type { Context } from 'hono'
 import {
   BusinessError,
   type App,
@@ -11,7 +11,7 @@ import {
 import { HTTPException } from 'hono/http-exception'
 import type { MatchKeysAndValues } from 'mongodb'
 import { nanoid } from 'nanoid'
-import { ITokenDoc } from '../db/model/token.js'
+import type { ITokenDoc } from '../db/model/token.js'
 
 export class CredentialContext {
   app

@@ -24,7 +24,8 @@ export const tAppRequestedPermission = type({
 export type IAppRequestedPermission = typeof tAppRequestedPermission.infer
 
 export const tAppOpenIdConfig = type({
-  additionalClaims: 'Record<string,string>'
+  'additionalClaims?': 'Record<string,string>',
+  'allowPublicClient?': 'boolean'
 })
 export type IAppOpenIdConfig = typeof tAppOpenIdConfig.infer
 

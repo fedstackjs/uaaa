@@ -1,6 +1,6 @@
 import micromatch from 'micromatch'
 import { UAAA } from './constants.js'
-import { IAppProvidedPermission } from '../db/index.js'
+import type { IAppProvidedPermission } from '../db/index.js'
 
 export class Permission<AppId extends string = string> {
   static fromFullURL<AppId extends string = string>(url: URL | string) {

@@ -6,7 +6,7 @@ import { definePlugin } from '../../_common.js'
 import {
   CredentialContext,
   CredentialImpl,
-  ICredentialUnbindResult
+  type ICredentialUnbindResult
 } from '../../../credential/_common.js'
 import { SecurityLevel, BusinessError } from '../../../util/index.js'
 

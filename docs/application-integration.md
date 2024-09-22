@@ -56,3 +56,11 @@ UAAA 实现了 [OpenID Connect 配置发现 1.0](https://openid.net/specs/openid
 UAAA 还实现了 [UserInfo 端点](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo)，因此 OAuth2 客户端也可以与 UAAA 集成。
 
 如果您想了解有关 OpenID Connect 和 OAuth2 的更多信息，可以参考 [这篇博客](https://www.authing.cn/blog/558)。
+
+UAAA支持 OAuth2 的如下授权模式：
+
+- Authorization Code Flow
+  - Client Credentials [RFC6749](https://www.rfc-editor.org/rfc/rfc6749#section-2.3)
+    - 需要在请求的Body中加入 `client_secret` 字段，参见[RFC6749 Section 2.3.1](https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1)
+  - PKCE [RFC7636](https://www.rfc-editor.org/rfc/rfc7636)
+    - 需要在UAAA中配置允许该方式

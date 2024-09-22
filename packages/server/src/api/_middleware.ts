@@ -1,7 +1,7 @@
 import { createMiddleware } from 'hono/factory'
 import type jwt from 'jsonwebtoken'
-import { BusinessError, Permission, UAAA, UAAAPermissionPath } from '../util/index.js'
-import { ITokenPayload } from '../token/index.js'
+import { BusinessError, Permission, UAAA, type UAAAPermissionPath } from '../util/index.js'
+import type { ITokenPayload } from '../token/index.js'
 export { arktypeValidator } from '@hono/arktype-validator'
 
 declare module 'hono' {

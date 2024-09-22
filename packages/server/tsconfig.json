@@ -8,7 +8,9 @@
     "exactOptionalPropertyTypes": true,
     "declaration": true,
     "types": ["node"],
-    "outDir": "lib"
+    "outDir": "lib",
+    "removeComments": true,
+    "verbatimModuleSyntax": true
   },
   "include": ["src/**/*.ts"]
 }

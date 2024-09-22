@@ -1,5 +1,5 @@
 import { Hookable } from 'hookable'
-import { Context } from 'hono'
+import type { Context } from 'hono'
 import type { App, IAppRequestedClaim, IUserClaims } from '../index.js'
 import {
   BusinessError,
