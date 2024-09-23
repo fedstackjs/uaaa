@@ -151,6 +151,8 @@ class IAAAImpl extends CredentialImpl {
       userId,
       type: 'iaaa',
       data: resp.userInfo.identityId,
+      userIdentifier: '',
+      globalIdentifier: resp.userInfo.identityId,
       secret: '',
       remark: '',
       validAfter: now,

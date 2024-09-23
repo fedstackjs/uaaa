@@ -105,11 +105,13 @@ function doShowGrant() {
     })
   } else {
     showGrant.value = !showGrant.value
+    reset()
   }
 }
 
 const {
   start,
+  reset,
   rest,
   running: timerRunning
 } = useTimer({

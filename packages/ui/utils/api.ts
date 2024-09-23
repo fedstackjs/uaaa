@@ -84,7 +84,6 @@ export class ApiManager {
   }
 
   private async _refreshToken(tokenId: string) {
-    console.log(`[API] Will refresh token ${tokenId}`)
     // Refresh token when refreshToken exists and
     // token's remaining time is less than half of its life time
     const _refreshToken = this.tokens.value[tokenId]?.refreshToken
@@ -110,50 +109,36 @@ export class ApiManager {
     } catch (err) {
       if (isAPIError(err) && err.code === 'INVALID_TOKEN') {
         delete this.tokens.value[tokenId].refreshToken
-        console.log(`[API] Failed to refresh token ${tokenId}`)
+        console.log(`[API] Token ${tokenId} failed to refresh because of invalid refreshToken`)
         return
       }
       console.error(err)
     }
   }
 
-  private async _updateEffectiveToken(): Promise<void> {
-    console.log(`[API] Updating effective token`)
+  private async _checkAndRefreshTokens() {
+    console.log(`[API] Checking and refreshing tokens`)
     const tokenIds = Object.keys(this.tokens.value)
     const now = Date.now()
-    let bestToken: IClientToken | undefined
-    const demandRefreshes: Promise<void>[] = []
+    let bestToken: IClientToken | null = null
     for (const tokenId of tokenIds) {
-      const current = this.tokens.value[tokenId]
-      if (current.decoded.exp * 1000 < now) {
-        if (current.refreshToken) {
-          demandRefreshes.push(this._refreshToken(tokenId))
-        } else {
-          delete this.tokens.value[tokenId]
-          console.log(`[API] Token ${tokenId} dropped`)
-        }
+      await this._refreshToken(tokenId)
+      if (this.tokens.value[tokenId].decoded.exp * 1000 < now) {
+        delete this.tokens.value[tokenId]
+        console.log(`[API] Token ${tokenId} dropped`)
         continue
       }
-      const remaining = current.decoded.exp * 1000 - now
-      const lifetime = (current.decoded.exp - current.decoded.iat) * 1000
-      if (remaining < lifetime / 2) this._refreshToken(tokenId)
-
-      if (!bestToken || bestToken.decoded.level < current.decoded.level) {
-        bestToken = current
+      if (!bestToken || bestToken.decoded.level < this.tokens.value[tokenId].decoded.level) {
+        bestToken = this.tokens.value[tokenId]
       }
     }
-    if (!bestToken && demandRefreshes.length) {
-      console.log(`[API] Waiting for token refreshes`)
-      await Promise.any(demandRefreshes)
-      return this._updateEffectiveToken()
-    }
-    console.log(`[API] Effective token updated to ${bestToken?.decoded.jti}`)
+    console.log(`[API] Effective token updated to ${bestToken?.decoded.jti ?? 'null'}`)
     this.effectiveToken.value = bestToken
   }
 
   async updateEffectiveToken() {
     return navigator.locks.request(`tokens`, async () => {
-      await this._updateEffectiveToken()
+      await this._checkAndRefreshTokens()
     })
   }
 
@@ -167,7 +152,7 @@ export class ApiManager {
       const effectiveId = this.effectiveToken.value?.decoded.jti
       if (!effectiveId) return
       delete this.tokens.value[effectiveId]
-      this._updateEffectiveToken()
+      this._checkAndRefreshTokens()
     })
   }
 
@@ -180,6 +165,7 @@ export class ApiManager {
 
   async login(type: string, payload: unknown) {
     const resp = await this.public.login.$post({ json: { type, payload } })
+    await this.checkResponse(resp)
     const { tokens } = await resp.json()
     for (const { token, refreshToken } of tokens) {
       this.tokens.value[ApiManager.parseJWT(token).jti] = {
@@ -188,12 +174,13 @@ export class ApiManager {
         decoded: ApiManager.parseJWT(token)
       }
     }
-    await this._updateEffectiveToken()
+    await this.updateEffectiveToken()
   }
 
   async verify(type: string, targetLevel: number, payload: unknown) {
     console.log(`[API] Will verify credential ${type}`)
     const resp = await this.session.elevate.$post({ json: { type, targetLevel, payload } })
+    await this.checkResponse(resp)
     const {
       token: { token, refreshToken }
     } = await resp.json()
@@ -204,7 +191,7 @@ export class ApiManager {
         refreshToken,
         decoded: ApiManager.parseJWT(token)
       }
-      await this._updateEffectiveToken()
+      await this._checkAndRefreshTokens()
     })
   }
 
