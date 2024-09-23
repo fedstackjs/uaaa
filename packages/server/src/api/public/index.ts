@@ -137,7 +137,7 @@ export const publicApi = new Hono()
             parentId: JSON.parse(atob(tokens[0].token.split('.')[1])).jti,
             securityLevel,
             createdAt: now,
-            expiresAt: now + expiresIn,
+            expiresAt: now + token.getSessionTokenTimeout(securityLevel, expiresIn),
             tokenTimeout: token.getTokenTimeout(securityLevel, tokenTimeout),
             refreshTimeout: token.getRefreshTimeout(securityLevel, refreshTimeout)
           })

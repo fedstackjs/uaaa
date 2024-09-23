@@ -52,7 +52,9 @@ export interface ICredentialLoginResult {
   credentialId: string
   /** Session Security Level */
   securityLevel: SecurityLevel
-  expiresIn: number
+
+  /** Overrides default token configuration */
+  expiresIn?: number
   tokenTimeout?: number
   refreshTimeout?: number
 }
@@ -60,7 +62,7 @@ export interface ICredentialLoginResult {
 export interface ICredentialVerifyResult {
   credentialId: string
   securityLevel: SecurityLevel
-  expiresIn: number
+  expiresIn?: number
   tokenTimeout?: number
   refreshTimeout?: number
 }

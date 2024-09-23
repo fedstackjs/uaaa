@@ -24,25 +24,20 @@ export class SessionManager extends Hookable<{
       { returnDocument: 'before' }
     )
     if (!session) throw new BusinessError('BAD_REQUEST', { msg: 'Session not found' })
-    const timestamp = Date.now()
+    const now = Date.now()
+    const { credentialId, securityLevel, expiresIn, tokenTimeout, refreshTimeout } = verifyResult
     const newToken = await this.app.token.createAndSignToken({
       sessionId: token.sid,
       userId: token.sub,
       permissions: ['/**'],
       index: session.tokenCount,
       parentId: token.jti,
-      credentialId: verifyResult.credentialId,
-      securityLevel: verifyResult.securityLevel,
-      createdAt: timestamp,
-      expiresAt: timestamp + verifyResult.expiresIn,
-      tokenTimeout: this.app.token.getTokenTimeout(
-        verifyResult.securityLevel,
-        verifyResult.tokenTimeout
-      ),
-      refreshTimeout: this.app.token.getRefreshTimeout(
-        verifyResult.securityLevel,
-        verifyResult.refreshTimeout
-      )
+      credentialId,
+      securityLevel,
+      createdAt: now,
+      expiresAt: now + this.app.token.getSessionTokenTimeout(securityLevel, expiresIn),
+      tokenTimeout: this.app.token.getTokenTimeout(securityLevel, tokenTimeout),
+      refreshTimeout: this.app.token.getRefreshTimeout(securityLevel, refreshTimeout)
     })
     return {
       token: newToken
