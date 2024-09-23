@@ -8,6 +8,7 @@ import CredentialFormEmail from './CredentialFormEmail.vue'
 import CredentialFormIAAA from './CredentialFormIAAA.vue'
 import CredentialFormPassword from './CredentialFormPassword.vue'
 import CredentialFormWebauthn from './CredentialFormWebauthn.vue'
+import CredentialFormTOTP from './CredentialFormTOTP.vue'
 
 defineProps<{
   type: string
@@ -19,6 +20,7 @@ const components: Record<string, Component> = {
   email: CredentialFormEmail,
   password: CredentialFormPassword,
   webauthn: CredentialFormWebauthn,
-  iaaa: CredentialFormIAAA
+  iaaa: CredentialFormIAAA,
+  totp: CredentialFormTOTP
 }
 </script>

@@ -2,7 +2,7 @@
   "name": "@uaaa/server",
   "type": "module",
   "main": "lib/index.js",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "publishConfig": {
     "access": "public"
   },
@@ -37,6 +37,7 @@
     "nanoid": "^5.0.7",
     "nodemailer": "^6.9.14",
     "pino": "^9.3.2",
+    "totp-generator": "^1.0.0",
     "typanion": "^3.14.0"
   },
   "devDependencies": {

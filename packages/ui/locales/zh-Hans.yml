@@ -29,6 +29,7 @@ credentials:
   email: 邮箱
   webauthn: 通行密钥
   iaaa: 北京大学统一身份认证
+  totp: 手机令牌
 
 actions:
   submit: 提交
@@ -48,6 +49,7 @@ actions:
   install: 安装
   authorize: 授权
   terminate: 吊销
+  confirm: 确认
 
 msg:
   id: ID
