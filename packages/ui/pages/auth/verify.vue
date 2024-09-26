@@ -8,14 +8,7 @@
         <div class="flex self-stretch">
           <div class="flex-1 flex justify-start">
             <VFadeTransition mode="out-in">
-              <VBtn
-                v-if="type"
-                icon="mdi-arrow-left"
-                size="sm"
-                variant="tonal"
-                color="info"
-                @click="type = ''"
-              />
+              <VBtn icon="mdi-arrow-left" size="sm" variant="tonal" color="info" @click="onBack" />
             </VFadeTransition>
           </div>
           <div>{{ t('pages.auth.verify') }}</div>
@@ -24,7 +17,7 @@
       </VCardTitle>
       <VDivider />
       <VFadeTransition mode="out-in">
-        <template v-if="!type">
+        <div v-if="!type">
           <VCardText class="flex flex-col gap-2" v-if="data?.types.length">
             <VBtn
               v-for="item of data.types"
@@ -46,14 +39,15 @@
               :text="t('actions.back')"
             />
           </VAlert>
-        </template>
-        <CredentialForm
-          v-else
-          action="verify"
-          :type="type"
-          :target-level="+targetLevel"
-          @updated="onUpdated"
-        />
+        </div>
+        <div v-else>
+          <CredentialForm
+            action="verify"
+            :type="type"
+            :target-level="+targetLevel"
+            @updated="onUpdated"
+          />
+        </div>
       </VFadeTransition>
     </VCard>
   </VContainer>
@@ -85,6 +79,14 @@ function onUpdated() {
   if (redirected) return
   redirected = true
   router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
+}
+
+function onBack() {
+  if (type.value) {
+    type.value = ''
+  } else {
+    router.back()
+  }
 }
 
 watch(

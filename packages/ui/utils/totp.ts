@@ -25,6 +25,15 @@ export function generateTOTPSecret(length = 20) {
 
 const cacheKey = 'cached-totp-secret'
 
+function getIssuer() {
+  const iss = api.effectiveToken.value?.decoded.iss ?? ''
+  try {
+    const url = new URL(iss)
+    return url.host
+  } catch {}
+  return 'UAAA'
+}
+
 export async function generateTOTPSecretUrl() {
   if (localStorage.getItem(cacheKey)) {
     try {
@@ -32,7 +41,7 @@ export async function generateTOTPSecretUrl() {
     } catch {}
   }
   const claims = await api.getSessionClaimMap()
-  const issuer = api.effectiveToken.value?.decoded.iss ?? 'UAAA'
+  const issuer = getIssuer()
   const username = claims.username?.value ?? 'UAAA User'
   const secret = generateTOTPSecret()
   const label = encodeURIComponent(`${issuer}:${username}`)
