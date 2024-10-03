@@ -54,6 +54,10 @@ export class DbManager extends Hookable {
     await this._migration.startMigration()
   }
 
+  async disconnect() {
+    await this.mongoClient.close()
+  }
+
   async getSystemConfig<K extends keyof ISystemConfig>(
     key: K,
     init?: ISystemConfig[K]

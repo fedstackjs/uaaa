@@ -30,6 +30,8 @@ export class App extends Hookable<{
   plugin
   token
   session
+  private _initialized = false
+  private _stopped = false
 
   constructor(config: IConfig) {
     super()
@@ -43,12 +45,32 @@ export class App extends Hookable<{
     this.session = new SessionManager(this)
   }
 
-  async start() {
+  async init() {
+    if (this._initialized) return
+    logger.info(`App initializing...`)
+    const start = performance.now()
     await this.plugin.loadPlugins()
     await this.config.validateConfig()
     await this.plugin.setupPlugins()
     await this.db.initDatabase()
     await this.cache.initCache()
+    const duration = performance.now() - start
+    logger.info(`App initialized in ${duration.toFixed(2)}ms`)
+    this._initialized = true
+  }
+
+  async stop() {
+    if (this._stopped) return
+    logger.info(`App stopping...`)
+    const start = performance.now()
+    await this.db.disconnect()
+    const duration = performance.now() - start
+    logger.info(`App stopped in ${duration.toFixed(2)}ms`)
+    this._stopped = true
+  }
+
+  async start() {
+    await this.init()
 
     const app = new Hono()
       .use(async (ctx, next) => {
