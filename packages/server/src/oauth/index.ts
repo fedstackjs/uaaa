@@ -18,7 +18,7 @@ const tOpenIdAuthorizationRequest = type({
 
 const AccessTokenRequest = type({
   grant_type: "'authorization_code'",
-  client_id: 'string',
+  'client_id?': 'string',
   'client_secret?': 'string',
   'code_verifier?': 'string',
   code: 'string',
@@ -26,7 +26,7 @@ const AccessTokenRequest = type({
 })
 const AccessTokenRefreshRequest = type({
   grant_type: "'refresh_token'",
-  client_id: 'string',
+  'client_id?': 'string',
   'client_secret?': 'string',
   refresh_token: 'string',
   'scope?': 'string|undefined'
@@ -136,21 +136,32 @@ export const oauthWellKnownRouter = new Hono()
     })
   })
 
-function loadClientSecret(ctx: Context, clientId: string, clientSecret?: string) {
-  if (clientSecret) return clientSecret
+// RFC6749 Section 2.3.1
+function loadClientPassword(
+  ctx: Context,
+  clientId?: string,
+  clientSecret?: string
+): { clientId: string; clientSecret: string } {
   const authorization = ctx.req.header('authorization')
   if (authorization) {
     const [type, token] = authorization.split(' ')
     if (type !== 'Basic') {
       throw new HTTPException(400, { res: ctx.text('invalid_client') })
     }
-    const [requestClientId, clientSecret] = Buffer.from(token, 'base64').toString().split(':')
-    if (requestClientId !== clientId) {
+    const [_id, _secret = ''] = Buffer.from(token, 'base64').toString().split(':')
+    clientId ??= _id
+    clientSecret ??= _secret
+    if (clientId !== _id || clientSecret !== _secret) {
       throw new HTTPException(400, { res: ctx.text('invalid_client') })
     }
-    return clientSecret
+    return { clientId, clientSecret }
+  } else {
+    if (!clientId) {
+      throw new HTTPException(400, { res: ctx.text('invalid_client') })
+    }
+    clientSecret ??= ''
+    return { clientId, clientSecret }
   }
-  return ''
 }
 
 function checkClientSecret(ctx: Context, app: IAppDoc, clientSecret: string) {
@@ -200,7 +211,12 @@ export const oauthRouter = new Hono()
     const request = ctx.req.valid('form')
     const { app } = ctx.var
     const { apps, tokens, sessions } = app.db
-    const clientApp = await apps.findOne({ _id: request.client_id })
+    const { clientId, clientSecret } = loadClientPassword(
+      ctx,
+      request.client_id,
+      request.client_secret
+    )
+    const clientApp = await apps.findOne({ _id: clientId })
     if (!clientApp) {
       return ctx.json({ error: 'invalid_client' }, 400)
     }
@@ -209,7 +225,7 @@ export const oauthRouter = new Hono()
       const tokenDoc = await tokens.findOneAndUpdate(
         {
           _id: request.code,
-          clientAppId: request.client_id,
+          clientAppId: clientId,
           lastIssuedAt: { $exists: false },
           terminated: { $ne: true }
         },
@@ -220,7 +236,6 @@ export const oauthRouter = new Hono()
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      let clientSecret = loadClientSecret(ctx, request.client_id, request.client_secret)
       checkClientSecret(ctx, clientApp, clientSecret)
       clientSecret || checkClientPKCE(ctx, tokenDoc.challenge, request.code_verifier)
 
@@ -242,7 +257,7 @@ export const oauthRouter = new Hono()
         .map((p) => Permission.fromScopedString(p, UAAA))
         .filter((p) => p.test('/session/claim'))
       if (matchedPermissions.length) {
-        id_token = await generateIDToken(ctx, request.client_id, tokenDoc.userId, tokenDoc.nonce)
+        id_token = await generateIDToken(ctx, clientId, tokenDoc.userId, tokenDoc.nonce)
       }
       return ctx.json({
         access_token: token,
@@ -253,7 +268,6 @@ export const oauthRouter = new Hono()
       })
     } else {
       const { refresh_token, client_id } = request
-      let clientSecret = loadClientSecret(ctx, client_id, request.client_secret)
       checkClientSecret(ctx, clientApp, clientSecret)
 
       const { token, refreshToken } = await ctx.var.app.token.refreshToken(refresh_token, client_id)
