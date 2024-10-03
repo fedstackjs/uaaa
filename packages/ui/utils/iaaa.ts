@@ -3,6 +3,7 @@ function getWindow(redirectUrl: string) {
   url.searchParams.set('stub', '1')
   redirectUrl = url.toString()
 
+  // TODO: detech desktop browser and use window.open
   const win = window.open(redirectUrl, 'iaaa', 'width=800,height=600')
   if (win) return { client: win, close: () => win?.close() }
   const iframe = document.createElement('iframe')
@@ -23,7 +24,7 @@ const timeout = 60 * 1000 // 1 minute
 
 export async function getIAAAToken() {
   const resp = await fetch('/.well-known/iaaa-configuration')
-  const { appID, appName, authorizeUrl, redirectUrl } = await resp.json()
+  const { appID, appName, authorizeUrl, redirectUrl, crossOrigin } = await resp.json()
   const html = `
   <form action="${authorizeUrl}" method=post name=iaaa style="display: none">
     <input type=hidden name=appID value="${appID}" />
@@ -33,8 +34,11 @@ export async function getIAAAToken() {
   `
   const { client, close } = getWindow(redirectUrl)
   if (!client) throw new Error('Failed to open IAAA window')
-  const { origin } = new URL(redirectUrl)
-  if (origin === window.origin) {
+  let sameOrigin =
+    typeof crossOrigin === 'boolean'
+      ? !crossOrigin
+      : new URL(redirectUrl).origin === window.location.origin
+  if (sameOrigin) {
     client.document.write(html)
     client.document.forms[0].submit()
     const start = Date.now()
@@ -54,6 +58,7 @@ export async function getIAAAToken() {
     close()
     throw new Error('IAAA timeout')
   } else {
+    const { origin } = new URL(redirectUrl)
     console.log(`[IAAA] Using stub: ${origin}`)
     let token = ''
     let ready = false

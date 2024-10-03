@@ -3,9 +3,10 @@ import { type } from 'arktype'
 import { type Context, Hono } from 'hono'
 import { verifyAuthorizationJwt, verifyPermission } from '../api/_middleware.js'
 import type { ClaimName } from '../claim/_common.js'
-import type { IUserClaims } from '../db/index.js'
+import type { IAppDoc, IUserClaims } from '../db/index.js'
 import { UAAA, BusinessError, Permission, SecurityLevel, logger } from '../util/index.js'
 import { createHash } from 'crypto'
+import { HTTPException } from 'hono/http-exception'
 
 const tOpenIdAuthorizationRequest = type({
   scope: 'string',
@@ -15,39 +16,23 @@ const tOpenIdAuthorizationRequest = type({
   'state?': 'string'
 })
 
-const AccessTokenRequestClientCredentials = type({
+const AccessTokenRequest = type({
   grant_type: "'authorization_code'",
   client_id: 'string',
-  client_secret: 'string',
+  'client_secret?': 'string',
+  'code_verifier?': 'string',
   code: 'string',
   'redirect_uri?': 'string|undefined'
 })
-const AccessTokenRequestPKCE = type({
-  grant_type: "'authorization_code'",
-  client_id: 'string',
-  code_verifier: 'string',
-  code: 'string',
-  'redirect_uri?': 'string|undefined'
-})
-const AccessTokenRequestRefreshClientCredentials = type({
+const AccessTokenRefreshRequest = type({
   grant_type: "'refresh_token'",
   client_id: 'string',
-  client_secret: 'string',
-  refresh_token: 'string',
-  'scope?': 'string|undefined'
-})
-const AccessTokenRequestRefreshPublic = type({
-  grant_type: "'refresh_token'",
-  client_id: 'string',
+  'client_secret?': 'string',
   refresh_token: 'string',
   'scope?': 'string|undefined'
 })
 
-const tOpenIdAccessTokenRequest = type(
-  type(AccessTokenRequestPKCE, '|', AccessTokenRequestClientCredentials),
-  '|',
-  type(AccessTokenRequestRefreshPublic, '|', AccessTokenRequestRefreshClientCredentials)
-)
+const tOpenIdAccessTokenRequest = type(AccessTokenRequest, '|', AccessTokenRefreshRequest)
 
 function generateAdditionalClaim(claims: Partial<IUserClaims>, template: string) {
   // template format:
@@ -151,6 +136,41 @@ export const oauthWellKnownRouter = new Hono()
     })
   })
 
+function loadClientSecret(ctx: Context, clientId: string, clientSecret?: string) {
+  if (clientSecret) return clientSecret
+  const authorization = ctx.req.header('authorization')
+  if (authorization) {
+    const [type, token] = authorization.split(' ')
+    if (type !== 'Basic') {
+      throw new HTTPException(400, { res: ctx.text('invalid_client') })
+    }
+    const [requestClientId, clientSecret] = Buffer.from(token, 'base64').toString().split(':')
+    if (requestClientId !== clientId) {
+      throw new HTTPException(400, { res: ctx.text('invalid_client') })
+    }
+    return clientSecret
+  }
+  return ''
+}
+
+function checkClientSecret(ctx: Context, app: IAppDoc, clientSecret: string) {
+  if (clientSecret) {
+    if (app.secret !== clientSecret) {
+      throw new HTTPException(400, { res: ctx.text('invalid_client') })
+    }
+  } else {
+    if (!app.openid?.allowPublicClient) {
+      throw new HTTPException(400, { res: ctx.text('invalid_client') })
+    }
+  }
+}
+
+function checkClientPKCE(ctx: Context, challenge?: string, codeVerifier?: string) {
+  if (!codeVerifier || !checkPKCEChallenge(codeVerifier, challenge)) {
+    throw new HTTPException(400, { res: ctx.text('invalid_client') })
+  }
+}
+
 export const oauthRouter = new Hono()
   // OIDC Authorization Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#AuthorizationEndpoint
@@ -180,11 +200,12 @@ export const oauthRouter = new Hono()
     const request = ctx.req.valid('form')
     const { app } = ctx.var
     const { apps, tokens, sessions } = app.db
+    const clientApp = await apps.findOne({ _id: request.client_id })
+    if (!clientApp) {
+      return ctx.json({ error: 'invalid_client' }, 400)
+    }
+
     if (request.grant_type === 'authorization_code') {
-      const clientApp = await apps.findOne({ _id: request.client_id })
-      if (!clientApp) {
-        return ctx.json({ error: 'invalid_client' }, 400)
-      }
       const tokenDoc = await tokens.findOneAndUpdate(
         {
           _id: request.code,
@@ -199,17 +220,9 @@ export const oauthRouter = new Hono()
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      if ('client_secret' in request) {
-        // Confidential Client
-        if (clientApp.secret !== request.client_secret) {
-          return ctx.json({ error: 'invalid_client' }, 400)
-        }
-      } else {
-        // Public Client, using PKCE
-        if (!checkPKCEChallenge(request.code_verifier, tokenDoc.challenge)) {
-          return ctx.json({ error: 'invalid_grant' }, 400)
-        }
-      }
+      let clientSecret = loadClientSecret(ctx, request.client_id, request.client_secret)
+      checkClientSecret(ctx, clientApp, clientSecret)
+      clientSecret || checkClientPKCE(ctx, tokenDoc.challenge, request.code_verifier)
 
       if (request.redirect_uri && !clientApp.callbackUrls.includes(request.redirect_uri)) {
         return ctx.json({ error: 'invalid_grant' }, 400)
@@ -240,19 +253,8 @@ export const oauthRouter = new Hono()
       })
     } else {
       const { refresh_token, client_id } = request
-      const client = await app.db.apps.findOne({ _id: client_id }, { projection: { secret: 1 } })
-      if (!client) {
-        return ctx.json({ error: 'invalid_client' }, 400)
-      }
-      if ('client_secret' in request) {
-        if (client.secret !== request.client_secret) {
-          return ctx.json({ error: 'invalid_client' }, 400)
-        }
-      } else {
-        if (!client.openid?.allowPublicClient) {
-          return ctx.json({ error: 'invalid_client' }, 400)
-        }
-      }
+      let clientSecret = loadClientSecret(ctx, client_id, request.client_secret)
+      checkClientSecret(ctx, clientApp, clientSecret)
 
       const { token, refreshToken } = await ctx.var.app.token.refreshToken(refresh_token, client_id)
       return ctx.json({

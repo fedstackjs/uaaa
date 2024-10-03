@@ -27,7 +27,7 @@
         <template v-if="!type">
           <VCardText class="flex flex-col gap-2" v-if="data">
             <VBtn
-              v-for="loginType of data.types"
+              v-for="loginType of data"
               :key="loginType"
               variant="tonal"
               class="justify-start"
@@ -59,7 +59,8 @@ const type = useRouteQuery<string>('type', '')
 
 const { data } = await useAsyncData(async () => {
   const resp = await api.public.login.$get()
-  return resp.json()
+  const { types } = await resp.json()
+  return types.filter((type) => t(`credentials.${type}`) !== `credentials.${type}`)
 })
 
 function postLogin() {

@@ -31,7 +31,7 @@
         <tr v-if="credential.validCount">
           <td>{{ t('validCount') }}</td>
           <td>
-            <code>{{ credential.validCount }}</code>
+            <code>{{ credential.validCount > 1e4 ? '>10000' : credential.validCount }}</code>
           </td>
         </tr>
         <tr>
@@ -67,7 +67,7 @@
         <tr>
           <td>{{ t('securityLevel') }}</td>
           <td>
-            <code>{{ credential.securityLevel }}</code>
+            <code>{{ t(`securityLevel.${credential.securityLevel}`) }}</code>
           </td>
         </tr>
       </tbody>

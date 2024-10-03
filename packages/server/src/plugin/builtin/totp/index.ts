@@ -87,7 +87,7 @@ class TOTPImpl extends CredentialImpl {
     await ctx.manager.checkCredentialUse(credential._id)
     return {
       credentialId: credential._id,
-      securityLevel: targetLevel
+      securityLevel: credential.securityLevel
     }
   }
 

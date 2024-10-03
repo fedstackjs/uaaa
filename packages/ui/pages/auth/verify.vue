@@ -18,9 +18,9 @@
       <VDivider />
       <VFadeTransition mode="out-in">
         <div v-if="!type">
-          <VCardText class="flex flex-col gap-2" v-if="data?.types.length">
+          <VCardText class="flex flex-col gap-2" v-if="data?.length">
             <VBtn
-              v-for="item of data.types"
+              v-for="item of data"
               :key="item"
               variant="tonal"
               class="justify-start"
@@ -70,7 +70,8 @@ const targetLevel = useRouteQuery('targetLevel', '0')
 
 const { data } = await useAsyncData(async () => {
   const resp = await api.session.elevate.$get({ query: { targetLevel: targetLevel.value } })
-  return resp.json()
+  const { types } = await resp.json()
+  return types.filter((type) => t(`credentials.${type}`) !== `credentials.${type}`)
 })
 
 let redirected = false
