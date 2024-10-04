@@ -47,6 +47,12 @@ export class SessionManager extends Hookable<{
   }
 
   async checkDerive(token: ITokenPayload, options: IDeriveOptions) {
+    if (token.client_id) {
+      throw new BusinessError('BAD_REQUEST', {
+        msg: 'Application token is not allowed to derive another token'
+      })
+    }
+
     const { clientAppId, securityLevel } = options
     if (securityLevel > token.level) {
       throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', { required: securityLevel })
