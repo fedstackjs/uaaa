@@ -17,6 +17,8 @@
 </template>
 
 <script setup lang="ts">
+import uaaa from '@/assets/uaaa.svg'
+
 const props = defineProps<{
   appId: string
   icon?: string
@@ -24,6 +26,7 @@ const props = defineProps<{
 }>()
 
 const { data } = await useAsyncData(props.appId, async () => {
+  if (props.appId === 'uaaa') return { name: 'UAAA', icon: uaaa }
   if (props.icon) return { icon: props.icon, name: props.name ?? '' }
   if (props.name) return { name: props.name }
   const resp = await api.public.app[':id'].$get({ param: { id: props.appId } })

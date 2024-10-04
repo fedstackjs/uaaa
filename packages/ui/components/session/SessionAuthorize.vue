@@ -43,10 +43,10 @@
 </template>
 
 <script setup lang="ts">
-import type { Connector } from '~/utils/connector'
+import type { IAuthorizeParams } from '~/composables/useAuthorize'
 
 const props = defineProps<{
-  connector: Connector
+  params: IAuthorizeParams
 }>()
 const { t } = useI18n()
 
@@ -56,33 +56,23 @@ const router = useRouter()
 const showGrant = ref(false)
 
 const { data: app } = await useAsyncData(async () => {
-  const resp = await api.public.app[':id'].$get({ param: { id: props.connector.clientAppId } })
+  const resp = await api.public.app[':id'].$get({ param: { id: props.params.clientAppId } })
   const { app } = await resp.json()
   return app
 })
 
 const { run: authorize, running } = useTask(async () => {
   if (!app.value) return
-  const { nonce, challenge } = await props.connector.checkAuthorize(app.value)
-  const resp = await api.session.derive.$post({
-    json: {
-      clientAppId: props.connector.clientAppId,
-      securityLevel: props.connector.securityLevel,
-      nonce,
-      challenge
-    }
-  })
-  if (resp.ok) {
-    const { tokenId } = await resp.json()
-    await props.connector.onAuthorize(app.value, tokenId)
-  } else {
-    const err = await api.getError(resp)
-    if (err.code === 'APP_NOT_INSTALLED') {
+  await props.params.connector.preAuthorize(props.params, app.value)
+  try {
+    await props.params.connector.onAuthorize(props.params, app.value)
+  } catch (err) {
+    if (isAPIError(err) && err.code === 'APP_NOT_INSTALLED') {
       toast.error(t('msg.app-not-installed'))
       router.replace({
         path: '/install',
         query: {
-          appId: props.connector.clientAppId,
+          appId: props.params.clientAppId,
           redirect: route.fullPath
         }
       })
@@ -94,7 +84,7 @@ const { run: authorize, running } = useTask(async () => {
 
 function cancel() {
   if (!app.value) return
-  props.connector.onCancel(app.value)
+  props.params.connector.onCancel(props.params, app.value)
 }
 
 function doShowGrant() {
@@ -120,7 +110,7 @@ const {
 
 onMounted(async () => {
   const resp = await api.session.try_derive.$post({
-    json: { clientAppId: props.connector.clientAppId, securityLevel: props.connector.securityLevel }
+    json: { clientAppId: props.params.clientAppId, securityLevel: props.params.securityLevel }
   })
   try {
     await api.checkResponse(resp)
@@ -130,7 +120,7 @@ onMounted(async () => {
       router.replace({
         path: '/install',
         query: {
-          appId: props.connector.clientAppId,
+          appId: props.params.clientAppId,
           redirect: route.fullPath
         }
       })
@@ -139,8 +129,11 @@ onMounted(async () => {
     // Handle error
     return
   }
-  const { slientAuthorize } = await resp.json()
-  if (slientAuthorize) {
+  const { permissions } = await resp.json()
+  const parsedPermissions = permissions
+    .map((perm) => Permission.fromCompactString(perm))
+    .filter((perm) => perm.appId === 'uaaa')
+  if (parsedPermissions.some((perm) => perm.test('/session/slient_authorize'))) {
     start(5)
   }
 })

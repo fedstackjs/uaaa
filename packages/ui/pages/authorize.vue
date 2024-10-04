@@ -8,15 +8,17 @@
         <div>{{ t('pages.authorize') }}</div>
       </VCardTitle>
       <VDivider />
-      <SessionAuthorize v-if="connector instanceof Connector" :connector="connector" />
-      <VAlert v-else type="error" :text="t('msg.bad-arguments')" />
+      <VAlert
+        v-if="'error' in params"
+        type="error"
+        :text="t('msg.bad-arguments', [params.error])"
+      />
+      <SessionAuthorize v-else :params="params" />
     </VCard>
   </VContainer>
 </template>
 
 <script setup lang="ts">
-import { Connector } from '~/utils/connector'
-
 definePageMeta({
   layout: 'plain',
   middleware: 'verifyauth'
@@ -26,7 +28,5 @@ useHead({
 })
 
 const { t } = useI18n()
-
-const type = useRouteQuery<string>('type', '')
-const connector = useConnector(type.value)
+const { params } = useAuthorize()
 </script>

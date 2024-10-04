@@ -138,7 +138,7 @@ export class SessionManager extends Hookable<{
       { generateCode: !signToken }
     )
     if (!signToken) {
-      return { code: tokenDoc.code }
+      return { code: tokenDoc.code! }
     }
     return this.app.token.signToken(tokenDoc)
   }

@@ -26,8 +26,9 @@
         {{ t(`securityLevel.${item.securityLevel}`) }}
       </template>
       <template v-slot:[`item.targetAppId`]="{ item }">
-        <AppAvatar v-if="item.targetAppId" :appId="item.targetAppId" />
-        <span v-else>{{ t('uaaa') }}</span>
+        <div class="flex gap-1">
+          <AppAvatar v-for="app of item.apps" :key="app" :appId="app" />
+        </div>
       </template>
       <template v-slot:[`item.clientAppId`]="{ item }">
         <AppAvatar v-if="item.clientAppId" :appId="item.clientAppId" />
@@ -95,7 +96,15 @@ const { page, perPage, data, cachedCount, status, execute } = usePagination(
     })
     await api.checkResponse(resp)
     const { tokens, count } = await resp.json()
-    return { items: tokens, count }
+    return {
+      items: tokens.map((token) => ({
+        ...token,
+        apps: [
+          ...new Set(token.permissions.map((perm) => Permission.fromCompactString(perm).appId))
+        ]
+      })),
+      count
+    }
   }
 )
 
