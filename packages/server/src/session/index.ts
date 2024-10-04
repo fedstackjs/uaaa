@@ -1,16 +1,20 @@
 import { Hookable } from 'hookable'
 import { BusinessError, Permission, UAAA } from '../util/index.js'
 import type { App, ICredentialVerifyResult, ITokenPayload, SecurityLevel } from '../index.js'
-import ms from 'ms'
+
+export interface IDeriveOptions {
+  clientAppId: string
+  securityLevel: SecurityLevel
+  nonce?: string
+  challenge?: string
+  permissions?: string[]
+  optionalPermissions?: string[]
+  signToken?: boolean
+}
 
 export class SessionManager extends Hookable<{
   preElevate(token: ITokenPayload, verifyResult: ICredentialVerifyResult): void | Promise<void>
-  preDerive(
-    token: ITokenPayload,
-    targetAppId: string | undefined,
-    clientAppId: string,
-    securityLevel: SecurityLevel
-  ): void | Promise<void>
+  preDerive(token: ITokenPayload, options: IDeriveOptions): void | Promise<void>
 }> {
   constructor(public app: App) {
     super()
@@ -29,7 +33,7 @@ export class SessionManager extends Hookable<{
     const newToken = await this.app.token.createAndSignToken({
       sessionId: token.sid,
       userId: token.sub,
-      permissions: ['/**'],
+      permissions: [`${UAAA}/**`],
       index: session.tokenCount,
       parentId: token.jti,
       credentialId,
@@ -39,22 +43,11 @@ export class SessionManager extends Hookable<{
       tokenTimeout: this.app.token.getTokenTimeout(securityLevel, tokenTimeout),
       refreshTimeout: this.app.token.getRefreshTimeout(securityLevel, refreshTimeout)
     })
-    return {
-      token: newToken
-    }
+    return { token: newToken }
   }
 
-  async checkDerive(
-    token: ITokenPayload,
-    targetAppId: string | undefined,
-    clientAppId: string,
-    securityLevel: SecurityLevel
-  ) {
-    if (token.client_id && !targetAppId) {
-      throw new BusinessError('BAD_REQUEST', {
-        msg: 'Secondary token can only derive application token'
-      })
-    }
+  async checkDerive(token: ITokenPayload, options: IDeriveOptions) {
+    const { clientAppId, securityLevel } = options
     if (securityLevel > token.level) {
       throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', { required: securityLevel })
     }
@@ -65,7 +58,7 @@ export class SessionManager extends Hookable<{
       throw new BusinessError('BAD_REQUEST', { msg: 'Security level higher than client app' })
     }
 
-    await this.callHook('preDerive', token, targetAppId, clientAppId, securityLevel)
+    await this.callHook('preDerive', token, options)
 
     const installation = await this.app.db.installations.findOne({
       userId: token.sub,
@@ -76,13 +69,27 @@ export class SessionManager extends Hookable<{
       throw new BusinessError('APP_NOT_INSTALLED', {})
     }
 
-    const permTarget = targetAppId ?? UAAA
-    const permissions = installation.grantedPermissions
-      .map((p) => Permission.fromCompactString(p))
-      .filter((p) => p.appId === permTarget)
-      .map((p) => p.toScopedString())
-    if (!permissions.length) {
-      throw new BusinessError('BAD_REQUEST', { msg: 'No permissions granted for target app' })
+    const granted = new Set(installation.grantedPermissions)
+    if (options.permissions) {
+      for (const perm of options.permissions) {
+        if (!granted.has(perm)) {
+          throw new BusinessError('INSUFFICIENT_PERMISSION', { required: perm })
+        }
+      }
+    } else {
+      // Default to grant all permissions
+      options.permissions = installation.grantedPermissions
+    }
+    if (options.optionalPermissions) {
+      options.permissions = [
+        ...options.permissions,
+        ...options.optionalPermissions.filter((p) => granted.has(p))
+      ]
+    }
+
+    const permissions = options.permissions
+    if (!permissions.some((p) => Permission.fromCompactString(p).appId === UAAA)) {
+      throw new BusinessError('BAD_REQUEST', { msg: 'No permissions granted for UAAA' })
     }
 
     const timestamp = Date.now()
@@ -98,19 +105,9 @@ export class SessionManager extends Hookable<{
     return { clientApp, installation, parentToken, permissions, timestamp }
   }
 
-  async derive(
-    token: ITokenPayload,
-    targetAppId: string | undefined,
-    clientAppId: string,
-    securityLevel: SecurityLevel,
-    options?: { nonce?: string; challenge?: string }
-  ) {
-    const { parentToken, permissions, timestamp } = await this.checkDerive(
-      token,
-      targetAppId,
-      clientAppId,
-      securityLevel
-    )
+  async derive(token: ITokenPayload, options: IDeriveOptions) {
+    const { clientAppId, securityLevel, signToken = false } = options
+    const { parentToken, permissions, timestamp } = await this.checkDerive(token, options)
 
     const session = await this.app.db.sessions.findOneAndUpdate(
       { _id: token.sid, terminated: { $ne: true } },
@@ -121,26 +118,28 @@ export class SessionManager extends Hookable<{
       throw new BusinessError('BAD_REQUEST', { msg: 'Session not found' })
     }
 
-    const { _id } = await this.app.token.createToken({
-      sessionId: token.sid,
-      userId: token.sub,
-      index: session.tokenCount,
-      targetAppId,
-      clientAppId,
-      permissions,
-      parentId: parentToken._id,
-      securityLevel,
-      createdAt: timestamp,
-      expiresAt: parentToken.expiresAt,
-      // TODO: tokenTimeout and refreshTimeout should be configurable
-      tokenTimeout: parentToken.tokenTimeout,
-      refreshTimeout: parentToken.refreshTimeout,
-      nonce: options?.nonce,
-      challenge: options?.challenge
-    })
-
-    return {
-      tokenId: _id
+    const tokenDoc = await this.app.token.createToken(
+      {
+        sessionId: token.sid,
+        userId: token.sub,
+        index: session.tokenCount,
+        clientAppId,
+        permissions,
+        parentId: parentToken._id,
+        securityLevel,
+        createdAt: timestamp,
+        expiresAt: parentToken.expiresAt,
+        // TODO: tokenTimeout and refreshTimeout should be configurable
+        tokenTimeout: parentToken.tokenTimeout,
+        refreshTimeout: parentToken.refreshTimeout,
+        nonce: options?.nonce,
+        challenge: options?.challenge
+      },
+      { generateCode: !signToken }
+    )
+    if (!signToken) {
+      return { code: tokenDoc.code }
     }
+    return this.app.token.signToken(tokenDoc)
   }
 }

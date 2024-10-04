@@ -2,13 +2,13 @@ import { Hono } from 'hono'
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { nanoid } from 'nanoid'
-import { HTTPException } from 'hono/http-exception'
 import { idParamValidator } from '../_common.js'
 import type { IAppDoc } from '../../db/index.js'
 import { BusinessError } from '../../util/errors.js'
 import { getRemoteIP, getUserAgent } from '../_helper.js'
 import { UAAA } from '../../util/constants.js'
 import { UAAAProvidedPermissions } from '../../util/permission.js'
+import type { ITokenDoc } from '../../db/model/token.js'
 
 /** Public API */
 export const publicApi = new Hono()
@@ -92,7 +92,7 @@ export const publicApi = new Hono()
     ),
     async (ctx) => {
       const { type, payload } = ctx.req.valid('json')
-      const { credential, db, token, config } = ctx.var.app
+      const { credential, db, token } = ctx.var.app
       const { userId, securityLevel, expiresIn, credentialId, tokenTimeout, refreshTimeout } =
         await credential.handleLogin(ctx, type, payload)
       const now = Date.now()
@@ -112,35 +112,41 @@ export const publicApi = new Hono()
         token: string
         refreshToken?: string | undefined
       }> = []
+      const partialTokenDoc = {
+        sessionId,
+        userId,
+        permissions: [`${UAAA}/**`],
+        credentialId
+      } satisfies Partial<ITokenDoc>
       tokens.push(
-        await token.createAndSignToken({
-          sessionId,
-          userId,
-          index: 0,
-          permissions: ['/**'],
-          credentialId,
-          securityLevel: 0,
-          createdAt: now,
-          expiresAt: now + token.sessionTimeout,
-          tokenTimeout: token.getTokenTimeout(0, tokenTimeout),
-          refreshTimeout: token.getRefreshTimeout(0, refreshTimeout)
-        })
+        await token.createAndSignToken(
+          {
+            ...partialTokenDoc,
+            index: 0,
+            securityLevel: 0,
+            createdAt: now,
+            expiresAt: now + token.sessionTimeout,
+            tokenTimeout: token.getTokenTimeout(0, tokenTimeout),
+            refreshTimeout: token.getRefreshTimeout(0, refreshTimeout)
+          },
+          { generateCode: false }
+        )
       )
       if (securityLevel > 0) {
         tokens.push(
-          await token.createAndSignToken({
-            sessionId,
-            userId,
-            index: 1,
-            permissions: ['/**'],
-            credentialId,
-            parentId: JSON.parse(atob(tokens[0].token.split('.')[1])).jti,
-            securityLevel,
-            createdAt: now,
-            expiresAt: now + token.getSessionTokenTimeout(securityLevel, expiresIn),
-            tokenTimeout: token.getTokenTimeout(securityLevel, tokenTimeout),
-            refreshTimeout: token.getRefreshTimeout(securityLevel, refreshTimeout)
-          })
+          await token.createAndSignToken(
+            {
+              ...partialTokenDoc,
+              index: 1,
+              parentId: JSON.parse(atob(tokens[0].token.split('.')[1])).jti,
+              securityLevel,
+              createdAt: now,
+              expiresAt: now + token.getSessionTokenTimeout(securityLevel, expiresIn),
+              tokenTimeout: token.getTokenTimeout(securityLevel, tokenTimeout),
+              refreshTimeout: token.getRefreshTimeout(securityLevel, refreshTimeout)
+            },
+            { generateCode: false }
+          )
         )
       }
       return ctx.json({ tokens })
@@ -158,15 +164,9 @@ export const publicApi = new Hono()
       })
     ),
     async (ctx) => {
-      const { refreshToken, clientId, clientSecret } = ctx.req.valid('json')
       const { app } = ctx.var
-      if (clientId) {
-        const client = await app.db.apps.findOne({ _id: clientId }, { projection: { secret: 1 } })
-        if (!client || client.secret !== clientSecret) {
-          throw new HTTPException(401)
-        }
-      }
-      return ctx.json(await app.token.refreshToken(refreshToken, clientId))
+      const { refreshToken, clientId, clientSecret } = ctx.req.valid('json')
+      return ctx.json(await app.token.refreshToken(refreshToken, clientId, clientSecret))
     }
   )
 

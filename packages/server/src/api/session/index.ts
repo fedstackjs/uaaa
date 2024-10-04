@@ -83,24 +83,33 @@ export const sessionApi = new Hono()
     }
   )
   .post(
+    '/exchange',
+    verifyPermission({ path: '/session/exchange' }),
+    arktypeValidator('json', type({ targetAppId: 'string' })),
+    async (ctx) => {
+      const { app, token } = ctx.var
+      const { targetAppId } = ctx.req.valid('json')
+      return ctx.json(await app.token.exchangeToken(token, targetAppId))
+    }
+  )
+  .post(
     '/derive',
     verifyPermission({ path: '/session/derive' }),
     arktypeValidator(
       'json',
       type({
-        'targetAppId?': 'string',
         clientAppId: 'string',
         securityLevel: tSecurityLevel,
+        'permissions?': 'string[]',
+        'optionalPermissions?': 'string[]',
         'nonce?': 'string',
-        'challenge?': 'string'
+        'challenge?': 'string',
+        'signToken?': 'boolean'
       })
     ),
     async (ctx) => {
-      const { targetAppId, clientAppId, securityLevel, ...options } = ctx.req.valid('json')
       const { session } = ctx.var.app
-      return ctx.json(
-        await session.derive(ctx.var.token, targetAppId, clientAppId, securityLevel, options)
-      )
+      return ctx.json(await session.derive(ctx.var.token, ctx.req.valid('json')))
     }
   )
   .post(
@@ -109,25 +118,17 @@ export const sessionApi = new Hono()
     arktypeValidator(
       'json',
       type({
-        'targetAppId?': 'string',
         clientAppId: 'string',
-        securityLevel: tSecurityLevel
+        securityLevel: tSecurityLevel,
+        'permissions?': 'string[]',
+        'optionalPermissions?': 'string[]'
       })
     ),
     async (ctx) => {
-      const { targetAppId, clientAppId, securityLevel } = ctx.req.valid('json')
       const { session } = ctx.var.app
-      const { installation } = await session.checkDerive(
-        ctx.var.token,
-        targetAppId,
-        clientAppId,
-        securityLevel
-      )
-      const permissions = installation.grantedPermissions
-        .map((p) => Permission.fromCompactString<UAAA>(p))
-        .filter((p) => p.appId === UAAA)
+      const { permissions } = await session.checkDerive(ctx.var.token, ctx.req.valid('json'))
       return ctx.json({
-        slientAuthorize: permissions.some((p) => p.test('/session/slient_authorize'))
+        permissions
       })
     }
   )

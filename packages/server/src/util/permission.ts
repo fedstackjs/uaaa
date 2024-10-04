@@ -52,6 +52,7 @@ export const UAAAPermissionDescriptionMap = {
   '/session/elevate': { name: 'Elevate session', description: '' },
   '/session/derive': { name: 'Derive token inside session', description: '' },
   '/session/slient_authorize': { name: 'Allow sliently authorize', description: '' },
+  '/session/exchange': { name: 'Exchange token for other application', description: '' },
   '/user': { name: 'Get user info', description: '' },
   '/user/claim': { name: 'Get user claims', description: '' },
   '/user/claim/edit': { name: 'Edit user claims', description: '' },

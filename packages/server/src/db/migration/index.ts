@@ -26,6 +26,10 @@ export class MigrationManager extends Hookable<{
     this.migrations.set(0, async function () {
       await this.db.installations.createIndex({ userId: 1, appId: 1 }, { unique: true })
       await this.db.tokens.createIndex(
+        { code: 1 },
+        { unique: true, partialFilterExpression: { code: { $exists: true } } }
+      )
+      await this.db.tokens.createIndex(
         { refreshToken: 1 },
         { unique: true, partialFilterExpression: { refreshToken: { $exists: true } } }
       )

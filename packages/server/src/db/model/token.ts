@@ -9,14 +9,14 @@ export interface ITokenDoc {
   userId: string
   /** Token Index in a session */
   index: number
-  /** Token Target AppID (empty when token is issued for UAAA) */
-  targetAppId?: string | undefined
   /** Token Client AppID (empty when token is issued for UAAA) */
   clientAppId?: string | undefined
-  /** Token's permissions. Array of stripped UPM-URLs */
+  /** Token's permissions. Array of compact UPM-URLs */
   permissions: string[]
   /** Token's security level' */
   securityLevel: SecurityLevel
+  /** Whether the token is confidential, eg. require client authentication */
+  confidential?: boolean | undefined
 
   parentId?: string | undefined
   credentialId?: string | undefined
@@ -48,4 +48,5 @@ export interface ITokenDoc {
   /** OpenID related */
   nonce?: string | undefined
   challenge?: string | undefined
+  code?: string | undefined
 }

@@ -182,28 +182,48 @@ function checkClientPKCE(ctx: Context, challenge?: string, codeVerifier?: string
   }
 }
 
+function getAuthorizeUrl(base: string, ...params: ConstructorParameters<typeof URLSearchParams>) {
+  return new URL('/authorize?' + new URLSearchParams(...params).toString(), base).toString()
+}
+
 export const oauthRouter = new Hono()
   // OIDC Authorization Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#AuthorizationEndpoint
   .get('/authorize', arktypeValidator('query', tOpenIdAuthorizationRequest), async (ctx) => {
+    const { db, config } = ctx.var.app
+    const base = config.get('deploymentUrl')
     const { client_id, ...rest } = ctx.req.valid('query')
-    const params = new URLSearchParams({
-      clientAppId: client_id,
-      type: 'oidc',
-      params: JSON.stringify(rest),
-      securityLevel: '0'
-    })
-    return ctx.redirect(new URL('/authorize?' + params.toString(), ctx.req.url).toString())
+
+    const clientApp = await db.apps.findOne({ _id: client_id })
+    if (!clientApp) {
+      return ctx.redirect(getAuthorizeUrl(base, { type: 'oidc', error: 'invalid_client' }))
+    }
+    return ctx.redirect(
+      getAuthorizeUrl(base, {
+        clientAppId: client_id,
+        type: 'oidc',
+        params: JSON.stringify(rest),
+        securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0')
+      })
+    )
   })
   .post('/authorize', arktypeValidator('form', tOpenIdAuthorizationRequest), async (ctx) => {
+    const { db, config } = ctx.var.app
+    const base = config.get('deploymentUrl')
     const { client_id, ...rest } = ctx.req.valid('form')
-    const params = new URLSearchParams({
-      clientAppId: client_id,
-      type: 'oidc',
-      params: JSON.stringify(rest),
-      securityLevel: '0'
-    })
-    return ctx.redirect(new URL('/authorize?' + params.toString(), ctx.req.url).toString())
+
+    const clientApp = await db.apps.findOne({ _id: client_id })
+    if (!clientApp) {
+      return ctx.redirect(getAuthorizeUrl(base, { type: 'oidc', error: 'invalid_client' }))
+    }
+    return ctx.redirect(
+      getAuthorizeUrl(base, {
+        clientAppId: client_id,
+        type: 'oidc',
+        params: JSON.stringify(rest),
+        securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0')
+      })
+    )
   })
   // OIDC Access Token Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#TokenEndpoint
@@ -224,12 +244,11 @@ export const oauthRouter = new Hono()
     if (request.grant_type === 'authorization_code') {
       const tokenDoc = await tokens.findOneAndUpdate(
         {
-          _id: request.code,
+          code: request.code,
           clientAppId: clientId,
-          lastIssuedAt: { $exists: false },
           terminated: { $ne: true }
         },
-        { $unset: { challenge: '' } },
+        { $unset: { code: '', challenge: '' } },
         { returnDocument: 'before' }
       )
       if (!tokenDoc) {

@@ -4,7 +4,14 @@ import { Hookable } from 'hookable'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
-import { BusinessError, logger, SecurityLevel, tSecurityLevel } from '../util/index.js'
+import {
+  BusinessError,
+  logger,
+  Permission,
+  SecurityLevel,
+  tSecurityLevel,
+  UAAA
+} from '../util/index.js'
 import type { App } from '../index.js'
 import type { ITokenDoc } from '../db/model/token.js'
 import ms from 'ms'
@@ -26,6 +33,10 @@ export const tTokenPayload = type({
 })
 
 export type ITokenPayload = typeof tTokenPayload.infer
+
+export interface ICreateTokenOptions {
+  generateCode?: boolean
+}
 
 export class TokenManager extends Hookable<{}> {
   sessionTimeout: number
@@ -108,8 +119,14 @@ export class TokenManager extends Hookable<{}> {
     return result
   }
 
-  async createToken(token: Omit<ITokenDoc, '_id'>): Promise<ITokenDoc> {
-    const doc = { _id: nanoid(), ...token }
+  async createToken(
+    token: Omit<ITokenDoc, '_id' | 'code'>,
+    { generateCode = true }: ICreateTokenOptions = {}
+  ): Promise<ITokenDoc> {
+    const doc: ITokenDoc = { _id: nanoid(), ...token }
+    if (generateCode) {
+      doc.code ??= nanoid()
+    }
     await this.app.db.tokens.insertOne(doc, { ignoreUndefined: true })
     return doc
   }
@@ -150,28 +167,54 @@ export class TokenManager extends Hookable<{}> {
       { $max: { expiresAt: Math.max(tokenExpiresAt, refreshExpiresAt ?? 0) } }
     )
 
-    const signOptions: jwt.SignOptions = {
-      subject: tokenDoc.userId,
-      jwtid: tokenDoc._id
-    }
-    if (tokenDoc.targetAppId) {
-      signOptions.audience = tokenDoc.targetAppId
+    const permissions = tokenDoc.permissions
+      .map((perm) => Permission.fromCompactString(perm))
+      .filter((perm) => perm.appId === UAAA)
+      .map((perm) => perm.toScopedString())
+    if (!permissions.length) {
+      throw new BusinessError('BAD_REQUEST', { msg: 'No permissions granted for UAAA' })
     }
     const token = await this.sign(
       {
         client_id: tokenDoc.clientAppId,
         sid: tokenDoc.sessionId,
-        perm: tokenDoc.permissions,
+        perm: permissions,
         level: tokenDoc.securityLevel,
         iat: Math.floor(now / 1000),
         exp: Math.floor(tokenExpiresAt / 1000)
       },
-      signOptions
+      { subject: tokenDoc.userId, jwtid: tokenDoc._id }
     )
     return { token, refreshToken }
   }
 
-  async refreshToken(refreshToken: string, clientId?: string) {
+  async exchangeToken(payload: ITokenPayload, targetAppId: string) {
+    if (!payload.client_id) {
+      throw new BusinessError('INVALID_TOKEN', {})
+    }
+    const tokenDoc = await this.app.db.tokens.findOne({
+      _id: payload.jti,
+      userId: payload.sub,
+      clientAppId: payload.client_id,
+      terminated: { $ne: true }
+    })
+    if (!tokenDoc) {
+      throw new BusinessError('INVALID_TOKEN', {})
+    }
+    const permissions = tokenDoc.permissions
+      .map((perm) => Permission.fromCompactString(perm))
+      .filter((perm) => perm.appId === targetAppId)
+      .map((perm) => perm.toScopedString())
+    if (!permissions.length) {
+      throw new BusinessError('FORBIDDEN', {
+        msg: 'Token does not have permission to access target app'
+      })
+    }
+    const token = await this.sign({ ...payload, perm: permissions }, { audience: targetAppId })
+    return { token }
+  }
+
+  async refreshToken(refreshToken: string, clientId?: string, clientSecret?: string) {
     const tokenDoc = await this.app.db.tokens.findOneAndUpdate(
       {
         refreshToken,
@@ -184,12 +227,22 @@ export class TokenManager extends Hookable<{}> {
     if (!tokenDoc) {
       throw new BusinessError('INVALID_TOKEN', {})
     }
+    if (tokenDoc.confidential && clientId) {
+      const client = await this.app.db.apps.findOne(
+        { _id: clientId },
+        { projection: { secret: 1 } }
+      )
+      if (!client || client.secret !== clientSecret) {
+        throw new BusinessError('INVALID_TOKEN', {})
+      }
+    }
     return this.signToken(tokenDoc)
   }
 
-  async createAndSignToken(token: Omit<ITokenDoc, '_id'>) {
-    const tokenDoc = await this.createToken(token)
-    return this.signToken(tokenDoc)
+  async createAndSignToken(token: Omit<ITokenDoc, '_id'>, options: ICreateTokenOptions = {}) {
+    const tokenDoc = await this.createToken(token, options)
+    const generated = await this.signToken(tokenDoc)
+    return tokenDoc.code ? { ...generated, code: tokenDoc.code } : generated
   }
 
   async verifyToken(token: string) {
