@@ -9,7 +9,7 @@ export const consoleAppApi = new Hono()
   .use(verifyPermission({ path: '/console/app' }))
   .get('/', async (ctx) => {
     const { app } = ctx.var
-    const apps = await app.db.apps.find({}).toArray()
+    const apps = await app.db.apps.find({}, { projection: { secret: 0 } }).toArray()
     return ctx.json({ apps })
   })
   .post('/', arktypeValidator('json', tAppManifest.onDeepUndeclaredKey('delete')), async (ctx) => {

@@ -2,8 +2,8 @@ import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
 import { type Context, Hono } from 'hono'
 import { verifyAuthorizationJwt, verifyPermission } from '../api/_middleware.js'
-import type { ClaimName } from '../claim/_common.js'
-import type { IAppDoc, IUserClaims } from '../db/index.js'
+import type { ClaimName } from '../claim/index.js'
+import type { IAppDoc, IUserClaims, ITokenDoc } from '../db/index.js'
 import { UAAA, BusinessError, Permission, SecurityLevel, logger } from '../util/index.js'
 import { createHash } from 'crypto'
 import { HTTPException } from 'hono/http-exception'
@@ -164,18 +164,6 @@ function loadClientPassword(
   }
 }
 
-function checkClientSecret(ctx: Context, app: IAppDoc, clientSecret: string) {
-  if (clientSecret) {
-    if (app.secret !== clientSecret) {
-      throw new HTTPException(400, { res: ctx.text('invalid_client') })
-    }
-  } else {
-    if (!app.openid?.allowPublicClient) {
-      throw new HTTPException(400, { res: ctx.text('invalid_client') })
-    }
-  }
-}
-
 function checkClientPKCE(ctx: Context, challenge?: string, codeVerifier?: string) {
   if (!codeVerifier || !checkPKCEChallenge(codeVerifier, challenge)) {
     throw new HTTPException(400, { res: ctx.text('invalid_client') })
@@ -255,8 +243,16 @@ export const oauthRouter = new Hono()
         return ctx.json({ error: 'invalid_grant' }, 400)
       }
 
-      checkClientSecret(ctx, clientApp, clientSecret)
-      clientSecret || checkClientPKCE(ctx, tokenDoc.challenge, request.code_verifier)
+      if (tokenDoc.confidential) {
+        if (clientApp.secret !== clientSecret) {
+          throw new HTTPException(400, { res: ctx.text('invalid_client') })
+        }
+        // For confidential clients, PKCE is optional
+        tokenDoc.challenge && checkClientPKCE(ctx, tokenDoc.challenge, request.code_verifier)
+      } else {
+        // For public clients, PKCE is required
+        checkClientPKCE(ctx, tokenDoc.challenge, request.code_verifier)
+      }
 
       if (request.redirect_uri && !clientApp.callbackUrls.includes(request.redirect_uri)) {
         return ctx.json({ error: 'invalid_grant' }, 400)
@@ -286,10 +282,11 @@ export const oauthRouter = new Hono()
         refresh_token: refreshToken
       })
     } else {
-      const { refresh_token, client_id } = request
-      checkClientSecret(ctx, clientApp, clientSecret)
-
-      const { token, refreshToken } = await ctx.var.app.token.refreshToken(refresh_token, client_id)
+      const { token, refreshToken } = await ctx.var.app.token.refreshToken(
+        request.refresh_token,
+        clientId,
+        clientSecret
+      )
       return ctx.json({
         access_token: token,
         token_type: 'Bearer',

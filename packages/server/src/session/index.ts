@@ -1,20 +1,24 @@
 import { Hookable } from 'hookable'
-import { BusinessError, Permission, UAAA } from '../util/index.js'
+import { BusinessError, Permission, tSecurityLevel, UAAA } from '../util/index.js'
 import type { App, ICredentialVerifyResult, ITokenPayload, SecurityLevel } from '../index.js'
+import { type } from 'arktype'
 
-export interface IDeriveOptions {
-  clientAppId: string
-  securityLevel: SecurityLevel
-  nonce?: string
-  challenge?: string
-  permissions?: string[]
-  optionalPermissions?: string[]
-  signToken?: boolean
-}
+export const tDeriveOptions = type({
+  clientAppId: 'string',
+  securityLevel: tSecurityLevel,
+  'permissions?': 'string[]',
+  'optionalPermissions?': 'string[]',
+  'nonce?': 'string',
+  'challenge?': 'string',
+  'signToken?': 'boolean',
+  'confidential?': 'boolean'
+})
+
+export type DeriveOptions = typeof tDeriveOptions.infer
 
 export class SessionManager extends Hookable<{
   preElevate(token: ITokenPayload, verifyResult: ICredentialVerifyResult): void | Promise<void>
-  preDerive(token: ITokenPayload, options: IDeriveOptions): void | Promise<void>
+  preDerive(token: ITokenPayload, options: DeriveOptions): void | Promise<void>
 }> {
   constructor(public app: App) {
     super()
@@ -46,14 +50,14 @@ export class SessionManager extends Hookable<{
     return { token: newToken }
   }
 
-  async checkDerive(token: ITokenPayload, options: IDeriveOptions) {
+  async checkDerive(token: ITokenPayload, options: DeriveOptions) {
     if (token.client_id) {
       throw new BusinessError('BAD_REQUEST', {
         msg: 'Application token is not allowed to derive another token'
       })
     }
 
-    const { clientAppId, securityLevel } = options
+    const { clientAppId, securityLevel, confidential = true } = options
     if (securityLevel > token.level) {
       throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', { required: securityLevel })
     }
@@ -62,6 +66,9 @@ export class SessionManager extends Hookable<{
     if (!clientApp) throw new BusinessError('NOT_FOUND', { msg: 'Client app not found' })
     if (securityLevel > clientApp.securityLevel) {
       throw new BusinessError('BAD_REQUEST', { msg: 'Security level higher than client app' })
+    }
+    if (!confidential && !clientApp.openid?.allowPublicClient){
+      throw new BusinessError('BAD_REQUEST', { msg: 'Public client not allowed' })
     }
 
     await this.callHook('preDerive', token, options)
@@ -111,8 +118,8 @@ export class SessionManager extends Hookable<{
     return { clientApp, installation, parentToken, permissions, timestamp }
   }
 
-  async derive(token: ITokenPayload, options: IDeriveOptions) {
-    const { clientAppId, securityLevel, signToken = false } = options
+  async derive(token: ITokenPayload, options: DeriveOptions) {
+    const { clientAppId, securityLevel, signToken = false, confidential = true } = options
     const { parentToken, permissions, timestamp } = await this.checkDerive(token, options)
 
     const session = await this.app.db.sessions.findOneAndUpdate(
@@ -138,6 +145,7 @@ export class SessionManager extends Hookable<{
         // TODO: tokenTimeout and refreshTimeout should be configurable
         tokenTimeout: parentToken.tokenTimeout,
         refreshTimeout: parentToken.refreshTimeout,
+        confidential,
         nonce: options?.nonce,
         challenge: options?.challenge
       },
