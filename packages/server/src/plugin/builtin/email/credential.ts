@@ -57,6 +57,8 @@ export class EmailImpl extends CredentialImpl {
       })
       const { insertedId: credentialId } = await ctx.app.db.credentials.insertOne({
         _id: nanoid(),
+        globalIdentifier: email,
+        userIdentifier: '',
         userId: userId,
         type: 'email',
         data: email,

@@ -89,8 +89,4 @@ export class DbManager extends Hookable {
 }
 
 export * from './_common.js'
-export * from './model/app.js'
-export * from './model/credential.js'
-export * from './model/installation.js'
-export * from './model/session.js'
-export * from './model/user.js'
+export * from './model/index.js'
