@@ -12,6 +12,7 @@ import { ClaimManager } from './claim/index.js'
 import { rootApi } from './api/index.js'
 import { logger } from './util/index.js'
 import { oauthRouter, oauthWellKnownRouter } from './oauth/index.js'
+import { OAuthManager } from './oauth/_common.js'
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -30,6 +31,8 @@ export class App extends Hookable<{
   plugin
   token
   session
+  oauth
+
   private _initialized = false
   private _stopped = false
 
@@ -43,6 +46,7 @@ export class App extends Hookable<{
     this.plugin = new PluginManager(this)
     this.token = new TokenManager(this)
     this.session = new SessionManager(this)
+    this.oauth = new OAuthManager(this)
   }
 
   async init() {

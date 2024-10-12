@@ -12,8 +12,7 @@ import {
   tSecurityLevel,
   UAAA
 } from '../util/index.js'
-import type { App } from '../index.js'
-import type { ITokenDoc } from '../db/model/token.js'
+import type { App, IAppDoc, ITokenDoc } from '../index.js'
 import ms from 'ms'
 
 export const tTokenPayload = type({
@@ -99,7 +98,10 @@ export class TokenManager extends Hookable<{}> {
     return new BusinessError('INVALID_TOKEN', {})
   }
 
-  async verify(token: string) {
+  async verify(
+    token: string,
+    mapVerifyError: (err: jwt.VerifyErrors | null) => Error = this._mapVerifyError
+  ) {
     const result = await new Promise<jwt.Jwt>((resolve, reject) =>
       jwt.verify(
         token,
@@ -113,7 +115,7 @@ export class TokenManager extends Hookable<{}> {
           }
         },
         { complete: true },
-        (err, decoded) => (decoded ? resolve(decoded) : reject(this._mapVerifyError(err)))
+        (err, decoded) => (decoded ? resolve(decoded) : reject(mapVerifyError(err)))
       )
     )
     return result
@@ -214,12 +216,15 @@ export class TokenManager extends Hookable<{}> {
     return { token }
   }
 
-  async refreshToken(refreshToken: string, clientId?: string, clientSecret?: string) {
+  async refreshToken(
+    refreshToken: string,
+    client: { id?: string | undefined; secret?: string | undefined; app?: IAppDoc | null }
+  ) {
     const tokenDoc = await this.app.db.tokens.findOneAndUpdate(
       {
         refreshToken,
         refreshExpiresAt: { $gt: Date.now() },
-        clientAppId: clientId ? clientId : { $exists: false },
+        clientAppId: client.id ? client.id : { $exists: false },
         terminated: { $ne: true }
       },
       { $unset: { refreshToken: '' } }
@@ -227,12 +232,13 @@ export class TokenManager extends Hookable<{}> {
     if (!tokenDoc) {
       throw new BusinessError('INVALID_TOKEN', {})
     }
-    if (tokenDoc.confidential && clientId) {
-      const client = await this.app.db.apps.findOne(
-        { _id: clientId },
+    if (tokenDoc.confidential && client.id) {
+      let clientApp = client.app
+      clientApp ??= await this.app.db.apps.findOne(
+        { _id: client.id },
         { projection: { secret: 1 } }
       )
-      if (!client || client.secret !== clientSecret) {
+      if (!clientApp || clientApp.secret !== client.secret) {
         throw new BusinessError('INVALID_TOKEN', {})
       }
     }

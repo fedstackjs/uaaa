@@ -159,14 +159,40 @@ export const publicApi = new Hono()
       'json',
       type({
         refreshToken: 'string',
-        'clientId?': 'string|undefined',
-        'clientSecret?': 'string|undefined'
+        'clientId?': 'string',
+        'clientSecret?': 'string'
       })
     ),
     async (ctx) => {
       const { app } = ctx.var
       const { refreshToken, clientId, clientSecret } = ctx.req.valid('json')
-      return ctx.json(await app.token.refreshToken(refreshToken, clientId, clientSecret))
+      return ctx.json(
+        await app.token.refreshToken(refreshToken, {
+          id: clientId,
+          secret: clientSecret
+        })
+      )
+    }
+  )
+  // Request remote auth
+  .post('/remote_authorize', async (ctx) => {
+    return ctx.json(await ctx.var.app.session.generateRemoteCode())
+  })
+  // Remote auth poll
+  .post(
+    '/remote_authorize_poll',
+    arktypeValidator(
+      'json',
+      type({
+        userCode: 'string',
+        authCode: 'string',
+        request: 'Record<string, unknown>'
+      })
+    ),
+    async (ctx) => {
+      const { userCode, authCode, request } = ctx.req.valid('json')
+      const response = await ctx.var.app.session.remoteAppPoll(userCode, authCode, request)
+      return ctx.json(response)
     }
   )
 

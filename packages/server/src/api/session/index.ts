@@ -114,5 +114,24 @@ export const sessionApi = new Hono()
       })
     }
   )
+  .post(
+    '/remote_authorize',
+    verifyPermission({ path: '/session/remote_authorize' }),
+    arktypeValidator('json', type({ userCode: 'string', response: 'Record<string, unknown>' })),
+    async (ctx) => {
+      const { userCode, response } = ctx.req.valid('json')
+      await ctx.var.app.session.remoteUserAuthorize(userCode, response)
+      return ctx.json({})
+    }
+  )
+  .post(
+    '/remote_authorize_poll',
+    verifyPermission({ path: '/session/remote_authorize' }),
+    arktypeValidator('json', type({ userCode: 'string' })),
+    async (ctx) => {
+      const { userCode } = ctx.req.valid('json')
+      return ctx.json(await ctx.var.app.session.remoteUserPoll(userCode))
+    }
+  )
 
 export type ISessionApi = typeof sessionApi

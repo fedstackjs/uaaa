@@ -1,7 +1,17 @@
 import { Hookable } from 'hookable'
 import { BusinessError, Permission, tSecurityLevel, UAAA } from '../util/index.js'
-import type { App, ICredentialVerifyResult, ITokenPayload, SecurityLevel } from '../index.js'
+import type { App, ICredentialVerifyResult, ITokenPayload } from '../index.js'
 import { type } from 'arktype'
+import { customAlphabet, nanoid } from 'nanoid'
+import ms from 'ms'
+
+const remoteCodeGen = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 8)
+
+interface IRemoteState {
+  authCode?: string | undefined
+  request?: Record<string, unknown>
+  response?: Record<string, unknown>
+}
 
 export const tDeriveOptions = type({
   clientAppId: 'string',
@@ -20,6 +30,9 @@ export class SessionManager extends Hookable<{
   preElevate(token: ITokenPayload, verifyResult: ICredentialVerifyResult): void | Promise<void>
   preDerive(token: ITokenPayload, options: DeriveOptions): void | Promise<void>
 }> {
+  remoteTimeout = ms('1min')
+  remotePollInterval = ms('5s')
+
   constructor(public app: App) {
     super()
   }
@@ -67,7 +80,7 @@ export class SessionManager extends Hookable<{
     if (securityLevel > clientApp.securityLevel) {
       throw new BusinessError('BAD_REQUEST', { msg: 'Security level higher than client app' })
     }
-    if (!confidential && !clientApp.openid?.allowPublicClient){
+    if (!confidential && !clientApp.openid?.allowPublicClient) {
       throw new BusinessError('BAD_REQUEST', { msg: 'Public client not allowed' })
     }
 
@@ -155,5 +168,53 @@ export class SessionManager extends Hookable<{
       return { code: tokenDoc.code! }
     }
     return this.app.token.signToken(tokenDoc)
+  }
+
+  private _getRemoteState(userCode: string) {
+    return this.app.cache.getx<IRemoteState>(`remote:${userCode}`)
+  }
+
+  private _setRemoteState(userCode: string, state: IRemoteState, expiresIn = this.remoteTimeout) {
+    return this.app.cache.setx(`remote:${userCode}`, state, expiresIn)
+  }
+
+  async generateRemoteCode() {
+    const code = remoteCodeGen()
+    const userCode = code.slice(0, 4) + '-' + code.slice(4)
+    const authCode = nanoid()
+    return { userCode, authCode }
+  }
+
+  async activateRemoteCode(userCode: string) {
+    const state = await this._getRemoteState(userCode)
+    if (state && state.authCode) {
+      throw new BusinessError('REMOTE_AUTH_BAD_USERCODE', {})
+    }
+    await this._setRemoteState(userCode, {})
+  }
+
+  async remoteUserPoll(userCode: string) {
+    const state = await this._getRemoteState(userCode)
+    if (!state) throw new BusinessError('REMOTE_AUTH_EXPIRED', {})
+    return state?.request
+  }
+
+  async remoteAppPoll(userCode: string, authCode: string, request: Record<string, unknown>) {
+    const state = await this._getRemoteState(userCode)
+    if (state?.authCode && state.authCode !== authCode) {
+      throw new BusinessError('REMOTE_AUTH_BAD_AUTHCODE', {})
+    }
+    if (state?.response) return state.response
+    if (!state?.authCode) {
+      await this._setRemoteState(userCode, { authCode, request })
+    }
+  }
+
+  async remoteUserAuthorize(userCode: string, response: Record<string, unknown>) {
+    const state = await this._getRemoteState(userCode)
+    if (!state?.authCode) {
+      throw new BusinessError('BAD_REQUEST', { msg: 'Can not response before app poll' })
+    }
+    await this._setRemoteState(userCode, { ...state, response })
   }
 }
