@@ -32,7 +32,7 @@ export const useErrorToast = () => {
       return
     }
     if (err instanceof Error) {
-      toast.error(t('errors.error', err as { message: string }))
+      toast.error(t('errors.error', { message: err.message }))
       return
     }
     toast.error(t('errors.unknown', { value: `${err}` }))

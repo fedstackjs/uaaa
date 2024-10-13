@@ -22,9 +22,11 @@ abstract class Connector {
 class OpenIDConnector extends Connector {
   private _extractParams(params: IAuthorizeParams) {
     const response_type = params.params?.response_type as string
-    if (!response_type) throw new Error('Missing response_type')
     const redirect_uri = params.params?.redirect_uri as string
-    if (!redirect_uri) throw new Error('Missing redirect_uri')
+    if (!params.userCode) {
+      if (!response_type) throw new Error('Missing response_type')
+      if (!redirect_uri) throw new Error('Missing redirect_uri')
+    }
     const state = params.params?.state as string
     const code_challenge = params.params?.code_challenge as string
     const code_challenge_method = params.params?.code_challenge_method as string
@@ -34,13 +36,14 @@ class OpenIDConnector extends Connector {
 
   override async preAuthorize(params: IAuthorizeParams, app: IAppDTO): Promise<void> {
     const { response_type, redirect_uri } = this._extractParams(params)
-    if (response_type !== 'code') throw new Error('Invalid response_type')
-
-    const resp = await api.public.app[':id'].check_redirect.$post({
-      param: { id: app._id },
-      json: { url: redirect_uri }
-    })
-    await api.checkResponse(resp)
+    if (!params.userCode) {
+      if (response_type !== 'code') throw new Error('Invalid response_type')
+      const resp = await api.public.app[':id'].check_redirect.$post({
+        param: { id: app._id },
+        json: { url: redirect_uri }
+      })
+      await api.checkResponse(resp)
+    }
   }
 
   override async onAuthorize(params: IAuthorizeParams, app: IAppDTO): Promise<void> {
@@ -53,7 +56,7 @@ class OpenIDConnector extends Connector {
         securityLevel: params.securityLevel,
         nonce,
         challenge,
-        // TODO: check non-confidential client
+        confidential: params.confidential,
         remote: !!params.userCode
       }
     })
@@ -124,6 +127,7 @@ export interface IAuthorizeParams {
   optionalPermissions?: string[]
   params?: any
   userCode?: string
+  confidential?: boolean
 }
 
 const parseAuthorizeParams = (query: LocationQuery) => {
@@ -150,6 +154,7 @@ const parseAuthorizeParams = (query: LocationQuery) => {
   if (query.optionalPermissions) {
     params.optionalPermissions = toArray(query.optionalPermissions)
   }
+  params.confidential = ['1', 'true'].includes(toSingle(query.confidential, '1'))
   const connectorParams = toSingle(query.params, '{}')
   try {
     params.params = JSON.parse(connectorParams)

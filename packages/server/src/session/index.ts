@@ -11,7 +11,8 @@ export const tRemoteRequest = type({
   type: 'string',
   clientAppId: 'string',
   params: 'string',
-  securityLevel: 'string'
+  securityLevel: 'string',
+  'confidential?': 'string'
 })
 export type RemoteRequest = typeof tRemoteRequest.infer
 

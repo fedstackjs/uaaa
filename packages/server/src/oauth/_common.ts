@@ -239,7 +239,7 @@ export class OAuthManager {
   }
 
   private _relativeUrl(path: string) {
-    return new URL(path, this._base).toString()
+    return new URL(path, this._base).toString().replace(/\?$/, '')
   }
 
   private _authorizeUrl(...params: ConstructorParameters<typeof URLSearchParams>) {
@@ -454,7 +454,8 @@ export class OAuthManager {
       clientAppId: clientId,
       type: 'oidc',
       params: JSON.stringify(rest),
-      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0')
+      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0'),
+      confidential: '0'
     }
     const deviceCode = await this.app.token.sign(
       { authCode, userCode, clientId, request: remoteRequest } satisfies Omit<
