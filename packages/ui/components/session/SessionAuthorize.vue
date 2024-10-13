@@ -66,6 +66,7 @@ const { run: authorize, running } = useTask(async () => {
   await props.params.connector.preAuthorize(props.params, app.value)
   try {
     await props.params.connector.onAuthorize(props.params, app.value)
+    router.replace('/')
   } catch (err) {
     if (isAPIError(err) && err.code === 'APP_NOT_INSTALLED') {
       toast.error(t('msg.app-not-installed'))

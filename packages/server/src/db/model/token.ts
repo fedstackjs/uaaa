@@ -1,5 +1,10 @@
 import type { SecurityLevel } from '../../util/index.js'
 
+export interface ITokenEnvironment {
+  ip?: string
+  ua?: string
+}
+
 export interface ITokenDoc {
   /** Token ID */
   _id: string
@@ -17,6 +22,8 @@ export interface ITokenDoc {
   securityLevel: SecurityLevel
   /** Whether the token is confidential, eg. require client authentication */
   confidential?: boolean | undefined
+  /** Whether the token is derived via remote authentication */
+  remote?: boolean | undefined
 
   parentId?: string | undefined
   credentialId?: string | undefined
@@ -49,4 +56,6 @@ export interface ITokenDoc {
   nonce?: string | undefined
   challenge?: string | undefined
   code?: string | undefined
+
+  environment: ITokenEnvironment
 }

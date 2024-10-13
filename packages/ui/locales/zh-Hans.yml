@@ -11,6 +11,7 @@ pages:
   credential: 凭据管理
   setting: 用户设置
   authorize: 授权
+  remote-authorize: 远程授权
   auth:
     signin: 登录
     signout: 登出
@@ -50,6 +51,7 @@ actions:
   authorize: 授权
   terminate: 吊销
   confirm: 确认
+  continue: 继续
 
 msg:
   id: ID
@@ -124,6 +126,11 @@ msg:
   user-list: 用户列表
   username: 用户名
   is-disabled: 是否禁用
+  scan-qrcode-to-authorize: 扫描二维码以授权
+  or-visit: 或访问
+  and-type-code-below: 并输入下方的授权码
+  start-remote-authorize: 授权
+  user-code: 授权码
 
 claims:
   username: 用户名

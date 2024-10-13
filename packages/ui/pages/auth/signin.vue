@@ -19,12 +19,38 @@
             </VFadeTransition>
           </div>
           <div>{{ t('pages.auth.signin') }}</div>
-          <div class="flex-1 flex justify-start"></div>
+          <div class="flex-1 flex justify-end">
+            <VBtn
+              v-if="showRemote"
+              icon="mdi-qrcode"
+              size="sm"
+              variant="text"
+              color="info"
+              :loading="remoteAuthorizeRunning"
+              @click="startRemoteAuthorize"
+            />
+          </div>
         </div>
       </VCardTitle>
       <VDivider />
       <VFadeTransition mode="out-in">
-        <template v-if="!type">
+        <template v-if="isRemote">
+          <VSkeletonLoader type="image" v-if="!userCode" />
+          <div v-else class="flex">
+            <div class="text-center p-4">
+              <div>{{ t('msg.scan-qrcode-to-authorize') }}</div>
+              <img :src="qrcode" />
+            </div>
+            <VDivider vertical />
+            <div class="flex-1 self-stretch flex flex-col justify-center items-center p-4">
+              <div>{{ t('msg.or-visit') }}</div>
+              <div class="font-mono text-blue">{{ deviceUrl }}</div>
+              <div>{{ t('msg.and-type-code-below') }}</div>
+              <div class="text-2xl font-mono text-red">{{ userCode }}</div>
+            </div>
+          </div>
+        </template>
+        <template v-else-if="!type">
           <VCardText class="flex flex-col gap-2" v-if="data">
             <VBtn
               v-for="loginType of data"
@@ -66,4 +92,9 @@ const { data } = await useAsyncData(async () => {
 function postLogin() {
   router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
 }
+
+const { showRemote, isRemote, userCode, qrcode, startRemoteAuthorize, remoteAuthorizeRunning } =
+  useRemoteAuthorize()
+
+const deviceUrl = new URL('/remote', location.href)
 </script>

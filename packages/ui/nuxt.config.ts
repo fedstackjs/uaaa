@@ -21,6 +21,7 @@ export default defineNuxtConfig({
       appName: 'UAAA'
     }
   },
+  css: ['@/assets/main.css'],
   build: {
     transpile: ['vuetify']
   },

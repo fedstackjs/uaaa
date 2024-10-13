@@ -23,6 +23,7 @@
     "@simplewebauthn/browser": "^10.0.0",
     "@types/whatwg-url": "^11.0.5",
     "@unocss/nuxt": "^0.61.3",
+    "@unocss/reset": "^0.63.4",
     "@vueuse/core": "^10.11.0",
     "@vueuse/nuxt": "^10.11.0",
     "@vueuse/router": "^11.0.3",

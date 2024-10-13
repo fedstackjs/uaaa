@@ -13,6 +13,7 @@ import { createHash } from 'node:crypto'
 import { OAuthError } from './_errors.js'
 import ms from 'ms'
 import jwt from 'jsonwebtoken'
+import { tRemoteRequest, type RemoteRequest } from '../session/index.js'
 
 export interface IOAuthTokenResponse {
   access_token: string
@@ -54,7 +55,7 @@ export class OAuthManager {
     authCode: 'string',
     userCode: 'string',
     clientId: 'string',
-    request: OAuthManager.tDeviceCodeRequest,
+    request: tRemoteRequest,
     exp: 'number',
     iat: 'number'
   })
@@ -66,8 +67,8 @@ export class OAuthManager {
 
   constructor(public app: App) {
     this._base = app.config.get('deploymentUrl')
-    const { db, token } = app
-    const { apps, tokens, sessions } = db
+    const { db } = app
+    const { tokens, sessions } = db
 
     // RFC6749 4.1
     this.defineGrant(
@@ -91,7 +92,7 @@ export class OAuthManager {
           { returnDocument: 'before' }
         )
         if (!tokenDoc) {
-          throw new OAuthError('invalid_grant')
+          throw new OAuthError('invalid_grant', { description: 'Bad code' })
         }
 
         if (tokenDoc.confidential) {
@@ -107,7 +108,7 @@ export class OAuthManager {
         }
 
         if (request.redirect_uri && !client.app.callbackUrls.includes(request.redirect_uri)) {
-          throw new OAuthError('invalid_grant')
+          throw new OAuthError('invalid_grant', { description: 'Bad redirect_uri' })
         }
 
         const session = await sessions.findOne({
@@ -115,7 +116,7 @@ export class OAuthManager {
           terminated: { $ne: true }
         })
         if (!session) {
-          throw new OAuthError('invalid_grant')
+          throw new OAuthError('invalid_grant', { description: 'Session not found' })
         }
 
         const { token, refreshToken } = await app.token.signToken(tokenDoc)
@@ -168,7 +169,7 @@ export class OAuthManager {
         'client_secret?': 'string'
       }),
       async (ctx, { device_code }, client) => {
-        const { payload: _payload } = await token.verify(device_code, (err) => {
+        const { payload: _payload } = await app.token.verify(device_code, (err) => {
           if (err instanceof jwt.TokenExpiredError) return new OAuthError('expired_token')
           return new OAuthError('invalid_grant')
         })
@@ -184,7 +185,55 @@ export class OAuthManager {
         if (!response) {
           throw new OAuthError('authorization_pending')
         }
-        return response as {} as IOAuthTokenResponse
+        if (!response.code) {
+          throw new OAuthError('access_denied')
+        }
+        const tokenDoc = await tokens.findOneAndUpdate(
+          {
+            code: response.code,
+            clientAppId: client.id,
+            remote: true,
+            terminated: { $ne: true }
+          },
+          { $unset: { code: '', challenge: '' } },
+          { returnDocument: 'before' }
+        )
+        if (!tokenDoc) {
+          throw new OAuthError('invalid_grant', { description: 'Bad code' })
+        }
+
+        if (tokenDoc.confidential) {
+          if (client.app.secret !== client.secret) {
+            throw new OAuthError('invalid_client')
+          }
+        }
+
+        const session = await sessions.findOne({
+          _id: tokenDoc.sessionId,
+          terminated: { $ne: true }
+        })
+        if (!session) {
+          throw new OAuthError('invalid_grant', { description: 'Session not found' })
+        }
+
+        const { token, refreshToken } = await app.token.signToken(tokenDoc)
+        ctx.set('token', JSON.parse(atob(token.split('.')[1])))
+
+        let id_token: string | undefined
+
+        const matchedPermissions = tokenDoc.permissions
+          .map((p) => Permission.fromScopedString(p, UAAA))
+          .filter((p) => p.test('/session/claim'))
+        if (matchedPermissions.length) {
+          id_token = await this.generateIDToken(ctx, client.id, tokenDoc.userId, tokenDoc.nonce)
+        }
+        return {
+          access_token: token,
+          token_type: 'Bearer',
+          expires_in: Math.floor((tokenDoc.expiresAt - Date.now()) / 1000),
+          id_token,
+          refresh_token: refreshToken
+        }
       }
     )
   }
@@ -198,7 +247,7 @@ export class OAuthManager {
   }
 
   private _deviceUrl(...params: ConstructorParameters<typeof URLSearchParams>) {
-    return this._relativeUrl('/device?' + new URLSearchParams(...params).toString())
+    return this._relativeUrl('/remote?' + new URLSearchParams(...params).toString())
   }
 
   async getMetadata() {
@@ -390,7 +439,7 @@ export class OAuthManager {
     if (request instanceof type.errors) {
       throw new OAuthError('invalid_request')
     }
-    const { client_id, client_secret } = request
+    const { client_id, client_secret, ...rest } = request
     const { clientId } = this.loadClientPassword(ctx, client_id, client_secret)
     const clientApp = await this.app.db.apps.findOne({ _id: clientId })
     if (!clientApp) {
@@ -401,8 +450,14 @@ export class OAuthManager {
     const verificationUriComplete = this._deviceUrl({ user_code: userCode })
     const expiresIn = Math.floor(this._deviceTimeout / 1000)
     const interval = Math.floor(this._devicePollInterval / 1000)
+    const remoteRequest: RemoteRequest = {
+      clientAppId: clientId,
+      type: 'oidc',
+      params: JSON.stringify(rest),
+      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0')
+    }
     const deviceCode = await this.app.token.sign(
-      { authCode, userCode, clientId, request } satisfies Omit<
+      { authCode, userCode, clientId, request: remoteRequest } satisfies Omit<
         typeof OAuthManager.tDeviceToken.infer,
         'exp' | 'iat'
       >,

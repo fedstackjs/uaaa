@@ -1,16 +1,37 @@
 import { Hookable } from 'hookable'
 import { BusinessError, Permission, tSecurityLevel, UAAA } from '../util/index.js'
-import type { App, ICredentialVerifyResult, ITokenPayload } from '../index.js'
+import type { App, ICredentialVerifyResult, ITokenEnvironment, ITokenPayload } from '../index.js'
 import { type } from 'arktype'
 import { customAlphabet, nanoid } from 'nanoid'
 import ms from 'ms'
 
 const remoteCodeGen = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 8)
 
+export const tRemoteRequest = type({
+  type: 'string',
+  clientAppId: 'string',
+  params: 'string',
+  securityLevel: 'string'
+})
+export type RemoteRequest = typeof tRemoteRequest.infer
+
+export const tRemoteResponse = type({
+  'code?': 'string',
+  'state?': 'string',
+  'error?': 'string'
+})
+export type RemoteResponse = typeof tRemoteResponse.infer
+
+export interface IRemoteEnvironment {
+  remoteIp?: string
+  remoteUa?: string
+}
+
 interface IRemoteState {
   authCode?: string | undefined
-  request?: Record<string, unknown>
-  response?: Record<string, unknown>
+  request?: RemoteRequest
+  response?: RemoteResponse
+  environment: IRemoteEnvironment
 }
 
 export const tDeriveOptions = type({
@@ -21,7 +42,8 @@ export const tDeriveOptions = type({
   'nonce?': 'string',
   'challenge?': 'string',
   'signToken?': 'boolean',
-  'confidential?': 'boolean'
+  'confidential?': 'boolean',
+  'remote?': 'boolean'
 })
 
 export type DeriveOptions = typeof tDeriveOptions.infer
@@ -37,7 +59,11 @@ export class SessionManager extends Hookable<{
     super()
   }
 
-  async elevate(token: ITokenPayload, verifyResult: ICredentialVerifyResult) {
+  async elevate(
+    token: ITokenPayload,
+    verifyResult: ICredentialVerifyResult,
+    environment: ITokenEnvironment
+  ) {
     await this.callHook('preElevate', token, verifyResult)
     const session = await this.app.db.sessions.findOneAndUpdate(
       { _id: token.sid, terminated: { $ne: true } },
@@ -58,7 +84,8 @@ export class SessionManager extends Hookable<{
       createdAt: now,
       expiresAt: now + this.app.token.getSessionTokenTimeout(securityLevel, expiresIn),
       tokenTimeout: this.app.token.getTokenTimeout(securityLevel, tokenTimeout),
-      refreshTimeout: this.app.token.getRefreshTimeout(securityLevel, refreshTimeout)
+      refreshTimeout: this.app.token.getRefreshTimeout(securityLevel, refreshTimeout),
+      environment
     })
     return { token: newToken }
   }
@@ -131,8 +158,14 @@ export class SessionManager extends Hookable<{
     return { clientApp, installation, parentToken, permissions, timestamp }
   }
 
-  async derive(token: ITokenPayload, options: DeriveOptions) {
-    const { clientAppId, securityLevel, signToken = false, confidential = true } = options
+  async derive(token: ITokenPayload, options: DeriveOptions, environment: ITokenEnvironment) {
+    const {
+      clientAppId,
+      securityLevel,
+      signToken = false,
+      confidential = true,
+      remote = false
+    } = options
     const { parentToken, permissions, timestamp } = await this.checkDerive(token, options)
 
     const session = await this.app.db.sessions.findOneAndUpdate(
@@ -159,8 +192,10 @@ export class SessionManager extends Hookable<{
         tokenTimeout: parentToken.tokenTimeout,
         refreshTimeout: parentToken.refreshTimeout,
         confidential,
+        remote,
         nonce: options?.nonce,
-        challenge: options?.challenge
+        challenge: options?.challenge,
+        environment
       },
       { generateCode: !signToken }
     )
@@ -190,27 +225,29 @@ export class SessionManager extends Hookable<{
     if (state && state.authCode) {
       throw new BusinessError('REMOTE_AUTH_BAD_USERCODE', {})
     }
-    await this._setRemoteState(userCode, {})
+    await this._setRemoteState(userCode, { environment: {} })
   }
 
   async remoteUserPoll(userCode: string) {
     const state = await this._getRemoteState(userCode)
     if (!state) throw new BusinessError('REMOTE_AUTH_EXPIRED', {})
-    return state?.request
+    return { request: state.request, environment: state.environment }
   }
 
-  async remoteAppPoll(userCode: string, authCode: string, request: Record<string, unknown>) {
+  async remoteAppPoll(userCode: string, authCode: string, request: RemoteRequest) {
     const state = await this._getRemoteState(userCode)
     if (state?.authCode && state.authCode !== authCode) {
       throw new BusinessError('REMOTE_AUTH_BAD_AUTHCODE', {})
     }
     if (state?.response) return state.response
-    if (!state?.authCode) {
-      await this._setRemoteState(userCode, { authCode, request })
+    if (state && !state?.authCode) {
+      // TODO: update environment
+      await this._setRemoteState(userCode, { authCode, request, environment: {} })
     }
+    return state ? null : undefined
   }
 
-  async remoteUserAuthorize(userCode: string, response: Record<string, unknown>) {
+  async remoteUserAuthorize(userCode: string, response: RemoteResponse) {
     const state = await this._getRemoteState(userCode)
     if (!state?.authCode) {
       throw new BusinessError('BAD_REQUEST', { msg: 'Can not response before app poll' })

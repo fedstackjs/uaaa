@@ -9,6 +9,7 @@ import { getRemoteIP, getUserAgent } from '../_helper.js'
 import { UAAA } from '../../util/constants.js'
 import { UAAAProvidedPermissions } from '../../util/permission.js'
 import type { ITokenDoc } from '../../db/model/token.js'
+import { tRemoteRequest } from '../../session/index.js'
 
 /** Public API */
 export const publicApi = new Hono()
@@ -112,11 +113,13 @@ export const publicApi = new Hono()
         token: string
         refreshToken?: string | undefined
       }> = []
+      const environment = {}
       const partialTokenDoc = {
         sessionId,
         userId,
         permissions: [`${UAAA}/**`],
-        credentialId
+        credentialId,
+        environment
       } satisfies Partial<ITokenDoc>
       tokens.push(
         await token.createAndSignToken(
@@ -183,16 +186,12 @@ export const publicApi = new Hono()
     '/remote_authorize_poll',
     arktypeValidator(
       'json',
-      type({
-        userCode: 'string',
-        authCode: 'string',
-        request: 'Record<string, unknown>'
-      })
+      type({ userCode: 'string', authCode: 'string', request: tRemoteRequest })
     ),
     async (ctx) => {
       const { userCode, authCode, request } = ctx.req.valid('json')
       const response = await ctx.var.app.session.remoteAppPoll(userCode, authCode, request)
-      return ctx.json(response)
+      return ctx.json({ response })
     }
   )
 

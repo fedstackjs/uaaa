@@ -3,8 +3,8 @@ import { HTTPException } from 'hono/http-exception'
 import { verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
-import { Permission, tSecurityLevel, UAAA } from '../../util/index.js'
-import { tDeriveOptions } from '../../session/index.js'
+import { tSecurityLevel } from '../../util/index.js'
+import { tDeriveOptions, tRemoteResponse } from '../../session/index.js'
 
 export const sessionApi = new Hono()
   .use(verifyAuthorizationJwt)
@@ -80,7 +80,7 @@ export const sessionApi = new Hono()
         targetLevel,
         payload
       )
-      return ctx.json(await session.elevate(ctx.var.token, verifyResult))
+      return ctx.json(await session.elevate(ctx.var.token, verifyResult, {}))
     }
   )
   .post(
@@ -99,7 +99,7 @@ export const sessionApi = new Hono()
     arktypeValidator('json', tDeriveOptions),
     async (ctx) => {
       const { session } = ctx.var.app
-      return ctx.json(await session.derive(ctx.var.token, ctx.req.valid('json')))
+      return ctx.json(await session.derive(ctx.var.token, ctx.req.valid('json'), {}))
     }
   )
   .post(
@@ -117,10 +117,20 @@ export const sessionApi = new Hono()
   .post(
     '/remote_authorize',
     verifyPermission({ path: '/session/remote_authorize' }),
-    arktypeValidator('json', type({ userCode: 'string', response: 'Record<string, unknown>' })),
+    arktypeValidator('json', type({ userCode: 'string', response: tRemoteResponse })),
     async (ctx) => {
       const { userCode, response } = ctx.req.valid('json')
       await ctx.var.app.session.remoteUserAuthorize(userCode, response)
+      return ctx.json({})
+    }
+  )
+  .post(
+    '/remote_authorize_activate',
+    verifyPermission({ path: '/session/remote_authorize' }),
+    arktypeValidator('json', type({ userCode: 'string' })),
+    async (ctx) => {
+      const { userCode } = ctx.req.valid('json')
+      await ctx.var.app.session.activateRemoteCode(userCode)
       return ctx.json({})
     }
   )

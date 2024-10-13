@@ -7,7 +7,7 @@ export const oauthWellKnownRouter = new Hono()
   // OIDC Discovery
   // https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
   .get('/openid-configuration', async (ctx) => {
-    return ctx.json(ctx.var.app.oauth.getMetadata())
+    return ctx.json(await ctx.var.app.oauth.getMetadata())
   })
 
 export const oauthRouter = new Hono()

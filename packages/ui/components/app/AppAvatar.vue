@@ -37,6 +37,8 @@ const { data } = await useAsyncData(props.appId, async () => {
 
 const generateTitle = (name: string) => {
   const [first, second] = name.split(/\s+/)
-  return (first[0] + (second ? second[0] : (first[1] ?? ''))).toUpperCase()
+  const code = (first[0] + (second ? second[0] : (first[1] ?? ''))).toUpperCase()
+  if (/[^\x01-\x7E]/.test(code)) return code[0]
+  return code
 }
 </script>
