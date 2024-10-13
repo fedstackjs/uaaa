@@ -226,7 +226,11 @@ export class ApiManager {
 
   async getError(resp: Response): Promise<APIErrorType> {
     try {
-      const { code, data } = await resp.json()
+      // For arktype validator error
+      const { code, data, errors, success } = await resp.json()
+      if (errors && success === false) {
+        return new APIError('INVALID_TYPE', { summary: '' })
+      }
       return new APIError(code, data)
     } catch (err) {
       return new APIError('UNKNOWN_ERROR', { msg: this._formatError(err) })

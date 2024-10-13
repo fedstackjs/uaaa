@@ -131,6 +131,13 @@ msg:
   and-type-code-below: 并输入下方的授权码
   start-remote-authorize: 授权
   user-code: 授权码
+  scanned: 授权设备连接成功，等待授权结果中...
+  remote-connected: 远程设备连接成功
+  remote-warn: |
+    您正在进行远程授权操作，请仔细鉴别如下信息：
+    1. 远程设备上的授权码是否为{code}
+    2. 远程设备上的页面地址是否和本页面的地址一致
+    请勿将授权码告知他人
 
 claims:
   username: 用户名
@@ -167,7 +174,7 @@ errors:
     INSUFFICIENT_PERMISSION: 权限不足
     REQUIRE_ADMIN: 需要管理员权限
     INVALID_OPERATION: 无效操作
-    INVALID_TYPE: 无效类型
+    INVALID_TYPE: 错误的输入格式
     NOT_FOUND: 未找到
     BAD_REQUEST: 错误请求：{msg}
     FORBIDDEN: 禁止访问：{msg}

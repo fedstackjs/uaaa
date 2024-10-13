@@ -56,7 +56,6 @@ const errToast = useErrorToast()
 const requireCode = computed(() => props.action !== 'unbind')
 const email = ref('')
 const emailIcon = ref('mdi-send')
-const emailSending = ref(false)
 const code = ref('')
 
 const emailRules = [
@@ -69,20 +68,19 @@ const emailRules = [
 
 const isLoading = ref(false)
 
-async function sendCode() {
-  if (emailSending.value) return
-  emailSending.value = true
+const { run: sendCode } = useTask(async () => {
   emailIcon.value = 'mdi-send-clock'
   try {
-    await api.email.send.$post({ json: { email: email.value } })
+    const resp = await api.email.send.$post({ json: { email: email.value } })
+    await api.checkResponse(resp)
     toast.success(t('hint.email-sent'))
     emailIcon.value = 'mdi-send-check'
+    return symNoToast
   } catch (err) {
-    toast.error(t('hint.email-send-failed', { msg: await prettyHTTPError(err) }))
     emailIcon.value = 'mdi-send'
+    throw err
   }
-  emailSending.value = false
-}
+})
 
 async function submit(ev?: SubmitEventPromise) {
   isLoading.value = true

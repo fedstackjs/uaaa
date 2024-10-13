@@ -9,7 +9,13 @@
       </VListItem>
     </VList>
     <VCardText>
-      <VAlert :text="t('msg.authorize-warn')" />
+      <VAlert
+        v-if="params.userCode"
+        type="warning"
+        :text="t('msg.remote-warn', { code: params.userCode })"
+        class="whitespace-pre"
+      />
+      <VAlert v-else :text="t('msg.authorize-warn')" />
     </VCardText>
     <AppGrantEditor v-if="showGrant" :app="app" readonly />
     <VCardActions class="grid! grid-flow-col grid-auto-cols-[1fr]">

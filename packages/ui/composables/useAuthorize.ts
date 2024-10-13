@@ -222,6 +222,7 @@ export const useRemoteAuthorize = () => {
     isRemote,
     userCode: userCodeRef,
     qrcode,
+    scanned,
     startRemoteAuthorize,
     remoteAuthorizeRunning
   }

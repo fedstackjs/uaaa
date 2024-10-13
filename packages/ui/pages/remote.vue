@@ -7,6 +7,13 @@
         </VIcon>
         <div>{{ t('pages.remote-authorize') }}</div>
       </VCardTitle>
+      <VCardText>
+        <VAlert
+          type="warning"
+          :text="t('msg.remote-warn', { code: userCode })"
+          class="whitespace-pre"
+        />
+      </VCardText>
       <VDivider />
       <div class="flex justify-center items-center uppercase!">
         <VTextField
@@ -17,17 +24,29 @@
           :rounded="0"
         />
       </div>
-      <VFadeTransition>
-        <VCardActions v-if="connected" class="flex">
-          <div class="flex-1">
-            <VBtn color="primary" variant="tonal" block @click="doRemoteAuthorize">
-              {{ t('actions.continue') }}
-            </VBtn>
+      <VFadeTransition mode="out-in">
+        <VCardActions v-if="connected" class="flex-col">
+          <div class="self-stretch">
+            <VBtn
+              block
+              color="success"
+              readonly
+              variant="tonal"
+              prepend-icon="mdi-check-circle-outline"
+              :text="t('msg.remote-connected')"
+            />
           </div>
-          <div class="flex-1">
-            <VBtn color="error" variant="tonal" block @click="cancelRemoteAuthorize">
-              {{ t('actions.cancel') }}
-            </VBtn>
+          <div class="self-stretch flex gap-2">
+            <div class="flex-1">
+              <VBtn color="primary" variant="tonal" block @click="doRemoteAuthorize">
+                {{ t('actions.continue') }}
+              </VBtn>
+            </div>
+            <div class="flex-1">
+              <VBtn color="error" variant="tonal" block @click="cancelRemoteAuthorize">
+                {{ t('actions.cancel') }}
+              </VBtn>
+            </div>
           </div>
         </VCardActions>
         <VCardActions>

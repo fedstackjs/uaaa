@@ -26,7 +26,7 @@
               size="sm"
               variant="text"
               color="info"
-              :loading="remoteAuthorizeRunning"
+              :disabled="remoteAuthorizeRunning"
               @click="startRemoteAuthorize"
             />
           </div>
@@ -48,6 +48,17 @@
               <div>{{ t('msg.and-type-code-below') }}</div>
               <div class="text-2xl font-mono text-red">{{ userCode }}</div>
             </div>
+            <VOverlay
+              v-model="scanned"
+              :close-on-back="false"
+              class="justify-center items-center"
+              contained
+            >
+              <div class="text-white text-center">
+                <VProgressCircular :size="48" indeterminate color="white" />
+                <div class="pt-4">{{ t('msg.scanned') }}</div>
+              </div>
+            </VOverlay>
           </div>
         </template>
         <template v-else-if="!type">
@@ -93,8 +104,15 @@ function postLogin() {
   router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
 }
 
-const { showRemote, isRemote, userCode, qrcode, startRemoteAuthorize, remoteAuthorizeRunning } =
-  useRemoteAuthorize()
+const {
+  showRemote,
+  isRemote,
+  userCode,
+  qrcode,
+  scanned,
+  startRemoteAuthorize,
+  remoteAuthorizeRunning
+} = useRemoteAuthorize()
 
 const deviceUrl = new URL('/remote', location.href)
 </script>
