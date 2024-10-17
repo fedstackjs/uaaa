@@ -18,6 +18,7 @@
       <VAlert v-else :text="t('msg.authorize-warn')" />
     </VCardText>
     <AppGrantEditor v-if="showGrant" :app="app" readonly />
+    <SessionGrantViewer v-else :permissions="grantedPermissions" />
     <VCardActions class="grid! grid-flow-col grid-auto-cols-[1fr]">
       <VBtn
         variant="tonal"
@@ -60,6 +61,7 @@ const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const showGrant = ref(false)
+const grantedPermissions = ref<string[]>([])
 
 const { data: app } = await useAsyncData(async () => {
   const resp = await api.public.app[':id'].$get({ param: { id: props.params.clientAppId } })
@@ -117,7 +119,14 @@ const {
 
 onMounted(async () => {
   const resp = await api.session.try_derive.$post({
-    json: { clientAppId: props.params.clientAppId, securityLevel: props.params.securityLevel }
+    json: {
+      clientAppId: props.params.clientAppId,
+      securityLevel: props.params.securityLevel,
+      permissions: props.params.permissions,
+      optionalPermissions: props.params.optionalPermissions,
+      confidential: props.params.confidential,
+      remote: !!props.params.userCode
+    }
   })
   try {
     await api.checkResponse(resp)
@@ -137,6 +146,7 @@ onMounted(async () => {
     return
   }
   const { permissions } = await resp.json()
+  grantedPermissions.value = permissions
   const parsedPermissions = permissions
     .map((perm) => Permission.fromCompactString(perm))
     .filter((perm) => perm.appId === 'uaaa')

@@ -7,7 +7,7 @@
           <VCheckbox
             v-model="permissions[permission.perm]"
             :label="permission.perm"
-            :readonly="permission.required || readonly"
+            :readonly="(permission.required && permissions[permission.perm]) || readonly"
             hide-details
             color="primary"
             class="font-mono"
@@ -30,7 +30,7 @@
             density="compact"
             v-model="claims[claim.name]"
             :append-icon="claim.verified ? 'mdi-shield-check' : undefined"
-            :readonly="claim.required || readonly"
+            :readonly="(claim.required && claims[claim.name]) || readonly"
             hide-details
             color="primary"
             class="font-mono"

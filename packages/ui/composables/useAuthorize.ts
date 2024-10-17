@@ -54,6 +54,8 @@ class OpenIDConnector extends Connector {
       json: {
         clientAppId: params.clientAppId,
         securityLevel: params.securityLevel,
+        permissions: params.permissions,
+        optionalPermissions: params.optionalPermissions,
         nonce,
         challenge,
         confidential: params.confidential,
@@ -148,16 +150,15 @@ const parseAuthorizeParams = (query: LocationQuery) => {
     securityLevel,
     userCode
   }
-  if (query.permissions) {
-    params.permissions = toArray(query.permissions)
-  }
-  if (query.optionalPermissions) {
-    params.optionalPermissions = toArray(query.optionalPermissions)
-  }
   params.confidential = ['1', 'true'].includes(toSingle(query.confidential, '1'))
-  const connectorParams = toSingle(query.params, '{}')
   try {
-    params.params = JSON.parse(connectorParams)
+    params.params = JSON.parse(toSingle(query.params, '{}'))
+    if (query.permissions) {
+      params.permissions = JSON.parse(toSingle(query.permissions, '[]'))
+    }
+    if (query.optionalPermissions) {
+      params.optionalPermissions = JSON.parse(toSingle(query.optionalPermissions, '[]'))
+    }
   } catch (err) {
     return { error: `Invalid params` }
   }

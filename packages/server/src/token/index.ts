@@ -212,7 +212,8 @@ export class TokenManager extends Hookable<{}> {
         msg: 'Token does not have permission to access target app'
       })
     }
-    const token = await this.sign({ ...payload, perm: permissions }, { audience: targetAppId })
+    const { iss, aud, ...original } = payload
+    const token = await this.sign({ ...original, perm: permissions }, { audience: targetAppId })
     return { token }
   }
 

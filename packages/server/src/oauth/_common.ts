@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { Type, type } from 'arktype'
 import {
   Permission,
@@ -9,7 +10,6 @@ import {
   type IUserClaims
 } from '../index.js'
 import type { Context } from 'hono'
-import { createHash } from 'node:crypto'
 import { OAuthError } from './_errors.js'
 import ms from 'ms'
 import jwt from 'jsonwebtoken'
@@ -263,13 +263,33 @@ export class OAuthManager {
     }
   }
 
+  scopeToPermissions(scope: string) {
+    const scopes = scope
+      .split(' ')
+      .map((s) => decodeURIComponent(s))
+      .filter((s) => URL.canParse(s))
+      .map((s) => new URL(s))
+      .filter((s) => ['uperm:', 'uperm+optional:'].includes(s.protocol))
+
+    const permissions = scopes
+      .filter((s) => s.protocol === 'uperm:')
+      .map((s) => Permission.fromFullURL(s).toCompactString())
+    const optionalPermissions = scopes
+      .filter((s) => s.protocol === 'uperm+optional:')
+      .map((s) => Permission.fromFullURL(s).toCompactString())
+    return {
+      permissions: permissions.length ? JSON.stringify(permissions) : '',
+      optionalPermissions: optionalPermissions.length ? JSON.stringify(optionalPermissions) : ''
+    }
+  }
+
   async authorizeToUI(ctx: Context, _request: Record<string, string>) {
     const request = OAuthManager.tAuthorizationRequest(_request)
     if (request instanceof type.errors) {
       return this._authorizeUrl({ type: 'oidc', error: 'invalid_request' })
     }
 
-    const { client_id, ...rest } = request
+    const { client_id, scope, ...rest } = request
     const clientApp = await this.app.db.apps.findOne({ _id: client_id })
     if (!clientApp) {
       return this._authorizeUrl({ type: 'oidc', error: 'invalid_client' })
@@ -278,7 +298,8 @@ export class OAuthManager {
       clientAppId: client_id,
       type: 'oidc',
       params: JSON.stringify(rest),
-      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0')
+      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0'),
+      ...this.scopeToPermissions(scope)
     })
   }
 
@@ -439,7 +460,7 @@ export class OAuthManager {
     if (request instanceof type.errors) {
       throw new OAuthError('invalid_request')
     }
-    const { client_id, client_secret, ...rest } = request
+    const { client_id, client_secret, scope, ...rest } = request
     const { clientId } = this.loadClientPassword(ctx, client_id, client_secret)
     const clientApp = await this.app.db.apps.findOne({ _id: clientId })
     if (!clientApp) {
@@ -455,7 +476,8 @@ export class OAuthManager {
       type: 'oidc',
       params: JSON.stringify(rest),
       securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0'),
-      confidential: '0'
+      confidential: '0',
+      ...this.scopeToPermissions(scope ?? '')
     }
     const deviceCode = await this.app.token.sign(
       { authCode, userCode, clientId, request: remoteRequest } satisfies Omit<

@@ -12,7 +12,9 @@ export const tRemoteRequest = type({
   clientAppId: 'string',
   params: 'string',
   securityLevel: 'string',
-  'confidential?': 'string'
+  'confidential?': 'string',
+  'permissions?': 'string',
+  'optionalPermissions?': 'string'
 })
 export type RemoteRequest = typeof tRemoteRequest.infer
 
@@ -123,7 +125,13 @@ export class SessionManager extends Hookable<{
       throw new BusinessError('APP_NOT_INSTALLED', {})
     }
 
-    const granted = new Set(installation.grantedPermissions)
+    const granted = new Set([
+      ...installation.grantedPermissions,
+      // Allow client app to request corresponding backend's permissions
+      ...clientApp.providedPermissions.map((p) =>
+        Permission.fromScopedString(p.path, clientApp._id).toCompactString()
+      )
+    ])
     if (options.permissions) {
       for (const perm of options.permissions) {
         if (!granted.has(perm)) {
