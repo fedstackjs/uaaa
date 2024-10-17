@@ -1,48 +1,9 @@
-import micromatch from 'micromatch'
-import { UAAA } from './constants.js'
 import type { IAppProvidedPermission } from '../db/index.js'
+export { Permission } from '@uaaa/core'
 
-export class Permission<AppId extends string = string> {
-  static fromFullURL<AppId extends string = string>(url: URL | string) {
-    return new Permission<AppId>(new URL(url))
-  }
-
-  static fromCompactString<AppId extends string = string>(str: string) {
-    return Permission.fromFullURL<AppId>(`uperm://${str}`)
-  }
-
-  static fromScopedString<AppId extends string>(str: string, appId: AppId) {
-    return Permission.fromFullURL<AppId>(`uperm://${appId}${str}`)
-  }
-
-  private constructor(private url: URL) {}
-
-  get appId() {
-    return this.url.host
-  }
-
-  get path() {
-    return this.url.pathname || '/'
-  }
-
-  get params() {
-    return this.url.searchParams
-  }
-
-  toScopedString() {
-    return `${this.path}${this.url.search}`
-  }
-
-  toCompactString() {
-    return `${this.appId}${this.toScopedString()}`
-  }
-
-  toString() {
-    return `uperm://${this.appId}${this.toScopedString()}`
-  }
-
-  test(path: AppId extends UAAA ? UAAAPermissionPath : string) {
-    return micromatch.isMatch(path, this.path)
+declare module '@uaaa/core' {
+  interface AppPermissionPaths {
+    uaaa: UAAAPermissionPath
   }
 }
 

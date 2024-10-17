@@ -2688,6 +2688,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@uaaa/core@workspace:^, @uaaa/core@workspace:packages/core":
+  version: 0.0.0-use.local
+  resolution: "@uaaa/core@workspace:packages/core"
+  dependencies:
+    "@types/micromatch": "npm:^4.0.9"
+    micromatch: "npm:^4.0.8"
+    typescript: "npm:^5.5.4"
+  languageName: unknown
+  linkType: soft
+
 "@uaaa/monorepo@workspace:.":
   version: 0.0.0-use.local
   resolution: "@uaaa/monorepo@workspace:."
@@ -2709,10 +2719,10 @@ __metadata:
     "@simplewebauthn/server": "npm:^10.0.1"
     "@types/bcrypt": "npm:^5.0.2"
     "@types/jsonwebtoken": "npm:^9.0.6"
-    "@types/micromatch": "npm:^4.0.9"
     "@types/ms": "npm:^0.7.34"
     "@types/node": "npm:^20.11.17"
     "@types/nodemailer": "npm:^6"
+    "@uaaa/core": "workspace:^"
     arktype: "npm:2.0.0-rc.7"
     bcrypt: "npm:^5.1.1"
     clipanion: "npm:^4.0.0-rc.3"
@@ -2721,7 +2731,6 @@ __metadata:
     hono: "npm:^4.5.8"
     hookable: "npm:^5.5.3"
     jsonwebtoken: "npm:^9.0.2"
-    micromatch: "npm:^4.0.8"
     mongodb: "npm:^6.8.0"
     mri: "npm:^1.2.0"
     ms: "npm:^2.1.3"
