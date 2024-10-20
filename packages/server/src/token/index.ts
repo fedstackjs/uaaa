@@ -65,7 +65,12 @@ export class TokenManager extends Hookable<{}> {
   async getJWKS() {
     const pairs = await this.app.db.jwkpairs.find().toArray()
     return {
-      keys: pairs.map(({ _id, publicKey }) => ({ kid: _id.toHexString(), ...publicKey }))
+      keys: pairs.map(({ _id, publicKey }) => ({
+        kid: _id.toHexString(),
+        alg: 'RS256',
+        use: 'sig',
+        ...publicKey
+      }))
     }
   }
 

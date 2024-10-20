@@ -31,7 +31,7 @@ const props = defineProps<{
 
 const url = computed(() => new URL(`uperm://${props.permission}`))
 
-const { data } = await useAsyncData(`permissions-${url.value.host}`, async () => {
+const { data } = await useAsyncData(props.permission, async () => {
   const resp = await api.public.app[':id'].provided_permissions.$get({
     param: { id: url.value.host }
   })
