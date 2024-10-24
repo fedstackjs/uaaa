@@ -16,7 +16,7 @@
           name="item"
           class="flex-1"
           :modelValue="model[key]"
-          @update:modelValue="($event) => (model[index] = $event)"
+          @update:modelValue="($event) => (model[key] = $event)"
         />
       </div>
     </div>

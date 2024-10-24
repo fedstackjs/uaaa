@@ -10,6 +10,14 @@
               </template>
             </VListItem>
           </VList>
+          <template v-if="app.variables['ui:install_description']">
+            <VAlert
+              type="info"
+              color=""
+              :rounded="0"
+              :text="app.variables['ui:install_description']"
+            />
+          </template>
           <VDivider />
           <VCardTitle class="text-center">{{ t('msg.grants') }}</VCardTitle>
           <VDivider />
