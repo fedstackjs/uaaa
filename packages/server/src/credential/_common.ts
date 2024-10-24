@@ -74,7 +74,11 @@ export interface ICredentialBindResult {
 export interface ICredentialUnbindResult {}
 
 export abstract class CredentialImpl {
-  abstract get type(): keyof ICredentialTypeMap
+  abstract get type(): CredentialType
+
+  async canLogin(ctx: CredentialContext): Promise<boolean> {
+    return !!this.login
+  }
 
   login?(ctx: CredentialContext, payload: unknown): Promise<ICredentialLoginResult>
 
@@ -130,10 +134,15 @@ export class CredentialManager extends Hookable<{}> {
     this.impls[impl.type] = impl
   }
 
-  getLoginTypes() {
-    return Object.values(this.impls)
-      .filter((impl) => impl.login)
-      .map((impl) => impl.type)
+  async getLoginTypes(ctx: Context) {
+    const types: CredentialType[] = []
+    const credentialCtx = new CredentialContext(this, ctx)
+    for (const impl of Object.values(this.impls)) {
+      if (await impl.canLogin(credentialCtx)) {
+        types.push(impl.type)
+      }
+    }
+    return types
   }
 
   async handleLogin(ctx: Context, type: string, payload: unknown) {
@@ -145,7 +154,7 @@ export class CredentialManager extends Hookable<{}> {
   }
 
   async getVerifyTypes(ctx: Context, userId: string, targetLevel: SecurityLevel) {
-    const types: string[] = []
+    const types: CredentialType[] = []
     const credentialCtx = new CredentialContext(this, ctx)
     for (const impl of Object.values(this.impls)) {
       if (await impl.canElevate(credentialCtx, userId, targetLevel)) {
@@ -156,7 +165,7 @@ export class CredentialManager extends Hookable<{}> {
   }
 
   async getBindTypes(ctx: Context, userId: string) {
-    const types: string[] = []
+    const types: CredentialType[] = []
     const credentialCtx = new CredentialContext(this, ctx)
     for (const impl of Object.values(this.impls)) {
       if (await impl.canBindNew(credentialCtx, userId)) {
@@ -294,7 +303,7 @@ export class CredentialManager extends Hookable<{}> {
     userId: string,
     credentialId: string
   ) {
-    const loginTypes = this.getLoginTypes()
+    const loginTypes = await this.getLoginTypes(ctx.httpCtx)
     const loginCredentialCount = await ctx.app.db.credentials.countDocuments({
       userId,
       type: { $in: loginTypes }

@@ -78,8 +78,8 @@ export const publicApi = new Hono()
     }
   )
   // Supported login methods
-  .get('/login', (ctx) => {
-    return ctx.json({ types: ctx.var.app.credential.getLoginTypes() })
+  .get('/login', async (ctx) => {
+    return ctx.json({ types: await ctx.var.app.credential.getLoginTypes(ctx) })
   })
   // Login
   .post(
