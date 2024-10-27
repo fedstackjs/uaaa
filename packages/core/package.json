@@ -2,10 +2,11 @@
   "name": "@uaaa/core",
   "type": "module",
   "main": "lib/index.js",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publishConfig": {
     "access": "public"
   },
+  "license": "Apache-2.0",
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc -w",
@@ -14,11 +15,7 @@
   "files": [
     "lib"
   ],
-  "dependencies": {
-    "micromatch": "^4.0.8"
-  },
   "devDependencies": {
-    "@types/micromatch": "^4.0.9",
     "typescript": "^5.5.4"
   }
 }

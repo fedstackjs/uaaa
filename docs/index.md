@@ -4,8 +4,11 @@ layout: home
 
 hero:
   name: 'UAAA'
-  text: '接入安全。'
+  text: '接入安全'
   tagline: 统一认证授权系统
+  image:
+    src: /logo.svg
+    alt: UAAA
   actions:
     - theme: brand
       text: 用户指南
@@ -17,11 +20,11 @@ hero:
 features:
   - title: 零信任
     icon: 🔒
-    details: 对用户和应用均应用零信任设计，贯彻最小授权原则，确保沦陷面最小化。
+    details: 零信任设计，贯彻最小授权原则，授权范围、沦陷面最小化。
   - title: 高安全
     icon: 🛡️
-    details: 所有授权均可用户感知，且可随时吊销，权限切断即使生效。
-  - title: 全支持
+    details: 所有授权可感知可吊销，权限切断即生效。
+  - title: 广支持
     icon: 🚀
     details: 插件框架，支持多种认证方式，支持多种应用接入，支持多种授权策略。
 ---

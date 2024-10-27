@@ -2506,13 +2506,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/braces@npm:*":
-  version: 3.0.4
-  resolution: "@types/braces@npm:3.0.4"
-  checksum: 10/7324497b6cc34c963c44d3f8516c67a83b749ab4f18defd9418b231b071af7ee8f0a0f345a52b204e867de80f684cabb21158512e1eaecbcebbabed1d1e357a3
-  languageName: node
-  linkType: hard
-
 "@types/estree@npm:*, @types/estree@npm:1.0.5, @types/estree@npm:^1.0.0":
   version: 1.0.5
   resolution: "@types/estree@npm:1.0.5"
@@ -2596,15 +2589,6 @@ __metadata:
   version: 2.0.0
   resolution: "@types/mdurl@npm:2.0.0"
   checksum: 10/78746e96c655ceed63db06382da466fd52c7e9dc54d60b12973dfdd110cae06b9439c4b90e17bb8d4461109184b3ea9f3e9f96b3e4bf4aa9fe18b6ac35f283c8
-  languageName: node
-  linkType: hard
-
-"@types/micromatch@npm:^4.0.9":
-  version: 4.0.9
-  resolution: "@types/micromatch@npm:4.0.9"
-  dependencies:
-    "@types/braces": "npm:*"
-  checksum: 10/324f4bcb4a7caa2048bdd650f442d2c24b5bf6bc95e4d63d4741bd234fdcf3cde140217bd477b2c02c7fb0034c7293037fd7b61429ace84e997dd3b4d3b2b2f7
   languageName: node
   linkType: hard
 
@@ -2692,8 +2676,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@uaaa/core@workspace:packages/core"
   dependencies:
-    "@types/micromatch": "npm:^4.0.9"
-    micromatch: "npm:^4.0.8"
     typescript: "npm:^5.5.4"
   languageName: unknown
   linkType: soft
@@ -7183,16 +7165,6 @@ __metadata:
     braces: "npm:^3.0.3"
     picomatch: "npm:^2.3.1"
   checksum: 10/a11ed1cb67dcbbe9a5fc02c4062cf8bb0157d73bf86956003af8dcfdf9b287f9e15ec0f6d6925ff6b8b5b496202335e497b01de4d95ef6cf06411bc5e5c474a0
-  languageName: node
-  linkType: hard
-
-"micromatch@npm:^4.0.8":
-  version: 4.0.8
-  resolution: "micromatch@npm:4.0.8"
-  dependencies:
-    braces: "npm:^3.0.3"
-    picomatch: "npm:^2.3.1"
-  checksum: 10/6bf2a01672e7965eb9941d1f02044fad2bd12486b5553dc1116ff24c09a8723157601dc992e74c911d896175918448762df3b3fd0a6b61037dd1a9766ddfbf58
   languageName: node
   linkType: hard
 
