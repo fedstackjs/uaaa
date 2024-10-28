@@ -56,6 +56,7 @@ actions:
 msg:
   id: ID
   value: 值
+  user-menu: 用户菜单
   system-settings: 系统设置
   actions: 操作
   login-by: 通过{0}登录
@@ -108,7 +109,7 @@ msg:
   token-id: 令牌ID
   token-index: 序号
   target-app: 目标应用
-  client-app: 客户端应用
+  client-app: 使用应用
   do-in-seconds: '{0}秒后执行{1}'
   missing-required-claims: '缺少必要的信息：{0}'
   missing-verified-claims: '缺少已验证的信息：{0}'

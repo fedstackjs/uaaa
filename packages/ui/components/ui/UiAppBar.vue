@@ -3,11 +3,9 @@
     <VAppBarNavIcon @click="model = !model" />
     <VToolbarItems>
       <VBtn to="/" rounded="lg" :active="false">
-        <template #prepend>
-          <VIcon size="42">
-            <img :src="uaaa" alt="UAAA" />
-          </VIcon>
-        </template>
+        <VIcon size="42">
+          <img :src="uaaa" alt="UAAA" />
+        </VIcon>
         <div v-if="mdAndUp" class="text-none pl-4 font-mono text-3xl">
           {{ config.public.appName }}
         </div>
@@ -16,7 +14,7 @@
 
     <VSpacer></VSpacer>
 
-    <UiUserMenu />
+    <UiUserMenu :dense="!mdAndUp" />
   </VAppBar>
 </template>
 

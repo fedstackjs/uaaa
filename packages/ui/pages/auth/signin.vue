@@ -1,6 +1,6 @@
 <template>
   <VContainer class="fill-height justify-center">
-    <VCard class="min-w-md">
+    <VCard class="min-w-xs lg:min-w-md">
       <VCardTitle class="d-flex flex-col items-center">
         <VIcon size="128">
           <CommonLogo variant="flat" />

@@ -1,11 +1,11 @@
 <template>
-  <VBtn
-    prepend-icon="mdi-security"
-    class="text-none mr-2"
-    variant="tonal"
-    :color="color"
-    :text="t('msg.current-security-level', [t(`securityLevel.${effectiveToken?.decoded.level}`)])"
-  />
+  <VBtn prepend-icon="mdi-security" class="text-none mr-2" variant="tonal" :color="color">
+    {{
+      dense
+        ? t(`securityLevel.${effectiveToken?.decoded.level}`)
+        : t('msg.current-security-level', [t(`securityLevel.${effectiveToken?.decoded.level}`)])
+    }}
+  </VBtn>
 
   <VMenu>
     <template v-slot:activator="{ props }">
@@ -17,7 +17,12 @@
         variant="tonal"
         color="info"
       >
-        {{ dense ? '' : data?.find(({ name }) => name === 'username')?.value }}
+        <template v-if="dense">
+          {{ t('msg.user-menu') }}
+        </template>
+        <template v-else>
+          {{ data?.find(({ name }) => name === 'username')?.value }}
+        </template>
       </VBtn>
     </template>
     <VList>
