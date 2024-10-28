@@ -1,10 +1,10 @@
 <template>
-  <VImg :src="variant === 'flat' ? flat : logo" alt="Logo" />
+  <VImg v-bind="$attrs" :src="variant === 'flat' ? flat : logo" alt="UAAA Logo" />
 </template>
 
 <script setup lang="ts">
-import logo from '@/assets/uaaa.svg'
-import flat from '@/assets/uaaa_flat.svg'
+import logo from '@/public/logo.svg'
+import flat from '@/public/logo.svg'
 
 defineProps<{
   variant?: 'flat' | 'default'

@@ -21,6 +21,11 @@ export default defineNuxtConfig({
       appName: 'UAAA'
     }
   },
+  app: {
+    head: {
+      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]
+    }
+  },
   css: ['@/assets/main.css'],
   build: {
     transpile: ['vuetify']

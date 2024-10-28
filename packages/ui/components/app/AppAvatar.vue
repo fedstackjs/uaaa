@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import uaaa from '@/assets/uaaa.svg'
+import uaaa from '@/public/logo.svg'
 
 const props = defineProps<{
   appId: string
