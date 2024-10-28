@@ -11,8 +11,13 @@
                   <template v-slot:activator="{ props }">
                     <VBtn :text="t('actions.add-credential')" variant="tonal" v-bind="props" />
                   </template>
-                  <VList>
-                    <VListItem v-for="type in types" :key="type" :value="type">
+                  <VList density="compact">
+                    <VListItem
+                      v-for="type in types"
+                      :key="type"
+                      :value="type"
+                      :prepend-icon="credentialIcon(type)"
+                    >
                       <VListItemTitle>{{ t(`credentials.${type}`) }}</VListItemTitle>
                       <CredentialBindDialog action="bind" :type="type" @updated="refresh()" />
                     </VListItem>

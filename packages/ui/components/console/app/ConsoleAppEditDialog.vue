@@ -40,7 +40,8 @@ watch(
 )
 
 const { run } = useTask(async () => {
-  await api.console.app.$patch({
+  await api.console.app[':id'].$patch({
+    param: { id: value.value.appId },
     json: value.value
   })
   model.value = false

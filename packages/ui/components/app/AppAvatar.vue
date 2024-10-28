@@ -1,7 +1,7 @@
 <template>
   <VTooltip :text="data?.name">
     <template v-slot:activator="{ props }">
-      <VAvatar v-bind="props" :color="data?.icon ? undefined : stringToColor(appId)">
+      <VAvatar rounded="0" v-bind="props" :color="data?.icon ? undefined : stringToColor(appId)">
         <template v-if="data">
           <VImg v-if="data.icon" :src="data.icon" />
           <span

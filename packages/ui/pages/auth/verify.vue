@@ -24,7 +24,7 @@
               :key="item"
               variant="tonal"
               class="justify-start"
-              prepend-icon="mdi-lock"
+              :prepend-icon="credentialIcon(item)"
               :text="t('msg.verify-by', [t(`credentials.${item}`)])"
               @click="type = item"
             />

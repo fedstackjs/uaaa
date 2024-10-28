@@ -93,65 +93,13 @@ export const publicApi = new Hono()
     ),
     async (ctx) => {
       const { type, payload } = ctx.req.valid('json')
-      const { credential, db, token } = ctx.var.app
-      const { userId, securityLevel, expiresIn, credentialId, tokenTimeout, refreshTimeout } =
-        await credential.handleLogin(ctx, type, payload)
-      const now = Date.now()
-      const { insertedId: sessionId } = await db.sessions.insertOne({
-        _id: nanoid(),
-        userId,
-        tokenCount: securityLevel > 0 ? 2 : 1,
-        expiresAt: now,
-        createdAt: now,
-        authorizedApps: [],
-        environment: {
-          ip: getRemoteIP(ctx),
-          ua: getUserAgent(ctx)
-        }
-      })
-      const tokens: Array<{
-        token: string
-        refreshToken?: string | undefined
-      }> = []
-      const environment = {}
-      const partialTokenDoc = {
-        sessionId,
-        userId,
-        permissions: [`${UAAA}/**`],
-        credentialId,
-        environment
-      } satisfies Partial<ITokenDoc>
-      tokens.push(
-        await token.createAndSignToken(
-          {
-            ...partialTokenDoc,
-            index: 0,
-            securityLevel: 0,
-            createdAt: now,
-            expiresAt: now + token.sessionTimeout,
-            tokenTimeout: token.getTokenTimeout(0, tokenTimeout),
-            refreshTimeout: token.getRefreshTimeout(0, refreshTimeout)
-          },
-          { generateCode: false }
-        )
-      )
-      if (securityLevel > 0) {
-        tokens.push(
-          await token.createAndSignToken(
-            {
-              ...partialTokenDoc,
-              index: 1,
-              parentId: JSON.parse(atob(tokens[0].token.split('.')[1])).jti,
-              securityLevel,
-              createdAt: now,
-              expiresAt: now + token.getSessionTokenTimeout(securityLevel, expiresIn),
-              tokenTimeout: token.getTokenTimeout(securityLevel, tokenTimeout),
-              refreshTimeout: token.getRefreshTimeout(securityLevel, refreshTimeout)
-            },
-            { generateCode: false }
-          )
-        )
+      const { credential, session } = ctx.var.app
+      const loginResult = await credential.handleLogin(ctx, type, payload)
+      const environment = {
+        ip: getRemoteIP(ctx),
+        ua: getUserAgent(ctx)
       }
+      const tokens = await session.login(loginResult, environment)
       return ctx.json({ tokens })
     }
   )

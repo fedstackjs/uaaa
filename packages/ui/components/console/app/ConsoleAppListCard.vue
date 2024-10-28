@@ -11,7 +11,7 @@
     <VDataTable v-if="apps" :items="apps" :headers="headers">
       <template v-slot:item.actions="{ item }">
         <VBtn icon="mdi-pencil" variant="text" @click="onEdit(item)" />
-        <!-- <VBtn icon="mdi-delete" variant="text" @click="onDelete(item)" /> -->
+        <VBtn icon="mdi-delete" variant="text" @click="onDelete(item)" :loading="deleteRunning" />
       </template>
     </VDataTable>
     <ConsoleAppEditDialog v-model="editDialogOpen" @updated="refresh()" :manifest="value" />
@@ -46,10 +46,12 @@ function onEdit({ _id, ...doc }: IAppDoc) {
   editDialogOpen.value = true
 }
 
-async function onDelete({ _id }: IAppDoc) {
-  // Not supported
+const { run: onDelete, running: deleteRunning } = useTask(async ({ _id }: IAppDoc) => {
+  if (!confirm(t('confirm-delete'))) return
+  const resp = await api.console.app[':id'].$delete({ param: { id: _id } })
+  await api.checkResponse(resp)
   refresh()
-}
+})
 </script>
 
 <i18n>
@@ -60,4 +62,5 @@ zh-Hans:
   promoted: 推荐
   security-level: 安全等级
   actions: 操作
+  confirm-delete: 确认删除应用？所有用户安装将被删除。
 </i18n>

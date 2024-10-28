@@ -1,6 +1,13 @@
 import { Hookable } from 'hookable'
 import { BusinessError, Permission, tSecurityLevel, UAAA } from '../util/index.js'
-import type { App, ICredentialVerifyResult, ITokenEnvironment, ITokenPayload } from '../index.js'
+import type {
+  App,
+  ICredentialLoginResult,
+  ICredentialVerifyResult,
+  ITokenDoc,
+  ITokenEnvironment,
+  ITokenPayload
+} from '../index.js'
 import { type } from 'arktype'
 import { customAlphabet, nanoid } from 'nanoid'
 import ms from 'ms'
@@ -60,6 +67,62 @@ export class SessionManager extends Hookable<{
 
   constructor(public app: App) {
     super()
+  }
+
+  async checkUser(userId: string) {
+    const count = await this.app.db.users.countDocuments({ _id: userId, disabled: { $ne: true } })
+    if (!count) throw new BusinessError('NOT_FOUND', { msg: 'User not found' })
+  }
+
+  async login(loginResult: ICredentialLoginResult, environment: ITokenEnvironment) {
+    const { db, token } = this.app
+    const { userId, securityLevel, expiresIn, credentialId, tokenTimeout, refreshTimeout } =
+      loginResult
+    await this.checkUser(userId)
+    const now = Date.now()
+    const { insertedId: sessionId } = await db.sessions.insertOne({
+      _id: nanoid(),
+      userId,
+      tokenCount: securityLevel > 0 ? 2 : 1,
+      expiresAt: now,
+      createdAt: now,
+      authorizedApps: [],
+      environment
+    })
+    const partialTokenDoc = {
+      sessionId,
+      userId,
+      permissions: [`${UAAA}/**`],
+      credentialId,
+      environment
+    } satisfies Partial<ITokenDoc>
+    const lower = await token.createAndSignToken(
+      {
+        ...partialTokenDoc,
+        index: 0,
+        securityLevel: 0,
+        createdAt: now,
+        expiresAt: now + token.sessionTimeout,
+        tokenTimeout: token.getTokenTimeout(0, tokenTimeout),
+        refreshTimeout: token.getRefreshTimeout(0, refreshTimeout)
+      },
+      { generateCode: false }
+    )
+    if (securityLevel <= 0) return [lower]
+    const upper = await token.createAndSignToken(
+      {
+        ...partialTokenDoc,
+        index: 1,
+        parentId: JSON.parse(atob(lower.token.split('.')[1])).jti,
+        securityLevel,
+        createdAt: now,
+        expiresAt: now + token.getSessionTokenTimeout(securityLevel, expiresIn),
+        tokenTimeout: token.getTokenTimeout(securityLevel, tokenTimeout),
+        refreshTimeout: token.getRefreshTimeout(securityLevel, refreshTimeout)
+      },
+      { generateCode: false }
+    )
+    return [lower, upper]
   }
 
   async elevate(

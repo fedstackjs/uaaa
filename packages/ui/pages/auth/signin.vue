@@ -68,7 +68,7 @@
               :key="loginType"
               variant="tonal"
               class="justify-start"
-              prepend-icon="mdi-lock"
+              :prepend-icon="credentialIcon(loginType)"
               :text="t('msg.login-by', [t(`credentials.${loginType}`)])"
               @click="type = loginType"
             />
