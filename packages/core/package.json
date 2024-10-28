@@ -10,12 +10,15 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc -w",
-    "prepack": "run build"
+    "prepack": "run build",
+    "test": "tsx --test 'src/**/*.spec.ts'"
   },
   "files": [
     "lib"
   ],
   "devDependencies": {
+    "expect": "^29.7.0",
+    "tsx": "^4.19.2",
     "typescript": "^5.5.4"
   }
 }
