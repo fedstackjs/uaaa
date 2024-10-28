@@ -10,6 +10,8 @@ export default defineConfig({
       lang: 'zh-Hans',
       themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
+        logo: '/logo.svg',
+
         nav: [
           { text: '首页', link: '/' },
           { text: '用户指南', link: '/user-guide' }
