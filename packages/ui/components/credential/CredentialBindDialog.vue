@@ -1,5 +1,5 @@
 <template>
-  <VDialog activator="parent" max-width="340">
+  <VDialog activator="parent" class="max-w-lg">
     <template v-slot:default="{ isActive }">
       <VCard prepend-icon="mdi-note-edit" :title="t(`actions.${action}`)">
         <CredentialForm

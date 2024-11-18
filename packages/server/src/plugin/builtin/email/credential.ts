@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { nanoid } from 'nanoid'
 import ms from 'ms'
 import { CredentialContext, CredentialImpl } from '../../../credential/_common.js'
-import { generateUsername, SecurityLevel } from '../../../util/index.js'
+import { BusinessError, generateUsername, SecurityLevel } from '../../../util/index.js'
 import type { ICredentialUnbindResult } from '../../../index.js'
 import type { EmailPlugin } from './plugin.js'
 
@@ -15,9 +15,11 @@ export class EmailImpl extends CredentialImpl {
 
   readonly type = 'email'
   defaultLevel = SecurityLevel.SL1
+  loginType
 
   constructor(public plugin: EmailPlugin) {
     super()
+    this.loginType = plugin.config.emailLogin ?? 'enabled'
   }
 
   private async _checkPayload(ctx: CredentialContext, payload: unknown) {
@@ -29,7 +31,15 @@ export class EmailImpl extends CredentialImpl {
     return { email: checked.email }
   }
 
+  override async showLogin(ctx: CredentialContext): Promise<boolean> {
+    if (this.loginType !== 'enabled') return false
+    return super.showLogin(ctx)
+  }
+
   override async login(ctx: CredentialContext, payload: unknown) {
+    if (this.loginType === 'disabled') {
+      throw new BusinessError('FORBIDDEN', { msg: 'Email login is disabled' })
+    }
     const { email } = await this._checkPayload(ctx, payload)
     const credential = await ctx.app.db.credentials.findOne({
       data: email,
@@ -82,7 +92,7 @@ export class EmailImpl extends CredentialImpl {
     throw new HTTPException(401, { message: 'User not found' })
   }
 
-  override async canElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
+  override async showElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
       _id: { $nin: await ctx.getCredentialIdBlacklist('email') },
       userId,
@@ -93,7 +103,7 @@ export class EmailImpl extends CredentialImpl {
     return !!credential
   }
 
-  override async canBindNew(ctx: CredentialContext, userId: string) {
+  override async showBindNew(ctx: CredentialContext, userId: string) {
     const credential = await ctx.app.db.credentials.findOne({
       userId,
       type: 'email'

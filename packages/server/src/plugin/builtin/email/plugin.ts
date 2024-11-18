@@ -13,7 +13,8 @@ export const tEmailConfig = type({
   emailFrom: 'string',
   'emailHtml?': 'string|undefined',
   'emailAllowSignup?': 'boolean|undefined',
-  'emailWhitelist?': 'string[]|undefined'
+  'emailWhitelist?': 'string[]|undefined',
+  'emailLogin?': '"enabled" | "hidden" | "disabled"'
 })
 
 type IEmailConfig = typeof tEmailConfig.infer
@@ -40,7 +41,7 @@ export class EmailPlugin {
 
   constructor(
     public app: App,
-    config: IEmailConfig = app.config.getAll()
+    public config: IEmailConfig = app.config.getAll()
   ) {
     this.transporter = mailer.createTransport(config.emailTransport as any)
     this.from = config.emailFrom ?? '"UAAA System" <system@uaaa.fedstack.org>'

@@ -47,11 +47,12 @@ actions:
   reset: 重置
   back: 返回
   add: 添加
-  install: 安装
+  install: 配置
   authorize: 授权
   terminate: 吊销
   confirm: 确认
   continue: 继续
+  send-otp: 发送验证码
 
 msg:
   id: ID
@@ -81,7 +82,7 @@ msg:
   security-level: 安全级别
   app: 应用
   request-for: 用途：{0}
-  install-app: 安装应用
+  install-app: 配置应用
   permissions: 权限
   claims: 用户信息
   grants: 授权
@@ -90,10 +91,10 @@ msg:
   unsupported-connector: 不支持的授权方式
   authorize-warn: 点击授权，将赋予该应用您设置的权限，是否继续？
   bad-arguments: 参数错误
-  app-not-installed: 应用未安装
+  app-not-installed: 应用未配置
   redirecting: 正在重定向...
   use-local-authenticator: 使用本地凭据
-  no-app-installed: 没有安装任何应用
+  no-app-installed: 没有配置任何应用
   session-list: 会话列表
   session-id: 会话ID
   session-token-count: 令牌数量
@@ -139,6 +140,12 @@ msg:
     1. 远程设备上的授权码是否为{code}
     2. 远程设备上的页面地址是否和本页面的地址一致
     请勿将授权码告知他人
+  email-email-hint: |
+    第一步：
+    输入邮箱地址并发送验证码
+  email-otp-hint: |
+    第二步：
+    输入邮箱收到的数字验证码
 
 claims:
   username: 用户名

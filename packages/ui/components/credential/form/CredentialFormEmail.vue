@@ -1,16 +1,32 @@
 <template>
   <VForm v-if="requireCode" fast-fail validate-on="submit lazy" @submit.prevent="submit">
     <VCardText>
-      <VTextField
-        v-model="email"
-        prepend-inner-icon="mdi-email"
-        :label="t('credentials.email')"
-        :rules="emailRules"
-        :append-icon="emailIcon"
-        @click:append="sendCode"
-        @keydown.enter.prevent.stop="sendCode"
-      />
-
+      <p class="pb-4">{{ t('msg.email-email-hint') }}</p>
+      <VRow no-gutters>
+        <VCol>
+          <VTextField
+            v-model="email"
+            :prepend-inner-icon="mdAndUp ? 'mdi-email' : ''"
+            :label="t('credentials.email')"
+            :rules="emailRules"
+            density="compact"
+            :disabled="sendCodeRunning"
+            @keydown.enter.prevent.stop="sendCode"
+          />
+        </VCol>
+        <VCol cols="auto" class="pl-2">
+          <VBtn
+            rounded="1"
+            :prepend-icon="mdAndUp ? 'mdi-send' : ''"
+            :loading="sendCodeRunning"
+            @click="sendCode"
+            block
+          >
+            {{ t('actions.send-otp') }}
+          </VBtn>
+        </VCol>
+      </VRow>
+      <p>{{ t('msg.email-otp-hint') }}</p>
       <VOtpInput v-model.trim="code" />
     </VCardText>
 
@@ -38,7 +54,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import type { SubmitEventPromise } from 'vuetify'
+import { useDisplay, type SubmitEventPromise } from 'vuetify'
 
 const props = defineProps<{
   action: 'login' | 'verify' | 'bind' | 'unbind'
@@ -52,10 +68,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const toast = useToast()
 const errToast = useErrorToast()
+const { mdAndUp } = useDisplay()
 
 const requireCode = computed(() => props.action !== 'unbind')
 const email = ref('')
-const emailIcon = ref('mdi-send')
 const code = ref('')
 
 const emailRules = [
@@ -68,16 +84,13 @@ const emailRules = [
 
 const isLoading = ref(false)
 
-const { run: sendCode } = useTask(async () => {
-  emailIcon.value = 'mdi-send-clock'
+const { run: sendCode, running: sendCodeRunning } = useTask(async () => {
   try {
     const resp = await api.email.send.$post({ json: { email: email.value } })
     await api.checkResponse(resp)
     toast.success(t('hint.email-sent'))
-    emailIcon.value = 'mdi-send-check'
     return symNoToast
   } catch (err) {
-    emailIcon.value = 'mdi-send'
     throw err
   }
 })

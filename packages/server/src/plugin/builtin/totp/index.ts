@@ -40,7 +40,7 @@ class TOTPImpl extends CredentialImpl {
     this.newCredentialSecurityLevel = config.totpSecurityLevel ?? SecurityLevel.SL3
   }
 
-  override async canElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
+  override async showElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
       _id: { $nin: await ctx.getCredentialIdBlacklist(this.type) },
       userId,
@@ -51,7 +51,7 @@ class TOTPImpl extends CredentialImpl {
     return !!credential
   }
 
-  override async canBindNew(ctx: CredentialContext, userId: string) {
+  override async showBindNew(ctx: CredentialContext, userId: string) {
     const credential = await ctx.app.db.credentials.findOne({
       userId,
       type: this.type

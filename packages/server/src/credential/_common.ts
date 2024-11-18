@@ -76,13 +76,13 @@ export interface ICredentialUnbindResult {}
 export abstract class CredentialImpl {
   abstract get type(): CredentialType
 
-  async canLogin(ctx: CredentialContext): Promise<boolean> {
+  async showLogin(ctx: CredentialContext): Promise<boolean> {
     return !!this.login
   }
 
   login?(ctx: CredentialContext, payload: unknown): Promise<ICredentialLoginResult>
 
-  async canElevate(
+  async showElevate(
     ctx: CredentialContext,
     userId: string,
     targetLevel: SecurityLevel
@@ -97,7 +97,7 @@ export abstract class CredentialImpl {
     return !!credential
   }
 
-  async canBindNew(ctx: CredentialContext, userId: string): Promise<boolean> {
+  async showBindNew(ctx: CredentialContext, userId: string): Promise<boolean> {
     return true
   }
 
@@ -138,7 +138,7 @@ export class CredentialManager extends Hookable<{}> {
     const types: CredentialType[] = []
     const credentialCtx = new CredentialContext(this, ctx)
     for (const impl of Object.values(this.impls)) {
-      if (await impl.canLogin(credentialCtx)) {
+      if (await impl.showLogin(credentialCtx)) {
         types.push(impl.type)
       }
     }
@@ -157,7 +157,7 @@ export class CredentialManager extends Hookable<{}> {
     const types: CredentialType[] = []
     const credentialCtx = new CredentialContext(this, ctx)
     for (const impl of Object.values(this.impls)) {
-      if (await impl.canElevate(credentialCtx, userId, targetLevel)) {
+      if (await impl.showElevate(credentialCtx, userId, targetLevel)) {
         types.push(impl.type)
       }
     }
@@ -168,7 +168,7 @@ export class CredentialManager extends Hookable<{}> {
     const types: CredentialType[] = []
     const credentialCtx = new CredentialContext(this, ctx)
     for (const impl of Object.values(this.impls)) {
-      if (await impl.canBindNew(credentialCtx, userId)) {
+      if (await impl.showBindNew(credentialCtx, userId)) {
         types.push(impl.type)
       }
     }

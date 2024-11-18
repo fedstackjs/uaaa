@@ -88,7 +88,7 @@ class PasswordImpl extends CredentialImpl {
     }
   }
 
-  override async canElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
+  override async showElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
       _id: { $nin: await ctx.getCredentialIdBlacklist('password') },
       userId,
@@ -99,7 +99,7 @@ class PasswordImpl extends CredentialImpl {
     return !!credential
   }
 
-  override async canBindNew(ctx: CredentialContext, userId: string) {
+  override async showBindNew(ctx: CredentialContext, userId: string) {
     const credential = await ctx.app.db.credentials.findOne({
       userId,
       type: 'password'
