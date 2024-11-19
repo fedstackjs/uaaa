@@ -145,15 +145,19 @@ export class EmailImpl extends CredentialImpl {
     _payload: unknown
   ) {
     const { email } = await this._checkPayload(ctx, _payload)
-    await ctx.app.db.users.updateOne(
-      { _id: userId },
+    await ctx.app.db.users.updateOne({ _id: userId }, [
       {
         $set: {
-          'claims.email.value': email,
-          'claims.email.verified': true
+          'claims.email': {
+            $cond: {
+              if: { $ne: ['$claims.email.verified', true] },
+              then: { value: email, verified: true },
+              else: '$claims.email'
+            }
+          }
         }
       }
-    )
+    ])
     return {
       credentialId: await ctx.manager.bindCredential(ctx, 'email', userId, credentialId, {
         userIdentifier: '',
