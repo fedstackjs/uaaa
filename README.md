@@ -1,5 +1,5 @@
 <div align=center>
-  <img src=docs/public/logo.svg height=144 width=144>
+  <img src=packages/ui/public/logo.svg height=144 width=144>
   <h1>UAAA</h1>
   <p>
     <font size=4>
