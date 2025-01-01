@@ -16,6 +16,11 @@ export const consoleAppApi = new Hono()
   .post('/', arktypeValidator('json', tAppManifest.onDeepUndeclaredKey('delete')), async (ctx) => {
     const { app } = ctx.var
     const { appId, ...newApp } = ctx.req.valid('json')
+    if (appId === app.appId) {
+      throw new BusinessError('DUPLICATE', {
+        msg: 'appId cannot be the same as the UAAA app'
+      })
+    }
     const secret = randomBytes(32).toString('hex')
     const { insertedId } = await app.db.apps.insertOne(
       { _id: appId, ...newApp, secret },

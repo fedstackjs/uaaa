@@ -18,3 +18,5 @@ export function isSecurityLevel(level: number): level is SecurityLevel {
 }
 
 export const tSecurityLevel = type('number').narrow(isSecurityLevel)
+
+export type UAAA = string & { __uaaa: never }

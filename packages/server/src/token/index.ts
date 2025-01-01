@@ -1,24 +1,17 @@
-import { createPrivateKey, createPublicKey } from 'node:crypto'
+import { createPrivateKey, createPublicKey, KeyObject } from 'node:crypto'
 import { type } from 'arktype'
 import { Hookable } from 'hookable'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
-import {
-  BusinessError,
-  logger,
-  Permission,
-  SecurityLevel,
-  tSecurityLevel,
-  UAAA
-} from '../util/index.js'
+import { BusinessError, logger, Permission, SecurityLevel, tSecurityLevel } from '../util/index.js'
 import type { App, IAppDoc, ITokenDoc } from '../index.js'
 import ms from 'ms'
 
 export const tTokenPayload = type({
   iss: 'string',
   sub: 'string',
-  'aud?': 'string',
+  aud: 'string',
   'client_id?': 'string|undefined',
   sid: 'string',
   jti: 'string',
@@ -38,6 +31,11 @@ export interface ICreateTokenOptions {
 }
 
 export class TokenManager extends Hookable<{}> {
+  issuer
+  trustedUpstreamIssuers: string[]
+  trustedUpstreamKeys: Record<string, KeyObject>
+  trustedLocalKeys: Record<string, KeyObject>
+
   sessionTimeout: number
   tokenTimeouts: number[]
   refreshTimeouts: number[]
@@ -45,12 +43,55 @@ export class TokenManager extends Hookable<{}> {
 
   constructor(public app: App) {
     super()
+    this.issuer = this.app.config.get('deploymentUrl')
+    this.trustedUpstreamIssuers = this.app.config.get('trustedUpstreamIssuers') ?? []
+    this.trustedUpstreamKeys = Object.create(null)
+    this.trustedLocalKeys = Object.create(null)
+
     this.sessionTimeout = ms(app.config.get('sessionTimeout'))
     this.tokenTimeouts = this._loadTimeouts(app.config.get('tokenTimeout'))
     this.sessionTokenTimeouts = this._loadTimeouts(
       app.config.get('sessionTokenTimeout') ?? app.config.get('tokenTimeout')
     )
     this.refreshTimeouts = this._loadTimeouts(app.config.get('refreshTimeout'))
+  }
+
+  private async _fetchUpstreamKeys(upstream: string) {
+    const discoveryUrl = new URL('.well-known/openid-configuration', upstream)
+    const discoveryRes = await fetch(discoveryUrl)
+    const discovery = await discoveryRes.json()
+    const jwksUrl = new URL(discovery.jwks_uri, upstream)
+    const jwksRes = await fetch(jwksUrl)
+    const jwks = await jwksRes.json()
+    for (const key of jwks.keys) {
+      const jwk = createPublicKey({ key, format: 'jwk' })
+      this.trustedUpstreamKeys[key.kid] = jwk
+      logger.info(`Added key from upstream ${upstream}: ${key.kid}`)
+    }
+  }
+
+  async fetchTrustedUpstreamKeys() {
+    for (const upstream of this.trustedUpstreamIssuers) {
+      try {
+        await this._fetchUpstreamKeys(upstream)
+      } catch (err) {
+        logger.error(`Failed to fetch keys from upstream ${upstream}: ${err}`)
+      }
+    }
+  }
+
+  async loadTrustedLocalKeys() {
+    const pairs = this.app.db.jwkpairs.find()
+    for await (const pair of pairs) {
+      const publicKey = createPublicKey({ key: pair.publicKey, format: 'jwk' })
+      this.trustedLocalKeys[pair._id.toHexString()] = publicKey
+      logger.info(`Added local key: ${pair._id}`)
+    }
+  }
+
+  async loadTrustedKeys() {
+    await this.loadTrustedLocalKeys()
+    await this.fetchTrustedUpstreamKeys()
   }
 
   private _loadTimeouts(config: string | string[]): number[] {
@@ -84,7 +125,7 @@ export class TokenManager extends Hookable<{}> {
         {
           algorithm: 'RS256',
           keyid: pair._id.toHexString(),
-          issuer: this.app.config.get('deploymentUrl'),
+          issuer: this.issuer,
           ...options
         },
         (err, token) => (token ? resolve(token) : reject(err))
@@ -111,13 +152,10 @@ export class TokenManager extends Hookable<{}> {
       jwt.verify(
         token,
         async ({ kid }, cb) => {
-          try {
-            const doc = await this.app.db.jwkpairs.findOne({ _id: new ObjectId(kid) })
-            if (!doc) throw new BusinessError('INVALID_TOKEN', {})
-            cb(null, createPublicKey({ key: doc.publicKey, format: 'jwk' }))
-          } catch (err) {
-            cb(err as Error)
-          }
+          if (!kid) return cb(new BusinessError('INVALID_TOKEN', {}))
+          const key = this.trustedLocalKeys[kid] ?? this.trustedUpstreamKeys[kid]
+          if (!key) return cb(new BusinessError('INVALID_TOKEN', {}))
+          return cb(null, key)
         },
         { complete: true },
         (err, decoded) => (decoded ? resolve(decoded) : reject(mapVerifyError(err)))
@@ -138,13 +176,20 @@ export class TokenManager extends Hookable<{}> {
     return doc
   }
 
-  async signToken(tokenDoc: ITokenDoc) {
+  async signToken(tokenDoc: ITokenDoc, targetAppId?: string) {
     if (tokenDoc.terminated) {
       throw new BusinessError('TOKEN_TERMINATED', {})
     }
     const now = Date.now()
     if (now >= tokenDoc.expiresAt) {
       throw new BusinessError('TOKEN_EXPIRED', {})
+    }
+
+    const parsedPermissions = tokenDoc.permissions.map((perm) => Permission.fromCompactString(perm))
+    const containsUAAA = parsedPermissions.some((perm) => perm.appId === this.app.appId)
+    targetAppId ??= containsUAAA ? this.app.appId : parsedPermissions[0].appId
+    if (!targetAppId) {
+      throw new BusinessError('INVALID_TOKEN', {})
     }
 
     const tokenExpiresAt = Math.min(tokenDoc.expiresAt, now + tokenDoc.tokenTimeout)
@@ -157,15 +202,8 @@ export class TokenManager extends Hookable<{}> {
     await this.app.db.tokens.updateOne(
       { _id: tokenDoc._id },
       {
-        $set: {
-          refreshToken,
-          refreshExpiresAt,
-          tokenExpiresAt,
-          lastIssuedAt: now
-        },
-        $inc: {
-          issuedCount: 1
-        }
+        $set: { refreshToken, refreshExpiresAt, tokenExpiresAt, lastIssuedAt: now },
+        $inc: { issuedCount: 1 }
       },
       { ignoreUndefined: true }
     )
@@ -176,7 +214,7 @@ export class TokenManager extends Hookable<{}> {
 
     const permissions = tokenDoc.permissions
       .map((perm) => Permission.fromCompactString(perm))
-      .filter((perm) => perm.appId === UAAA)
+      .filter((perm) => perm.appId === targetAppId)
       .map((perm) => perm.toScopedString())
     if (!permissions.length) {
       throw new BusinessError('BAD_REQUEST', { msg: 'No permissions granted for UAAA' })
@@ -190,41 +228,15 @@ export class TokenManager extends Hookable<{}> {
         iat: Math.floor(now / 1000),
         exp: Math.floor(tokenExpiresAt / 1000)
       },
-      { subject: tokenDoc.userId, jwtid: tokenDoc._id }
+      { subject: tokenDoc.userId, jwtid: tokenDoc._id, audience: targetAppId }
     )
     return { token, refreshToken }
   }
 
-  async exchangeToken(payload: ITokenPayload, targetAppId: string) {
-    if (!payload.client_id) {
-      throw new BusinessError('INVALID_TOKEN', {})
-    }
-    const tokenDoc = await this.app.db.tokens.findOne({
-      _id: payload.jti,
-      userId: payload.sub,
-      clientAppId: payload.client_id,
-      terminated: { $ne: true }
-    })
-    if (!tokenDoc) {
-      throw new BusinessError('INVALID_TOKEN', {})
-    }
-    const permissions = tokenDoc.permissions
-      .map((perm) => Permission.fromCompactString(perm))
-      .filter((perm) => perm.appId === targetAppId)
-      .map((perm) => perm.toScopedString())
-    if (!permissions.length) {
-      throw new BusinessError('FORBIDDEN', {
-        msg: 'Token does not have permission to access target app'
-      })
-    }
-    const { iss, aud, ...original } = payload
-    const token = await this.sign({ ...original, perm: permissions }, { audience: targetAppId })
-    return { token }
-  }
-
   async refreshToken(
     refreshToken: string,
-    client: { id?: string | undefined; secret?: string | undefined; app?: IAppDoc | null }
+    client: { id?: string | undefined; secret?: string | undefined; app?: IAppDoc | null },
+    targetAppId?: string
   ) {
     const tokenDoc = await this.app.db.tokens.findOneAndUpdate(
       {
@@ -248,12 +260,16 @@ export class TokenManager extends Hookable<{}> {
         throw new BusinessError('INVALID_TOKEN', {})
       }
     }
-    return this.signToken(tokenDoc)
+    return this.signToken(tokenDoc, targetAppId)
   }
 
-  async createAndSignToken(token: Omit<ITokenDoc, '_id'>, options: ICreateTokenOptions = {}) {
+  async createAndSignToken(
+    token: Omit<ITokenDoc, '_id'>,
+    options: ICreateTokenOptions = {},
+    targetAppId?: string
+  ) {
     const tokenDoc = await this.createToken(token, options)
-    const generated = await this.signToken(tokenDoc)
+    const generated = await this.signToken(tokenDoc, targetAppId)
     return tokenDoc.code ? { ...generated, code: tokenDoc.code } : generated
   }
 
@@ -271,7 +287,7 @@ export class TokenManager extends Hookable<{}> {
 
   async verifyUAAAToken(token: string) {
     const { jwt, payload } = await this.verifyToken(token)
-    if (Object.hasOwn(payload, 'aud')) {
+    if (payload.aud !== this.app.appId) {
       throw new BusinessError('INVALID_TOKEN', {})
     }
     return { jwt, payload }

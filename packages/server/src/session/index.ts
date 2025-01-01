@@ -1,5 +1,5 @@
 import { Hookable } from 'hookable'
-import { BusinessError, Permission, tSecurityLevel, UAAA } from '../util/index.js'
+import { BusinessError, Permission, tSecurityLevel } from '../util/index.js'
 import type {
   App,
   ICredentialLoginResult,
@@ -92,7 +92,7 @@ export class SessionManager extends Hookable<{
     const partialTokenDoc = {
       sessionId,
       userId,
-      permissions: [`${UAAA}/**`],
+      permissions: [`${this.app.appId}/**`],
       credentialId,
       environment
     } satisfies Partial<ITokenDoc>
@@ -142,7 +142,7 @@ export class SessionManager extends Hookable<{
     const newToken = await this.app.token.createAndSignToken({
       sessionId: token.sid,
       userId: token.sub,
-      permissions: [`${UAAA}/**`],
+      permissions: [`${this.app.appId}/**`],
       index: session.tokenCount,
       parentId: token.jti,
       credentialId,
@@ -213,7 +213,7 @@ export class SessionManager extends Hookable<{
     }
 
     const permissions = options.permissions
-    if (!permissions.some((p) => Permission.fromCompactString(p).appId === UAAA)) {
+    if (!permissions.some((p) => Permission.fromCompactString(p).appId === this.app.appId)) {
       throw new BusinessError('BAD_REQUEST', { msg: 'No permissions granted for UAAA' })
     }
 

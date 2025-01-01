@@ -12,7 +12,6 @@ export const UAAAPermissionDescriptionMap = {
   '/session/claim': { name: 'Get authorized claims', description: '' },
   '/session/elevate': { name: 'Elevate session', description: '' },
   '/session/derive': { name: 'Derive token inside session', description: '' },
-  '/session/exchange': { name: 'Exchange token for other application', description: '' },
   '/session/slient_authorize': { name: 'Allow sliently authorize', description: '' },
   '/session/remote_authorize': { name: 'Authorize remote clients', description: '' },
   '/user': { name: 'Get user info', description: '' },

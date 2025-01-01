@@ -1,14 +1,11 @@
 import { Hono } from 'hono'
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
-import { nanoid } from 'nanoid'
 import { idParamValidator } from '../_common.js'
 import type { IAppDoc } from '../../db/index.js'
 import { BusinessError } from '../../util/errors.js'
 import { getRemoteIP, getUserAgent } from '../_helper.js'
-import { UAAA } from '../../util/constants.js'
 import { UAAAProvidedPermissions } from '../../util/permission.js'
-import type { ITokenDoc } from '../../db/model/token.js'
 import { tRemoteRequest } from '../../session/index.js'
 
 /** Public API */
@@ -45,7 +42,7 @@ export const publicApi = new Hono()
   // Get application provided permissions
   .get('/app/:id/provided_permissions', idParamValidator, async (ctx) => {
     const { id } = ctx.req.valid('param')
-    if (id === UAAA) return ctx.json({ permissions: UAAAProvidedPermissions })
+    if (id === ctx.var.app.appId) return ctx.json({ permissions: UAAAProvidedPermissions })
 
     const app = await ctx.var.app.db.apps.findOne(
       { _id: id },
@@ -111,7 +108,8 @@ export const publicApi = new Hono()
       type({
         refreshToken: 'string',
         'clientId?': 'string',
-        'clientSecret?': 'string'
+        'clientSecret?': 'string',
+        'targetAppId?': 'string'
       })
     ),
     async (ctx) => {

@@ -3,7 +3,6 @@ import { Type, type } from 'arktype'
 import {
   Permission,
   SecurityLevel,
-  UAAA,
   type App,
   type ClaimName,
   type IAppDoc,
@@ -125,7 +124,7 @@ export class OAuthManager {
         let id_token: string | undefined
 
         const matchedPermissions = tokenDoc.permissions
-          .map((p) => Permission.fromScopedString(p, UAAA))
+          .map((p) => Permission.fromScopedString(p, this.app.appId))
           .filter((p) => p.test('/session/claim'))
         if (matchedPermissions.length) {
           id_token = await this.generateIDToken(ctx, client.id, tokenDoc.userId, tokenDoc.nonce)
@@ -149,7 +148,7 @@ export class OAuthManager {
         refresh_token: 'string',
         'scope?': 'string|undefined'
       }),
-      async (ctx, { refresh_token }, client) => {
+      async (ctx, { refresh_token, scope }, client) => {
         const { token, refreshToken } = await ctx.var.app.token.refreshToken(refresh_token, client)
         return {
           access_token: token,
@@ -222,7 +221,7 @@ export class OAuthManager {
         let id_token: string | undefined
 
         const matchedPermissions = tokenDoc.permissions
-          .map((p) => Permission.fromScopedString(p, UAAA))
+          .map((p) => Permission.fromScopedString(p, this.app.appId))
           .filter((p) => p.test('/session/claim'))
         if (matchedPermissions.length) {
           id_token = await this.generateIDToken(ctx, client.id, tokenDoc.userId, tokenDoc.nonce)

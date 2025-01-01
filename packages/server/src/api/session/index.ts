@@ -84,16 +84,6 @@ export const sessionApi = new Hono()
     }
   )
   .post(
-    '/exchange',
-    verifyPermission({ path: '/session/exchange' }),
-    arktypeValidator('json', type({ targetAppId: 'string' })),
-    async (ctx) => {
-      const { app, token } = ctx.var
-      const { targetAppId } = ctx.req.valid('json')
-      return ctx.json(await app.token.exchangeToken(token, targetAppId))
-    }
-  )
-  .post(
     '/derive',
     verifyPermission({ path: '/session/derive' }),
     arktypeValidator('json', tDeriveOptions),

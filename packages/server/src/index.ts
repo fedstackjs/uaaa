@@ -23,6 +23,7 @@ declare module 'hono' {
 export class App extends Hookable<{
   extendApp(router: Hono): void | Promise<void>
 }> {
+  appId
   config
   db
   cache
@@ -39,6 +40,7 @@ export class App extends Hookable<{
   constructor(config: IConfig) {
     super()
     this.config = new ConfigManager(this, config)
+    this.appId = this.config.get('appId')
     this.db = new DbManager(this)
     this.cache = new CacheManager(this)
     this.credential = new CredentialManager(this)
@@ -58,6 +60,7 @@ export class App extends Hookable<{
     await this.plugin.setupPlugins()
     await this.db.initDatabase()
     await this.cache.initCache()
+    await this.token.loadTrustedKeys()
     const duration = performance.now() - start
     logger.info(`App initialized in ${duration.toFixed(2)}ms`)
     this._initialized = true

@@ -1,8 +1,10 @@
 import { type } from 'arktype'
 import { Hookable } from 'hookable'
-import type { App } from '../index.js'
+import { rAppId } from '../util/index.js'
+import type { App, UAAA } from '../index.js'
 
 const tAppConfig = type({
+  appId: type('string').narrow((s): s is UAAA => rAppId.test(s)),
   mongoUri: 'string',
   plugins: 'string[]',
   port: 'number',
@@ -12,6 +14,7 @@ const tAppConfig = type({
   refreshTimeout: 'string|string[]',
   'sessionTokenTimeout?': 'string|string[]',
   'realIpHeader?': 'string',
+  'trustedUpstreamIssuers?': 'string[]',
   'openidClaimConfig?': type.Record(
     'string',
     type({
