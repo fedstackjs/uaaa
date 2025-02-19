@@ -9,8 +9,6 @@ export interface ISessionDoc {
   /** The session's user's union id */
   userId: string
 
-  tokenCount: number
-
   authorizedApps: string[]
   environment: ISessionEnvironment
 

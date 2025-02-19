@@ -12,8 +12,6 @@ export interface ITokenDoc {
   sessionId: string
   /** User ID */
   userId: string
-  /** Token Index in a session */
-  index: number
   /** Token Client AppID (empty when token is issued for UAAA) */
   clientAppId?: string | undefined
   /** Token's permissions. Array of compact UPM-URLs */

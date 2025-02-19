@@ -14,7 +14,6 @@ export const sessionApi = new Hono()
     const session = await app.db.sessions.findOne({ _id: token.sid, terminated: { $ne: true } })
     if (!session) throw new HTTPException(404)
     return ctx.json({
-      tokenCount: session.tokenCount,
       authorizedApps: session.authorizedApps
     })
   })

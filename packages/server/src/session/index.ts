@@ -83,7 +83,6 @@ export class SessionManager extends Hookable<{
     const { insertedId: sessionId } = await db.sessions.insertOne({
       _id: nanoid(),
       userId,
-      tokenCount: securityLevel > 0 ? 2 : 1,
       expiresAt: now,
       createdAt: now,
       authorizedApps: [],
@@ -99,7 +98,6 @@ export class SessionManager extends Hookable<{
     const lower = await token.createAndSignToken(
       {
         ...partialTokenDoc,
-        index: 0,
         securityLevel: 0,
         createdAt: now,
         expiresAt: now + token.sessionTimeout,
@@ -112,7 +110,6 @@ export class SessionManager extends Hookable<{
     const upper = await token.createAndSignToken(
       {
         ...partialTokenDoc,
-        index: 1,
         parentId: JSON.parse(atob(lower.token.split('.')[1])).jti,
         securityLevel,
         createdAt: now,
@@ -143,7 +140,6 @@ export class SessionManager extends Hookable<{
       sessionId: token.sid,
       userId: token.sub,
       permissions: [`${this.app.appId}/**`],
-      index: session.tokenCount,
       parentId: token.jti,
       credentialId,
       securityLevel,
@@ -158,6 +154,8 @@ export class SessionManager extends Hookable<{
 
   async checkDerive(token: ITokenPayload, options: DeriveOptions) {
     if (token.client_id) {
+      // TODO: allow application token to derive token for self
+      // eg. background login
       throw new BusinessError('BAD_REQUEST', {
         msg: 'Application token is not allowed to derive another token'
       })
@@ -242,7 +240,7 @@ export class SessionManager extends Hookable<{
 
     const session = await this.app.db.sessions.findOneAndUpdate(
       { _id: token.sid, terminated: { $ne: true } },
-      { $inc: { tokenCount: 1 }, $addToSet: { authorizedApps: clientAppId } },
+      { $addToSet: { authorizedApps: clientAppId } },
       { returnDocument: 'before' }
     )
     if (!session) {
@@ -253,16 +251,14 @@ export class SessionManager extends Hookable<{
       {
         sessionId: token.sid,
         userId: token.sub,
-        index: session.tokenCount,
         clientAppId,
         permissions,
         parentId: parentToken._id,
         securityLevel,
         createdAt: timestamp,
         expiresAt: parentToken.expiresAt,
-        // TODO: tokenTimeout and refreshTimeout should be configurable
-        tokenTimeout: parentToken.tokenTimeout,
-        refreshTimeout: parentToken.refreshTimeout,
+        tokenTimeout: this.app.token.getTokenTimeout(securityLevel),
+        refreshTimeout: this.app.token.getRefreshTimeout(securityLevel),
         confidential,
         remote,
         nonce: options?.nonce,

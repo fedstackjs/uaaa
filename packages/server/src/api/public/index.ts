@@ -114,12 +114,13 @@ export const publicApi = new Hono()
     ),
     async (ctx) => {
       const { app } = ctx.var
-      const { refreshToken, clientId, clientSecret } = ctx.req.valid('json')
+      const { refreshToken, clientId, clientSecret, targetAppId } = ctx.req.valid('json')
       return ctx.json(
-        await app.token.refreshToken(refreshToken, {
-          id: clientId,
-          secret: clientSecret
-        })
+        await app.token.refreshToken(
+          refreshToken,
+          { id: clientId, secret: clientSecret },
+          targetAppId
+        )
       )
     }
   )

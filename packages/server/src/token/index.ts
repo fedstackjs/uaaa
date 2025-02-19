@@ -168,12 +168,37 @@ export class TokenManager extends Hookable<{}> {
     token: Omit<ITokenDoc, '_id' | 'code'>,
     { generateCode = true }: ICreateTokenOptions = {}
   ): Promise<ITokenDoc> {
-    const doc: ITokenDoc = { _id: nanoid(), ...token }
-    if (generateCode) {
-      doc.code ??= nanoid()
-    }
-    await this.app.db.tokens.insertOne(doc, { ignoreUndefined: true })
-    return doc
+    const doc = await this.app.db.tokens.findOneAndUpdate(
+      {
+        userId: token.userId,
+        sessionId: token.sessionId,
+        parentId: token.parentId ? token.parentId : { $exists: false },
+        clientAppId: token.clientAppId,
+        securityLevel: token.securityLevel,
+        expiresAt: { $gt: Date.now() },
+        terminated: { $ne: true }
+      },
+      {
+        $setOnInsert: {
+          _id: nanoid(),
+          ...token,
+          code: generateCode ? nanoid() : undefined
+        },
+        $set: {
+          permissions: token.permissions,
+          confidential: token.confidential,
+          remote: token.remote,
+          nonce: token.nonce,
+          challenge: token.challenge,
+          environment: token.environment
+        },
+        $max: {
+          expiresAt: token.expiresAt
+        }
+      },
+      { upsert: true, returnDocument: 'after', ignoreUndefined: true }
+    )
+    return doc!
   }
 
   async signToken(tokenDoc: ITokenDoc, targetAppId?: string) {
