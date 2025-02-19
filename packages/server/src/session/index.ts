@@ -89,6 +89,7 @@ export class SessionManager extends Hookable<{
       environment
     })
     const partialTokenDoc = {
+      clientAppId: this.app.appId,
       sessionId,
       userId,
       permissions: [`${this.app.appId}/**`],
@@ -139,6 +140,7 @@ export class SessionManager extends Hookable<{
     const newToken = await this.app.token.createAndSignToken({
       sessionId: token.sid,
       userId: token.sub,
+      clientAppId: this.app.appId,
       permissions: [`${this.app.appId}/**`],
       parentId: token.jti,
       credentialId,

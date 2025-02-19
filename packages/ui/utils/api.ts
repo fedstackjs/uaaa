@@ -97,7 +97,12 @@ export class ApiManager {
 
     console.log(`[API] Refreshing token ${tokenId}`)
     try {
-      const resp = await this.public.refresh.$post({ json: { refreshToken: _refreshToken } })
+      const resp = await this.public.refresh.$post({
+        json: {
+          clientId: this.tokens.value[tokenId]?.decoded.client_id || '',
+          refreshToken: _refreshToken
+        }
+      })
       await this.checkResponse(resp)
       const { token, refreshToken } = await resp.json()
       this.tokens.value[tokenId] = {

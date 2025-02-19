@@ -107,7 +107,7 @@ export const publicApi = new Hono()
       'json',
       type({
         refreshToken: 'string',
-        'clientId?': 'string',
+        clientId: 'string',
         'clientSecret?': 'string',
         'targetAppId?': 'string'
       })

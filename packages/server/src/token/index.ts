@@ -12,7 +12,7 @@ export const tTokenPayload = type({
   iss: 'string',
   sub: 'string',
   aud: 'string',
-  'client_id?': 'string|undefined',
+  client_id: 'string',
   sid: 'string',
   jti: 'string',
   perm: type('string')
@@ -260,14 +260,14 @@ export class TokenManager extends Hookable<{}> {
 
   async refreshToken(
     refreshToken: string,
-    client: { id?: string | undefined; secret?: string | undefined; app?: IAppDoc | null },
+    client: { id: string; secret?: string | undefined; app?: IAppDoc | null },
     targetAppId?: string
   ) {
     const tokenDoc = await this.app.db.tokens.findOneAndUpdate(
       {
         refreshToken,
         refreshExpiresAt: { $gt: Date.now() },
-        clientAppId: client.id ? client.id : { $exists: false },
+        clientAppId: client.id,
         terminated: { $ne: true }
       },
       { $unset: { refreshToken: '' } }
