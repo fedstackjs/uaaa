@@ -28,6 +28,8 @@ export type ITokenPayload = typeof tTokenPayload.infer
 
 export interface ICreateTokenOptions {
   generateCode?: boolean
+  mergeActive?: boolean
+  timestamp?: number
 }
 
 export class TokenManager extends Hookable<{}> {
@@ -164,41 +166,79 @@ export class TokenManager extends Hookable<{}> {
     return result
   }
 
+  /**
+   * Creates a token for the user.
+   *
+   * Note: if token.parentId is specified, the parent token must be checked.
+   *
+   * @param token - Information for the token to be created.
+   * @param options - Options for token generation.
+   * @returns The created token document.
+   */
   async createToken(
     token: Omit<ITokenDoc, '_id' | 'code'>,
-    { generateCode = true }: ICreateTokenOptions = {}
+    { generateCode = true, mergeActive = true, timestamp = Date.now() }: ICreateTokenOptions = {}
   ): Promise<ITokenDoc> {
-    const doc = await this.app.db.tokens.findOneAndUpdate(
-      {
-        userId: token.userId,
-        sessionId: token.sessionId,
-        parentId: token.parentId ? token.parentId : { $exists: false },
-        clientAppId: token.clientAppId,
-        securityLevel: token.securityLevel,
-        expiresAt: { $gt: Date.now() },
-        terminated: { $ne: true }
-      },
-      {
-        $setOnInsert: {
-          _id: nanoid(),
-          ...token,
-          code: generateCode ? nanoid() : undefined
+    if (mergeActive) {
+      // Select the last active token and update it,
+      // or create a new token if no active token is found.
+      const doc = await this.app.db.tokens.findOneAndUpdate(
+        {
+          userId: token.userId,
+          sessionId: token.sessionId,
+          parentId: token.parentId ? token.parentId : { $exists: false },
+          clientAppId: token.clientAppId,
+          securityLevel: token.securityLevel,
+          expiresAt: { $gt: timestamp },
+          terminated: { $ne: true }
         },
-        $set: {
-          permissions: token.permissions,
-          confidential: token.confidential,
-          remote: token.remote,
-          nonce: token.nonce,
-          challenge: token.challenge,
-          environment: token.environment
+        {
+          $setOnInsert: {
+            _id: nanoid(),
+            userId: token.userId,
+            sessionId: token.sessionId,
+            parentId: token.parentId,
+            clientAppId: token.clientAppId,
+            securityLevel: token.securityLevel,
+            createdAt: token.createdAt,
+            tokenTimeout: token.tokenTimeout,
+            refreshTimeout: token.refreshTimeout,
+            code: generateCode ? nanoid() : undefined
+          },
+          $set: {
+            confidential: token.confidential,
+            remote: token.remote,
+            nonce: token.nonce,
+            challenge: token.challenge,
+            // TODO: consider how to merge environment
+            environment: token.environment
+          },
+          $max: {
+            expiresAt: token.expiresAt
+          },
+          $addToSet: {
+            permissions: { $each: token.permissions }
+          }
         },
-        $max: {
-          expiresAt: token.expiresAt
+        {
+          upsert: true,
+          returnDocument: 'after',
+          ignoreUndefined: true,
+          // If we accidentally have two active tokens,
+          // update one that expires later.
+          sort: { expiresAt: -1 }
         }
-      },
-      { upsert: true, returnDocument: 'after', ignoreUndefined: true }
-    )
-    return doc!
+      )
+      return doc!
+    } else {
+      const doc = {
+        _id: nanoid(),
+        ...token,
+        code: generateCode ? nanoid() : undefined
+      }
+      await this.app.db.tokens.insertOne(doc, { ignoreUndefined: true })
+      return doc
+    }
   }
 
   async signToken(tokenDoc: ITokenDoc, targetAppId?: string) {

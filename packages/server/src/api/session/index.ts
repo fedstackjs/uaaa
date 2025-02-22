@@ -21,7 +21,7 @@ export const sessionApi = new Hono()
   .get('/claim', verifyPermission({ path: '/session/claim' }), async (ctx) => {
     const { app, token } = ctx.var
     const { client_id } = token
-    if (!client_id) {
+    if (client_id === app.appId) {
       const user = await app.db.users.findOne({ _id: token.sub })
       if (!user) throw new HTTPException(404)
       const claims = await app.claim.filterBasicClaims(ctx, user.claims)

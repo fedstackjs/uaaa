@@ -50,7 +50,7 @@ export class MigrationManager extends Hookable<{
         publicKey: publicKey.export({ format: 'jwk' }),
         privateKey: privateKey.export({ format: 'jwk' })
       })
-      await this.db.setSystemConfig('version', databaseVersion)
+      await this.db.setSystemConfig('version', 1)
     })
   }
 

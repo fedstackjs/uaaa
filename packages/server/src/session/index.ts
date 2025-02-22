@@ -105,7 +105,7 @@ export class SessionManager extends Hookable<{
         tokenTimeout: token.getTokenTimeout(0, tokenTimeout),
         refreshTimeout: token.getRefreshTimeout(0, refreshTimeout)
       },
-      { generateCode: false }
+      { generateCode: false, timestamp: now }
     )
     if (securityLevel <= 0) return [lower]
     const upper = await token.createAndSignToken(
@@ -118,7 +118,7 @@ export class SessionManager extends Hookable<{
         tokenTimeout: token.getTokenTimeout(securityLevel, tokenTimeout),
         refreshTimeout: token.getRefreshTimeout(securityLevel, refreshTimeout)
       },
-      { generateCode: false }
+      { generateCode: false, timestamp: now }
     )
     return [lower, upper]
   }
@@ -137,20 +137,23 @@ export class SessionManager extends Hookable<{
     if (!session) throw new BusinessError('BAD_REQUEST', { msg: 'Session not found' })
     const now = Date.now()
     const { credentialId, securityLevel, expiresIn, tokenTimeout, refreshTimeout } = verifyResult
-    const newToken = await this.app.token.createAndSignToken({
-      sessionId: token.sid,
-      userId: token.sub,
-      clientAppId: this.app.appId,
-      permissions: [`${this.app.appId}/**`],
-      parentId: token.jti,
-      credentialId,
-      securityLevel,
-      createdAt: now,
-      expiresAt: now + this.app.token.getSessionTokenTimeout(securityLevel, expiresIn),
-      tokenTimeout: this.app.token.getTokenTimeout(securityLevel, tokenTimeout),
-      refreshTimeout: this.app.token.getRefreshTimeout(securityLevel, refreshTimeout),
-      environment
-    })
+    const newToken = await this.app.token.createAndSignToken(
+      {
+        sessionId: token.sid,
+        userId: token.sub,
+        clientAppId: this.app.appId,
+        permissions: [`${this.app.appId}/**`],
+        parentId: token.jti,
+        credentialId,
+        securityLevel,
+        createdAt: now,
+        expiresAt: now + this.app.token.getSessionTokenTimeout(securityLevel, expiresIn),
+        tokenTimeout: this.app.token.getTokenTimeout(securityLevel, tokenTimeout),
+        refreshTimeout: this.app.token.getRefreshTimeout(securityLevel, refreshTimeout),
+        environment
+      },
+      { timestamp: now }
+    )
     return { token: newToken }
   }
 
@@ -267,7 +270,7 @@ export class SessionManager extends Hookable<{
         challenge: options?.challenge,
         environment
       },
-      { generateCode: !signToken }
+      { generateCode: !signToken, timestamp }
     )
     if (!signToken) {
       return { code: tokenDoc.code! }

@@ -54,6 +54,7 @@ const options = { serializer }
 export class ApiManager {
   tokens
   effectiveToken
+  appId
   isLoggedIn
   isAdmin
   securityLevel
@@ -69,6 +70,7 @@ export class ApiManager {
   constructor() {
     this.tokens = useLocalStorage<Record<string, IClientToken>>('tokens', {}, options)
     this.effectiveToken = useLocalStorage<IClientToken | null>('effectiveToken', null, options)
+    this.appId = computed(() => this.effectiveToken.value?.decoded.client_id ?? '')
     this.isAdmin = ref(false)
     this.isLoggedIn = computed(() => !!this.effectiveToken.value)
     this.securityLevel = computed(() => this.effectiveToken.value?.decoded.level ?? 0)
@@ -98,10 +100,7 @@ export class ApiManager {
     console.log(`[API] Refreshing token ${tokenId}`)
     try {
       const resp = await this.public.refresh.$post({
-        json: {
-          clientId: this.tokens.value[tokenId]?.decoded.client_id || '',
-          refreshToken: _refreshToken
-        }
+        json: { clientId: this.appId.value, refreshToken: _refreshToken }
       })
       await this.checkResponse(resp)
       const { token, refreshToken } = await resp.json()

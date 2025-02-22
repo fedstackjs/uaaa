@@ -336,7 +336,7 @@ export class CredentialManager extends Hookable<{}> {
         },
         { $unwind: '$chain' },
         { $replaceRoot: { newRoot: '$chain' } },
-        { $sort: { index: 1 } },
+        { $sort: { createdAt: 1 } },
         {
           $lookup: {
             from: 'credentials',

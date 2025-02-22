@@ -46,7 +46,7 @@ export const userSessionApi = new Hono()
       const tokens = await app.db.tokens
         .find(
           { sessionId: id, userId: token.sub },
-          { skip, limit, sort: { index: -1 }, projection: { refreshToken: 0 } }
+          { skip, limit, sort: { createdAt: -1 }, projection: { refreshToken: 0 } }
         )
         .toArray()
       return ctx.json({
