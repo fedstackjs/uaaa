@@ -79,7 +79,7 @@ export const sessionApi = new Hono()
         targetLevel,
         payload
       )
-      return ctx.json(await session.elevate(ctx.var.token, verifyResult, {}))
+      return ctx.json(await session.upgrade(ctx.var.token, verifyResult, {}))
     }
   )
   .post(

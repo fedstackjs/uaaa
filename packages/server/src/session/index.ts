@@ -6,7 +6,8 @@ import type {
   ICredentialVerifyResult,
   ITokenDoc,
   ITokenEnvironment,
-  ITokenPayload
+  ITokenPayload,
+  SecurityLevel
 } from '../index.js'
 import { type } from 'arktype'
 import { customAlphabet, nanoid } from 'nanoid'
@@ -59,8 +60,21 @@ export const tDeriveOptions = type({
 export type DeriveOptions = typeof tDeriveOptions.infer
 
 export class SessionManager extends Hookable<{
-  preElevate(token: ITokenPayload, verifyResult: ICredentialVerifyResult): void | Promise<void>
-  preDerive(token: ITokenPayload, options: DeriveOptions): void | Promise<void>
+  preUpgrade(
+    token: ITokenPayload,
+    verifyResult: ICredentialVerifyResult,
+    env: ITokenEnvironment
+  ): void | Promise<void>
+  preDowngrade(
+    token: ITokenPayload,
+    targetLevel: SecurityLevel,
+    env: ITokenEnvironment
+  ): void | Promise<void>
+  preDerive(
+    token: ITokenPayload,
+    options: DeriveOptions,
+    env: ITokenEnvironment
+  ): void | Promise<void>
 }> {
   remoteTimeout = ms('1min')
   remotePollInterval = ms('5s')
@@ -123,12 +137,12 @@ export class SessionManager extends Hookable<{
     return [lower, upper]
   }
 
-  async elevate(
+  async upgrade(
     token: ITokenPayload,
     verifyResult: ICredentialVerifyResult,
     environment: ITokenEnvironment
   ) {
-    await this.callHook('preElevate', token, verifyResult)
+    await this.callHook('preUpgrade', token, verifyResult)
     const session = await this.app.db.sessions.findOneAndUpdate(
       { _id: token.sid, terminated: { $ne: true } },
       { $inc: { tokenCount: 1 } },
@@ -157,7 +171,7 @@ export class SessionManager extends Hookable<{
     return { token: newToken }
   }
 
-  async checkDerive(token: ITokenPayload, options: DeriveOptions) {
+  async checkDerive(token: ITokenPayload, options: DeriveOptions, environment: ITokenEnvironment) {
     if (token.client_id) {
       // TODO: allow application token to derive token for self
       // eg. background login
@@ -180,7 +194,7 @@ export class SessionManager extends Hookable<{
       throw new BusinessError('BAD_REQUEST', { msg: 'Public client not allowed' })
     }
 
-    await this.callHook('preDerive', token, options)
+    await this.callHook('preDerive', token, options, environment)
 
     const installation = await this.app.db.installations.findOne({
       userId: token.sub,
@@ -241,7 +255,11 @@ export class SessionManager extends Hookable<{
       confidential = true,
       remote = false
     } = options
-    const { parentToken, permissions, timestamp } = await this.checkDerive(token, options)
+    const { parentToken, permissions, timestamp } = await this.checkDerive(
+      token,
+      options,
+      environment
+    )
 
     const session = await this.app.db.sessions.findOneAndUpdate(
       { _id: token.sid, terminated: { $ne: true } },
