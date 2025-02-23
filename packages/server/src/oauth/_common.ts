@@ -416,7 +416,7 @@ export class OAuthManager {
   defineGrant<G extends string, R extends { grant_type: G }, T extends Type<R>>(
     grant_type: G,
     request_type: T,
-    fn: GrantFn<T['infer']>
+    fn: GrantFn<T extends { infer: infer U } ? U : never>
   ) {
     this._grants[grant_type] = (ctx, request, client) => {
       const data = request_type(request)
