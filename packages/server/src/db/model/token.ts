@@ -59,10 +59,11 @@ export interface ITokenDoc {
   parentId?: string | undefined
   credentialId?: string | undefined
 
-  /** Token is created at */
   createdAt: number
-  /** Token will expire at */
+  updatedAt: number
   expiresAt: number
+  activatedAt: number
+  activatedCount?: number
 
   /** Refresh Token */
   refreshToken?: string | undefined

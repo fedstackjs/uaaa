@@ -1,18 +1,12 @@
-import { createHash } from 'node:crypto'
-import { Type, type } from 'arktype'
-import {
-  Permission,
-  SecurityLevel,
-  type App,
-  type ClaimName,
-  type IAppDoc,
-  type IUserClaims
-} from '../index.js'
-import type { Context } from 'hono'
-import { OAuthError } from './_errors.js'
 import ms from 'ms'
 import jwt from 'jsonwebtoken'
+import { createHash } from 'node:crypto'
+import { Type, type } from 'arktype'
+import type { Context } from 'hono'
+import type { App, ClaimName, IAppDoc, IUserClaims } from '../index.js'
+import { OAuthError } from './_errors.js'
 import { tRemoteRequest, type RemoteRequest } from '../session/index.js'
+import { Permission, SECURITY_LEVEL } from '../util/index.js'
 
 export interface IOAuthTokenResponse {
   access_token: string
@@ -365,7 +359,8 @@ export class OAuthManager {
     return app.token.sign({
       ...mappedClaims,
       aud: appId,
-      exp: now + ctx.var.app.token.getSessionTokenTimeout(SecurityLevel.SL1),
+      // TODO: configure this timeout
+      exp: now + ctx.var.app.token.getSessionTokenTimeout(SECURITY_LEVEL.LOW),
       iat: now,
       nonce
     })

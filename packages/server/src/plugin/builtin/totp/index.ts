@@ -7,7 +7,12 @@ import {
   CredentialImpl,
   type ICredentialUnbindResult
 } from '../../../credential/_common.js'
-import { SecurityLevel, BusinessError, tSecurityLevel } from '../../../util/index.js'
+import {
+  BusinessError,
+  SECURITY_LEVEL,
+  tSecurityLevel,
+  type SecurityLevel
+} from '../../../util/index.js'
 
 const tTOTPConfig = type({
   'totpSecurityLevel?': tSecurityLevel
@@ -37,7 +42,7 @@ class TOTPImpl extends CredentialImpl {
 
   constructor(public config: ITOTPConfig) {
     super()
-    this.newCredentialSecurityLevel = config.totpSecurityLevel ?? SecurityLevel.SL3
+    this.newCredentialSecurityLevel = config.totpSecurityLevel ?? SECURITY_LEVEL.HIGH
   }
 
   override async showElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {

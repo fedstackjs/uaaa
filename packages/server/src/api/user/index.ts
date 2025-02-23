@@ -4,10 +4,11 @@ import { userClaimApi } from './claim.js'
 import { userSessionApi } from './session.js'
 import { userInstallationApi } from './installation.js'
 import { userCredentialApi } from './credential.js'
+import { SECURITY_LEVEL } from '../../util/types.js'
 
 export const userApi = new Hono()
   .use(verifyAuthorizationJwt)
-  .use(verifyPermission({ securityLevel: 1 }))
+  .use(verifyPermission({ securityLevel: SECURITY_LEVEL.MEDIUM }))
 
   // Summary API
   .get('/', verifyPermission({ path: '/user' }), async (ctx) => {

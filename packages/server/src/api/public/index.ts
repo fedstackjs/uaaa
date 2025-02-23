@@ -6,7 +6,7 @@ import type { IAppDoc } from '../../db/index.js'
 import { BusinessError } from '../../util/errors.js'
 import { getRemoteIP, getUserAgent } from '../_helper.js'
 import { UAAAProvidedPermissions } from '../../util/permission.js'
-import { tRemoteRequest } from '../../session/index.js'
+import { tExchangeOptions, tRemoteRequest } from '../../session/index.js'
 
 /** Public API */
 export const publicApi = new Hono()
@@ -96,8 +96,30 @@ export const publicApi = new Hono()
         ip: getRemoteIP(ctx),
         ua: getUserAgent(ctx)
       }
-      const tokens = await session.login(loginResult, environment)
-      return ctx.json({ tokens })
+      const token = await session.login(loginResult, environment)
+      return ctx.json({ token })
+    }
+  )
+  // Exchange
+  .post(
+    '/exchange',
+    arktypeValidator(
+      'json',
+      type({
+        from: 'string',
+        config: tExchangeOptions
+      })
+    ),
+    async (ctx) => {
+      const { app } = ctx.var
+      const { from, config } = ctx.req.valid('json')
+      const { payload } = await app.token.verifyToken(from)
+      const environment = {
+        ip: getRemoteIP(ctx),
+        ua: getUserAgent(ctx)
+      }
+      const token = await app.session.exchange(payload, config, environment)
+      return ctx.json({ token })
     }
   )
   // Refresh Token

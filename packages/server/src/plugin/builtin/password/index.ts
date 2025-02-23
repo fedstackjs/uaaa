@@ -8,7 +8,7 @@ import {
   CredentialImpl,
   type ICredentialUnbindResult
 } from '../../../credential/_common.js'
-import { SecurityLevel, BusinessError } from '../../../util/index.js'
+import { BusinessError, SECURITY_LEVEL, type SecurityLevel } from '../../../util/index.js'
 
 const tPasswordConfig = type({
   'passwordExpiration?': 'number|string',
@@ -34,7 +34,7 @@ class PasswordImpl extends CredentialImpl {
   })
 
   readonly type = 'password'
-  defaultLevel = SecurityLevel.SL1
+  defaultLevel = SECURITY_LEVEL.MEDIUM
   passwordExpiration
   passwordTimeout
 
@@ -83,7 +83,7 @@ class PasswordImpl extends CredentialImpl {
     return {
       userId: user._id,
       credentialId: credential._id,
-      securityLevel: SecurityLevel.SL1,
+      securityLevel: SECURITY_LEVEL.MEDIUM,
       expiresIn: this.passwordTimeout
     }
   }

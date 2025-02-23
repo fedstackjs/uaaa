@@ -4,8 +4,8 @@ import { Hookable } from 'hookable'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
-import { BusinessError, logger, Permission, SecurityLevel, tSecurityLevel } from '../util/index.js'
-import type { App, IAppDoc, ITokenDoc } from '../index.js'
+import { BusinessError, logger, Permission, tSecurityLevel } from '../util/index.js'
+import type { App, IAppDoc, ITokenDoc, SecurityLevel } from '../index.js'
 import ms from 'ms'
 
 export const tTokenPayload = type({
@@ -214,10 +214,15 @@ export class TokenManager extends Hookable<{}> {
             environment: token.environment
           },
           $max: {
-            expiresAt: token.expiresAt
+            expiresAt: token.expiresAt,
+            updatedAt: token.updatedAt,
+            activatedAt: token.activatedAt
           },
           $addToSet: {
             permissions: { $each: token.permissions }
+          },
+          $inc: {
+            activatedCount: 1
           }
         },
         {

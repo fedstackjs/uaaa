@@ -3,8 +3,8 @@ import { HTTPException } from 'hono/http-exception'
 import { nanoid } from 'nanoid'
 import ms from 'ms'
 import { CredentialContext, CredentialImpl } from '../../../credential/_common.js'
-import { BusinessError, generateUsername, SecurityLevel } from '../../../util/index.js'
-import type { ICredentialUnbindResult } from '../../../index.js'
+import { BusinessError, generateUsername, SECURITY_LEVEL } from '../../../util/index.js'
+import type { ICredentialUnbindResult, SecurityLevel } from '../../../index.js'
 import type { EmailPlugin } from './plugin.js'
 
 export class EmailImpl extends CredentialImpl {
@@ -14,7 +14,7 @@ export class EmailImpl extends CredentialImpl {
   })
 
   readonly type = 'email'
-  defaultLevel = SecurityLevel.SL1
+  defaultLevel = SECURITY_LEVEL.MEDIUM
   loginType
 
   constructor(public plugin: EmailPlugin) {
@@ -51,8 +51,7 @@ export class EmailImpl extends CredentialImpl {
       return {
         userId: credential.userId,
         credentialId: credential._id,
-        securityLevel: SecurityLevel.SL1,
-        expiresIn: ctx.app.token.getSessionTokenTimeout(SecurityLevel.SL1)
+        securityLevel: SECURITY_LEVEL.MEDIUM
       }
     }
     if (this.plugin.allowSignupFromLogin) {
@@ -85,8 +84,7 @@ export class EmailImpl extends CredentialImpl {
       return {
         userId,
         credentialId,
-        securityLevel: SecurityLevel.SL1,
-        expiresIn: ctx.app.token.getSessionTokenTimeout(SecurityLevel.SL1)
+        securityLevel: SECURITY_LEVEL.MEDIUM
       }
     }
     throw new HTTPException(401, { message: 'User not found' })

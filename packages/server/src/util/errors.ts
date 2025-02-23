@@ -3,7 +3,7 @@ import type { StatusCode } from 'hono/utils/http-status'
 
 export interface IErrorMap {
   INSUFFICIENT_SECURITY_LEVEL: { required: number }
-  INSUFFICIENT_PERMISSION: { required: string }
+  INSUFFICIENT_PERMISSION: { required: string[] }
   REQUIRE_ADMIN: {}
   INVALID_OPERATION: {}
   INVALID_TYPE: { summary: string }

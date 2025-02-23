@@ -14,13 +14,13 @@ import {
   type ICredentialUnbindResult,
   type ICredentialVerifyResult
 } from '../../../credential/_common.js'
-import { SecurityLevel } from '../../../util/types.js'
 import type { WebauthnPlugin } from './plugin.js'
 import { HTTPException } from 'hono/http-exception'
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server'
 import { BusinessError } from '../../../util/errors.js'
 import { type } from 'arktype'
 import ms from 'ms'
+import { SECURITY_LEVEL, type SecurityLevel } from '../../../util/index.js'
 
 export interface IWebauthnKey {
   id: Base64URLString
@@ -78,7 +78,7 @@ export class WebauthnImpl extends CredentialImpl {
         expectedRPID: this.plugin.rpId,
         authenticator: {
           credentialID: passkey.id,
-          credentialPublicKey: Buffer.from(passkey.publicKey, 'base64'),
+          credentialPublicKey: new Uint8Array(Buffer.from(passkey.publicKey, 'base64')),
           counter: passkey.counter,
           transports: passkey.transports as AuthenticatorTransportFuture[]
         }
@@ -89,13 +89,9 @@ export class WebauthnImpl extends CredentialImpl {
       await ctx.manager.checkCredentialUse(credential._id, {
         'secret.counter': verification.authenticationInfo.newCounter
       })
-      let securityLevel = credential.securityLevel
-      if (!verification.authenticationInfo.userVerified) {
-        securityLevel = Math.min(securityLevel, SecurityLevel.SL2)
-      }
       return {
         credentialId: credential._id,
-        securityLevel,
+        securityLevel: credential.securityLevel,
         expiresIn: ms('30min')
       }
     } catch (err) {
@@ -143,9 +139,7 @@ export class WebauthnImpl extends CredentialImpl {
         remark: '',
         expiration: ms('100y'),
         validCount: Number.MAX_SAFE_INTEGER,
-        securityLevel: verification.registrationInfo.userVerified
-          ? SecurityLevel.SL3
-          : SecurityLevel.SL2
+        securityLevel: SECURITY_LEVEL.HIGH
       })
     }
   }

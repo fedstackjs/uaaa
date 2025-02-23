@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
-import { tSecurityLevel } from '../../util/index.js'
+import { SECURITY_LEVEL, tSecurityLevel } from '../../util/index.js'
 import { tDeriveOptions, tRemoteResponse } from '../../session/index.js'
 
 export const sessionApi = new Hono()
@@ -45,7 +45,7 @@ export const sessionApi = new Hono()
   })
   .get(
     '/elevate',
-    verifyPermission({ path: '/session/elevate' }),
+    verifyPermission({ path: '/session/elevate', securityLevel: SECURITY_LEVEL.HINT }),
     arktypeValidator(
       'query',
       type({
@@ -60,7 +60,7 @@ export const sessionApi = new Hono()
   )
   .post(
     '/elevate',
-    verifyPermission({ path: '/session/elevate' }),
+    verifyPermission({ path: '/session/elevate', securityLevel: SECURITY_LEVEL.HINT }),
     arktypeValidator(
       'json',
       type({
@@ -88,6 +88,7 @@ export const sessionApi = new Hono()
     arktypeValidator('json', tDeriveOptions),
     async (ctx) => {
       const { session } = ctx.var.app
+      // TODO: handle token environment
       return ctx.json(await session.derive(ctx.var.token, ctx.req.valid('json'), {}))
     }
   )
@@ -97,7 +98,7 @@ export const sessionApi = new Hono()
     arktypeValidator('json', tDeriveOptions),
     async (ctx) => {
       const { session } = ctx.var.app
-      const { permissions } = await session.checkDerive(ctx.var.token, ctx.req.valid('json'))
+      const { permissions } = await session.checkDerive(ctx.var.token, ctx.req.valid('json'), {})
       return ctx.json({
         permissions
       })
