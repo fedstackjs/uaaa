@@ -1,6 +1,6 @@
-appId: org.fedstack.test
-name: 测试应用
-description: 测试应用
+appId: org.fedstack.oauth2_proxy
+name: OAuth2 Proxy
+description: OAuth2 Proxy测试
 providedPermissions: []
 requestedClaims:
   - name: email
@@ -11,7 +11,7 @@ requestedClaims:
     required: true
 requestedPermissions:
   - reason: 访问用户授权的信息
-    perm: uaaa/session/claim
+    perm: uaaa.local/session/claim
     required: true
 callbackUrls:
   - http://localhost:4180/oauth2/callback
@@ -19,3 +19,6 @@ variables: {}
 secrets: {}
 promoted: false
 securityLevel: 1
+openid:
+  allowPublicClient: false
+  minSecurityLevel: 1

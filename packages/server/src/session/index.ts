@@ -289,7 +289,7 @@ export class SessionManager extends Hookable<{
    * @returns Data for actual derivation
    */
   async checkDerive(jwt: ITokenPayload, options: DeriveOptions, environment: ITokenEnvironment) {
-    if (jwt.client_id) {
+    if (jwt.client_id !== this.app.appId) {
       throw new BusinessError('BAD_REQUEST', {
         msg: 'Application token is not allowed to derive another token'
       })

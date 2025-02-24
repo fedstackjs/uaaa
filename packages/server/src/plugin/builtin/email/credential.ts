@@ -51,7 +51,7 @@ export class EmailImpl extends CredentialImpl {
       return {
         userId: credential.userId,
         credentialId: credential._id,
-        securityLevel: SECURITY_LEVEL.MEDIUM
+        securityLevel: credential.securityLevel
       }
     }
     if (this.plugin.allowSignupFromLogin) {
@@ -84,7 +84,7 @@ export class EmailImpl extends CredentialImpl {
       return {
         userId,
         credentialId,
-        securityLevel: SECURITY_LEVEL.MEDIUM
+        securityLevel: this.defaultLevel
       }
     }
     throw new BusinessError('NOT_FOUND', { msg: 'User not found' })
