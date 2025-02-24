@@ -1,5 +1,5 @@
 import { HTTPException } from 'hono/http-exception'
-import type { StatusCode } from 'hono/utils/http-status'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 export interface IErrorMap {
   INSUFFICIENT_SECURITY_LEVEL: { required: number }
@@ -19,20 +19,29 @@ export interface IErrorMap {
   CRED_NO_UNBIND_LAST: {}
   CRED_VALIDATION_FAILED: { msg: string }
   FORBIDDEN: { msg: string }
-  INVALID_TOKEN: {}
+
+  // Token
+  TOKEN_INVALID_JWT: {}
+  TOKEN_INVALID_REFRESH: {}
+  TOKEN_INVALID_CONFIG: {}
+  TOKEN_INVALID_CLIENT: {}
   TOKEN_TERMINATED: {}
   TOKEN_EXPIRED: {}
-  TOKEN_NOT_BEFORE: {}
-  TOKEN_REQUIRED: {}
+  TOKEN_PENDING: {}
+
+  // Remote auth
   REMOTE_AUTH_BAD_USERCODE: {}
   REMOTE_AUTH_BAD_AUTHCODE: {}
   REMOTE_AUTH_EXPIRED: {}
+
+  // Misc
+  TOO_MANY_REQUESTS: { msg: string }
 }
 
 export type ErrorName = keyof IErrorMap
 
 export const ErrorStatusMap: {
-  [key in ErrorName]: StatusCode
+  [key in ErrorName]: ContentfulStatusCode
 } = {
   INSUFFICIENT_SECURITY_LEVEL: 403,
   INSUFFICIENT_PERMISSION: 403,
@@ -51,15 +60,21 @@ export const ErrorStatusMap: {
   CRED_NO_UNBIND_LAST: 400,
   CRED_VALIDATION_FAILED: 403,
   FORBIDDEN: 403,
-  INVALID_TOKEN: 403,
+
+  TOKEN_INVALID_JWT: 403,
+  TOKEN_INVALID_CLIENT: 403,
+  TOKEN_INVALID_REFRESH: 403,
+  TOKEN_INVALID_CONFIG: 403,
+  TOKEN_PENDING: 403,
   TOKEN_TERMINATED: 403,
   TOKEN_EXPIRED: 403,
-  TOKEN_NOT_BEFORE: 403,
-  TOKEN_REQUIRED: 401,
+
   REMOTE_AUTH_BAD_USERCODE: 400,
   REMOTE_AUTH_BAD_AUTHCODE: 400,
-  REMOTE_AUTH_EXPIRED: 400
-}
+  REMOTE_AUTH_EXPIRED: 400,
+
+  TOO_MANY_REQUESTS: 429
+} as const
 
 export class BusinessError<T extends ErrorName> extends HTTPException {
   constructor(

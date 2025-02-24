@@ -14,7 +14,7 @@
         <slot
           name="item"
           :modelValue="value"
-          @update:modelValue="($event) => (model[index] = $event)"
+          @update:modelValue="($event: T) => (model[index] = $event)"
         />
       </div>
       <VBtn icon="mdi-delete" variant="text" @click="model.splice(index, 1)" />

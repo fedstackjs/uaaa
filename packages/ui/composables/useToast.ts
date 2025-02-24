@@ -25,9 +25,6 @@ export const useErrorToast = () => {
           })
           break
         }
-        case 'INVALID_TOKEN': {
-          api.dropEffectiveToken()
-        }
       }
       return
     }

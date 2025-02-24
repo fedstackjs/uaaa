@@ -20,7 +20,11 @@ declare module 'hono' {
 export const verifyAuthorizationJwt = createMiddleware(async (ctx, next) => {
   const header = ctx.req.header('Authorization')
   const token = header?.split(' ')[1]
-  if (!token) throw new BusinessError('TOKEN_REQUIRED', {})
+  if (!token) {
+    throw new BusinessError('FORBIDDEN', {
+      msg: 'Missing Authorization header'
+    })
+  }
   const { jwt, payload } = await ctx.var.app.token.verifyUAAAToken(token)
   ctx.set('jwt', jwt)
   ctx.set('token', payload)

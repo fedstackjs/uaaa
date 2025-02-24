@@ -232,7 +232,9 @@ export class CredentialManager extends Hookable<{}> {
       }
     )
     if (!matchedCount) {
-      throw new HTTPException(401)
+      throw new BusinessError('FORBIDDEN', {
+        msg: 'Credential is expired or locked'
+      })
     }
   }
 

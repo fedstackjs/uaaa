@@ -1,5 +1,5 @@
 <template>
-  <VContainer class="fill-height justify-center">
+  <VContainer class="flex flex-wrap items-center justify-center h-full lg:h-auto lg:pt-40!">
     <VCard class="min-w-xs lg:min-w-md">
       <VCardTitle class="d-flex flex-col items-center">
         <VIcon size="128">
@@ -16,6 +16,17 @@
         </div>
       </VCardTitle>
       <VDivider />
+      <template v-if="data?.length">
+        <VAlert type="info" rounded="0" variant="tonal" class="whitespace-pre">
+          {{
+            t('msg.verify-hint', {
+              currentLevel: t(`securityLevel.${currentLevel}`),
+              targetLevel: t(`securityLevel.${targetLevel}`)
+            })
+          }}
+        </VAlert>
+        <VDivider />
+      </template>
       <VFadeTransition mode="out-in">
         <div v-if="!type">
           <VCardText class="flex flex-col gap-2" v-if="data?.length">
@@ -29,14 +40,21 @@
               @click="type = item"
             />
           </VCardText>
-          <VAlert v-else type="info" :title="t('msg.tips')">
-            <div>{{ t('msg.no-verify-methods') }}</div>
+          <VAlert
+            v-else
+            type="info"
+            variant="tonal"
+            class="whitespace-pre"
+            :title="t('msg.no-verify-methods')"
+          >
+            {{ t('msg.no-verify-methods-hint') }}
+            <VSpacer />
             <VBtn
-              @click="router.back()"
+              :to="{ path: '/credential', query: { bind: targetLevel } }"
               variant="flat"
-              color="white"
-              prepend-icon="mdi-arrow-left"
-              :text="t('actions.back')"
+              color="info"
+              :text="t('actions.goto', { target: t('pages.credential') })"
+              prepend-icon="mdi-open-in-new"
             />
           </VAlert>
         </div>
@@ -66,10 +84,11 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const type = useRouteQuery<string>('type', '')
+const currentLevel = api.securityLevel
 const targetLevel = useRouteQuery('targetLevel', '0')
 
 const { data } = await useAsyncData(async () => {
-  const resp = await api.session.elevate.$get({ query: { targetLevel: targetLevel.value } })
+  const resp = await api.session.upgrade.$get({ query: { targetLevel: targetLevel.value } })
   const { types } = await resp.json()
   return types.filter((type) => t(`credentials.${type}`) !== `credentials.${type}`)
 })

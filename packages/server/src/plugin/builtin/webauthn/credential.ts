@@ -6,7 +6,7 @@ import type {
   PublicKeyCredentialCreationOptionsJSON,
   RegistrationResponseJSON,
   AuthenticationResponseJSON
-} from '@simplewebauthn/types'
+} from '@simplewebauthn/server'
 import {
   CredentialImpl,
   type CredentialContext,
@@ -76,9 +76,9 @@ export class WebauthnImpl extends CredentialImpl {
         expectedChallenge: currentOptions.challenge,
         expectedOrigin,
         expectedRPID: this.plugin.rpId,
-        authenticator: {
-          credentialID: passkey.id,
-          credentialPublicKey: new Uint8Array(Buffer.from(passkey.publicKey, 'base64')),
+        credential: {
+          id: passkey.id,
+          publicKey: new Uint8Array(Buffer.from(passkey.publicKey, 'base64')),
           counter: passkey.counter,
           transports: passkey.transports as AuthenticatorTransportFuture[]
         }
@@ -95,7 +95,7 @@ export class WebauthnImpl extends CredentialImpl {
         expiresIn: ms('30min')
       }
     } catch (err) {
-      throw new HTTPException(400, { message: `${err}` })
+      throw new BusinessError('BAD_REQUEST', { msg: `${err}` })
     }
   }
 
@@ -124,14 +124,14 @@ export class WebauthnImpl extends CredentialImpl {
     const info = verification.registrationInfo
     return {
       credentialId: await ctx.manager.bindCredential(ctx, 'webauthn', userId, credentialId, {
-        userIdentifier: info.credentialID,
-        globalIdentifier: info.credentialID,
+        userIdentifier: info.credential.id,
+        globalIdentifier: info.credential.id,
         data: '',
         secret: {
-          id: info.credentialID,
+          id: info.credential.id,
           webauthnUserID: currentOptions.user.id,
-          publicKey: Buffer.from(info.credentialPublicKey).toString('base64'),
-          counter: info.counter,
+          publicKey: Buffer.from(info.credential.publicKey).toString('base64'),
+          counter: info.credential.counter,
           deviceType: info.credentialDeviceType,
           backedUp: info.credentialBackedUp,
           transports: (payload as RegistrationResponseJSON).response.transports

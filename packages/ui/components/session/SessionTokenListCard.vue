@@ -112,15 +112,10 @@ const { page, perPage, data, cachedCount, status, execute } = usePagination(
 
 const { run } = useTask(async (id: string) => {
   if (!confirm(t('msg.confirm-operation'))) return symNoToast
-  const cachedTokenId = effectiveToken.value
   const resp = await api.user.session[':id'].token[':tokenId'].terminate.$post({
     param: { id: props.sessionId, tokenId: id }
   })
   await api.checkResponse(resp)
-  if (id === cachedTokenId) {
-    api.dropEffectiveToken()
-  } else {
-    execute()
-  }
+  execute()
 })
 </script>

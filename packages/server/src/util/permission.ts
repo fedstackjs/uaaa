@@ -10,7 +10,8 @@ declare module '@uaaa/core' {
 export const UAAAPermissionDescriptionMap = {
   '/session': { name: 'Get session info', description: '' },
   '/session/claim': { name: 'Get authorized claims', description: '' },
-  '/session/elevate': { name: 'Elevate session', description: '' },
+  '/session/upgrade': { name: 'Upgrade token inside session', description: '' },
+  '/session/downgrade': { name: 'Downgrade token inside session', description: '' },
   '/session/derive': { name: 'Derive token inside session', description: '' },
   '/session/slient_authorize': { name: 'Allow sliently authorize', description: '' },
   '/session/remote_authorize': { name: 'Authorize remote clients', description: '' },

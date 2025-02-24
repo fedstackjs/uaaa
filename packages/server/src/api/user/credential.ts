@@ -1,9 +1,9 @@
 import { arktypeValidator } from '@hono/arktype-validator'
 import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import { type } from 'arktype'
 import { idParamValidator } from '../_common.js'
 import { verifyPermission } from '../_middleware.js'
+import { BusinessError } from '../../util/errors.js'
 
 export const userCredentialApi = new Hono()
   .get('/', verifyPermission({ path: '/user/credential' }), async (ctx) => {
@@ -61,7 +61,7 @@ export const userCredentialApi = new Hono()
       { _id: id, userId: ctx.var.token.sub },
       { projection: { secret: 0 } }
     )
-    if (!credential) throw new HTTPException(404)
+    if (!credential) throw new BusinessError('NOT_FOUND', { msg: 'Credential not found' })
     return ctx.json({ credential })
   })
   .patch(

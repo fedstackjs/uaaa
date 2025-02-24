@@ -1,5 +1,5 @@
 <template>
-  <VContainer class="fill-height justify-center">
+  <VContainer class="flex flex-wrap items-center justify-center h-full lg:h-auto lg:pt-40!">
     <VCard class="min-w-xs lg:min-w-md">
       <VCardTitle class="d-flex flex-col items-center">
         <VIcon size="128">
@@ -32,6 +32,10 @@
           </div>
         </div>
       </VCardTitle>
+      <VDivider />
+      <VAlert type="info" rounded="0" variant="tonal" class="whitespace-pre">
+        {{ t('msg.login-hint') }}
+      </VAlert>
       <VDivider />
       <VFadeTransition mode="out-in">
         <template v-if="isRemote">

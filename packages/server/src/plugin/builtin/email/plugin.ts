@@ -2,7 +2,7 @@ import { type } from 'arktype'
 import { HTTPException } from 'hono/http-exception'
 import { customAlphabet } from 'nanoid'
 import mailer from 'nodemailer'
-import { logger } from '../../../util/index.js'
+import { BusinessError, logger } from '../../../util/index.js'
 import type { App, PluginContext } from '../../../index.js'
 import { Hono } from 'hono'
 import { EmailImpl } from './credential.js'
@@ -86,10 +86,13 @@ export class EmailPlugin {
   }
 
   private async sendCode(key: string, mail: string, purpose: string) {
-    if (!this.checkWhitelist(mail)) throw new HTTPException(403, { message: 'Email not allowed' })
+    if (!this.checkWhitelist(mail))
+      throw new BusinessError('FORBIDDEN', { msg: 'Email not allowed' })
     const ttl = await this.app.cache.ttl(key)
     if (ttl > 0) {
-      throw new HTTPException(429, { message: `Wait for ${Math.ceil(ttl / 1000)} seconds` })
+      throw new BusinessError('TOO_MANY_REQUESTS', {
+        msg: `Wait for ${Math.ceil(ttl / 1000)} seconds`
+      })
     }
     const code = codegen()
     await this.app.cache.setx(key, { code, mail, n: 5 }, 5 * 60 * 1000)
@@ -106,12 +109,12 @@ export class EmailPlugin {
     const ttl = await this.app.cache.ttl(key)
     const value = await this.app.cache.getx<{ code: string; mail: string; n: number }>(key)
     await this.app.cache.del(key)
-    if (!value) throw new HTTPException(403, { message: 'Invalid code' })
+    if (!value) throw new BusinessError('BAD_REQUEST', { msg: 'Invalid code' })
     if (value.code !== code) {
       if (ttl > 0 && value.n > 0) {
         await this.app.cache.setx(key, { ...value, n: value.n - 1 }, ttl)
       }
-      throw new HTTPException(403, { message: 'Invalid code' })
+      throw new BusinessError('BAD_REQUEST', { msg: 'Invalid code' })
     }
     return value
   }
@@ -128,7 +131,7 @@ export class EmailPlugin {
       async (ctx) => {
         const { email } = ctx.req.valid('json')
         if (!this.checkWhitelist(email)) {
-          throw new HTTPException(403, { message: 'Email not allowed' })
+          throw new BusinessError('FORBIDDEN', { msg: 'Email not allowed' })
         }
         await this.sendCode(this.mailKey(email), email, 'verification')
         return ctx.json({})

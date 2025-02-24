@@ -2,6 +2,7 @@ import type { ApiManager } from '#imports'
 import type { LocationQuery, LocationQueryValue } from '#vue-router'
 import type { InferResponseType } from 'hono'
 import { renderSVG } from 'uqr'
+import type { SecurityLevel } from '~/utils/api'
 
 const toSingle = (value: LocationQueryValue | LocationQueryValue[], init: string): string =>
   (Array.isArray(value) ? value[0] : value) ?? init
@@ -124,7 +125,7 @@ export interface IAuthorizeParams {
   type: ConnectorType
   connector: Connector
   clientAppId: string
-  securityLevel: number
+  securityLevel: SecurityLevel
   permissions?: string[]
   optionalPermissions?: string[]
   params?: any
@@ -147,7 +148,7 @@ const parseAuthorizeParams = (query: LocationQuery) => {
     type,
     connector,
     clientAppId,
-    securityLevel,
+    securityLevel: securityLevel as SecurityLevel,
     userCode
   }
   params.confidential = ['1', 'true'].includes(toSingle(query.confidential, '1'))

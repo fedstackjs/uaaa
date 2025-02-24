@@ -3,12 +3,6 @@
     <VTable v-if="info">
       <tbody>
         <tr>
-          <td>{{ t('token-count') }}</td>
-          <td>
-            <code>{{ info.tokenCount }}</code>
-          </td>
-        </tr>
-        <tr>
           <td>{{ t('authorized-apps') }}</td>
           <td>
             <code>{{ info.authorizedApps.length }}</code>

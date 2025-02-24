@@ -1,6 +1,5 @@
 import { arktypeValidator } from '@hono/arktype-validator'
 import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import { type } from 'arktype'
 import type { IInstallationDoc, IAppDoc } from '../../db/index.js'
 import { BusinessError } from '../../util/errors.js'
@@ -90,7 +89,7 @@ export const userInstallationApi = new Hono()
     const { id } = ctx.req.valid('param')
     const { app, token } = ctx.var
     const installation = await app.db.installations.findOne({ appId: id, userId: token.sub })
-    if (!installation) throw new HTTPException(404)
+    if (!installation) throw new BusinessError('NOT_FOUND', { msg: 'Installation not found' })
     return ctx.json({ installation })
   })
   .put(

@@ -55,14 +55,14 @@ class PasswordImpl extends CredentialImpl {
   override async login(ctx: CredentialContext, _payload: unknown) {
     const payload = PasswordImpl.tPasswordLoginPayload(_payload)
     if (payload instanceof type.errors) {
-      throw new HTTPException(400, { cause: payload.summary })
+      throw new BusinessError('BAD_REQUEST', { msg: payload.summary })
     }
 
     const user = await ctx.app.db.users.findOne({
       $or: [{ 'claims.username.value': payload.id }]
     })
     if (!user) {
-      throw new HTTPException(401)
+      throw new BusinessError('FORBIDDEN', { msg: 'Bad username or password' })
     }
 
     const credential = await ctx.app.db.credentials.findOne({
@@ -71,12 +71,12 @@ class PasswordImpl extends CredentialImpl {
       disabled: { $ne: true }
     })
     if (!credential) {
-      throw new HTTPException(401)
+      throw new BusinessError('FORBIDDEN', { msg: 'Bad username or password' })
     }
 
     const match = await bcrypt.compare(payload.password, credential.secret as string)
     if (!match) {
-      throw new HTTPException(401)
+      throw new BusinessError('FORBIDDEN', { msg: 'Bad username or password' })
     }
 
     await ctx.manager.checkCredentialUse(credential._id)
@@ -148,7 +148,7 @@ class PasswordImpl extends CredentialImpl {
   ) {
     const payload = PasswordImpl.tPasswordVerifyPayload(_payload)
     if (payload instanceof type.errors) {
-      throw new HTTPException(400, { cause: payload.summary })
+      throw new BusinessError('INVALID_TYPE', { summary: payload.summary })
     }
     const hashed = await bcrypt.hash(payload.password, 10)
     return {
@@ -170,7 +170,7 @@ class PasswordImpl extends CredentialImpl {
     credentialId: string,
     payload: unknown
   ): Promise<ICredentialUnbindResult> {
-    throw new HTTPException(403, { message: 'Cannot unbind password credential' })
+    throw new BusinessError('FORBIDDEN', { msg: 'Cannot unbind password credential' })
   }
 }
 

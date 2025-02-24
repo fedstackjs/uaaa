@@ -6,11 +6,14 @@ import type {
   ITokenPayload,
   IClaim,
   ErrorName,
-  IErrorMap
+  IErrorMap,
+  SecurityLevel
 } from '@uaaa/server'
 import type { IEmailApi } from '@uaaa/server/lib/plugin/builtin/email'
 import type { IWebauthnApi } from '@uaaa/server/lib/plugin/builtin/webauthn'
 import { hc } from 'hono/client'
+
+export type { SecurityLevel }
 
 export interface IClientToken {
   token: string
@@ -58,6 +61,7 @@ export class ApiManager {
   isLoggedIn
   isAdmin
   securityLevel
+  refreshTokensDebounced
 
   public
   session
@@ -68,12 +72,18 @@ export class ApiManager {
   webauthn
 
   constructor() {
-    this.tokens = useLocalStorage<Record<string, IClientToken>>('tokens', {}, options)
-    this.effectiveToken = useLocalStorage<IClientToken | null>('effectiveToken', null, options)
+    this.tokens = useLocalStorage<IClientToken[]>('tokens_v2', [], options)
+    this.securityLevel = useLocalStorage<SecurityLevel | -1>('level_v2', -1, options)
+    this.effectiveToken = computed<IClientToken | null>(
+      () => this.tokens.value[this.securityLevel.value] ?? null
+    )
     this.appId = computed(() => this.effectiveToken.value?.decoded.client_id ?? '')
     this.isAdmin = ref(false)
-    this.isLoggedIn = computed(() => !!this.effectiveToken.value)
-    this.securityLevel = computed(() => this.effectiveToken.value?.decoded.level ?? 0)
+    this.isLoggedIn = computed(() => this.securityLevel.value !== -1)
+    this.refreshTokensDebounced = useDebounceFn(
+      () => navigator.locks.request(`tokens`, this._refreshTokens.bind(this)),
+      1000
+    )
 
     const headers = this.getHeaders.bind(this)
     this.public = hc<IPublicApi>('/api/public')
@@ -85,84 +95,98 @@ export class ApiManager {
     this.webauthn = hc<IWebauthnApi>('/api/plugin/webauthn', { headers })
   }
 
-  private async _refreshToken(tokenId: string) {
-    // Refresh token when refreshToken exists and
-    // token's remaining time is less than half of its life time
-    const _refreshToken = this.tokens.value[tokenId]?.refreshToken
-    if (!_refreshToken) return
-
-    const now = Date.now()
-    const current = this.tokens.value[tokenId]
-    const remaining = current.decoded.exp * 1000 - now
-    const lifetime = (current.decoded.exp - current.decoded.iat) * 1000
+  private async _refreshTokenFor(level: SecurityLevel, now = Date.now()) {
+    const token = this.tokens.value[level]
+    if (!token) return
+    const remaining = token.decoded.exp * 1000 - now
+    const lifetime = (token.decoded.exp - token.decoded.iat) * 1000
     if (remaining > lifetime / 2) return
-
-    console.log(`[API] Refreshing token ${tokenId}`)
-    try {
-      const resp = await this.public.refresh.$post({
-        json: { clientId: this.appId.value, refreshToken: _refreshToken }
-      })
-      await this.checkResponse(resp)
-      const { token, refreshToken } = await resp.json()
-      this.tokens.value[tokenId] = {
-        token,
-        refreshToken,
-        decoded: ApiManager.parseJWT(token)
-      }
-      console.log(`[API] Token ${tokenId} refreshed`)
-    } catch (err) {
-      if (isAPIError(err) && err.code === 'INVALID_TOKEN') {
-        delete this.tokens.value[tokenId].refreshToken
-        console.log(`[API] Token ${tokenId} failed to refresh because of invalid refreshToken`)
+    console.log(`[API] Refreshing token at level ${level}`)
+    if (token.refreshToken) {
+      try {
+        const resp = await this.public.refresh.$post({
+          json: { clientId: this.appId.value, refreshToken: token.refreshToken }
+        })
+        await this.checkResponse(resp)
+        const { token: newToken, refreshToken } = await resp.json()
+        this.tokens.value[level] = {
+          token: newToken,
+          refreshToken,
+          decoded: ApiManager.parseJWT(newToken)
+        }
+        console.log(`[API] Token at level ${level} refreshed`)
         return
+      } catch (err) {
+        if (isAPIError(err) && err.code === 'TOKEN_INVALID_REFRESH') {
+          delete this.tokens.value[level].refreshToken
+          console.log(`[API] Token ${level} failed to refresh: invalid refreshToken`)
+        } else {
+          console.log(`[API] Token ${level} failed to refresh: ${this._formatError(err)}`)
+        }
       }
-      console.error(err)
+    }
+    // Token not refreshed, check if it is expired
+    if (remaining < 3 * 1000) {
+      console.log(`[API] Token at level ${level} dropped remaining=${remaining}ms`)
+      delete this.tokens.value[level]
     }
   }
 
-  private async _checkAndRefreshTokens() {
-    console.log(`[API] Checking and refreshing tokens`)
-    const tokenIds = Object.keys(this.tokens.value)
+  /**
+   * Refresh tokens if needed and drop expired tokens
+   */
+  private async _refreshTokens() {
+    if (this.securityLevel.value === null) return
     const now = Date.now()
-    let bestToken: IClientToken | null = null
-    for (const tokenId of tokenIds) {
-      await this._refreshToken(tokenId)
-      if (this.tokens.value[tokenId].decoded.exp * 1000 < now) {
-        delete this.tokens.value[tokenId]
-        console.log(`[API] Token ${tokenId} dropped`)
-        continue
-      }
-      if (!bestToken || bestToken.decoded.level < this.tokens.value[tokenId].decoded.level) {
-        bestToken = this.tokens.value[tokenId]
-      }
+    console.group(`[API] Refreshing tokens at ${now}`)
+    await Promise.all(
+      Array.from({ length: this.securityLevel.value + 1 }, (_, i) =>
+        this._refreshTokenFor(i as SecurityLevel, now)
+      )
+    )
+    console.log(`[API] Calculating Security Level`)
+    const level = this.tokens.value.reduce((acc: -1 | SecurityLevel, token, i) => {
+      if (token && token.decoded.exp * 1000 > now) return i as SecurityLevel
+      return acc
+    }, -1)
+    console.log(`[API] Security Level is ${level}`)
+    this.securityLevel.value = level
+    console.groupEnd()
+  }
+
+  private async _downgradeTokenFrom(level: SecurityLevel) {
+    console.log(`[API] Downgrading token to level ${level}`)
+    try {
+      const resp = await this.session.downgrade.$post({ json: { targetLevel: level } })
+      await this.checkResponse(resp)
+      const {
+        token: { token, refreshToken }
+      } = await resp.json()
+      this.tokens.value[level] = { token, refreshToken, decoded: ApiManager.parseJWT(token) }
+    } catch (err) {
+      console.log(`[API] Token downgrade failed: ${this._formatError(err)}`)
     }
-    console.log(`[API] Effective token updated to ${bestToken?.decoded.jti ?? 'null'}`)
-    this.effectiveToken.value = bestToken
   }
 
-  async updateEffectiveToken() {
-    return navigator.locks.request(`tokens`, async () => {
-      await this._checkAndRefreshTokens()
-    })
-  }
-
-  async getEffectiveToken() {
-    await this.updateEffectiveToken()
-    return this.effectiveToken.value
-  }
-
-  async dropEffectiveToken() {
-    return navigator.locks.request(`tokens`, async () => {
-      const effectiveId = this.effectiveToken.value?.decoded.jti
-      if (!effectiveId) return
-      delete this.tokens.value[effectiveId]
-      this._checkAndRefreshTokens()
-    })
+  /**
+   * Fill token store
+   */
+  private async _applyToken(token: string, refreshToken?: string) {
+    const decoded = ApiManager.parseJWT(token)
+    const { jti, level } = decoded
+    console.group(`[API] Applying token ${jti}`)
+    this.tokens.value[level] = { token, refreshToken, decoded }
+    this.securityLevel.value = level
+    await Promise.all(
+      Array.from({ length: level }, (_, i) => this._downgradeTokenFrom(i as SecurityLevel))
+    )
+    console.groupEnd()
   }
 
   async getHeaders() {
+    this.refreshTokensDebounced()
     const headers: Record<string, string> = Object.create(null)
-    const token = await this.getEffectiveToken()
+    const token = this.effectiveToken.value
     if (token) headers.Authorization = `Bearer ${token.token}`
     return headers
   }
@@ -170,42 +194,30 @@ export class ApiManager {
   async login(type: string, payload: unknown) {
     const resp = await this.public.login.$post({ json: { type, payload } })
     await this.checkResponse(resp)
-    const { tokens } = await resp.json()
-    for (const { token, refreshToken } of tokens) {
-      this.tokens.value[ApiManager.parseJWT(token).jti] = {
-        token,
-        refreshToken,
-        decoded: ApiManager.parseJWT(token)
-      }
-    }
-    await this.updateEffectiveToken()
+    const {
+      token: { token, refreshToken }
+    } = await resp.json()
+    return navigator.locks.request(`tokens`, () => this._applyToken(token, refreshToken))
   }
 
-  async verify(type: string, targetLevel: number, payload: unknown) {
+  async verify(type: string, targetLevel: SecurityLevel, payload: unknown) {
     console.log(`[API] Will verify credential ${type}`)
-    const resp = await this.session.elevate.$post({ json: { type, targetLevel, payload } })
+    const resp = await this.session.upgrade.$post({ json: { type, targetLevel, payload } })
     await this.checkResponse(resp)
     const {
       token: { token, refreshToken }
     } = await resp.json()
-    return navigator.locks.request(`tokens`, async () => {
-      console.log(`[API] Verifying credential ${type}`)
-      this.tokens.value[ApiManager.parseJWT(token).jti] = {
-        token,
-        refreshToken,
-        decoded: ApiManager.parseJWT(token)
-      }
-      await this._checkAndRefreshTokens()
-    })
+    return navigator.locks.request(`tokens`, () => this._applyToken(token, refreshToken))
   }
 
   async logout() {
     console.log(`[API] Will logout`)
-    return navigator.locks.request(`tokens`, async () => {
+    await navigator.locks.request(`tokens`, async () => {
       console.log(`[API] Logging out`)
-      this.tokens.value = {}
-      this.effectiveToken.value = null
+      this.tokens.value = []
+      this.securityLevel.value = null
     })
+    window.open('/', '_self')
   }
 
   async getSessionClaimMap() {

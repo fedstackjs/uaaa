@@ -1,9 +1,8 @@
 import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import { verifyAuthorizationJwt, verifyPermission } from '../_middleware.js'
 import { arktypeValidator } from '@hono/arktype-validator'
 import { type } from 'arktype'
-import { SECURITY_LEVEL, tSecurityLevel } from '../../util/index.js'
+import { BusinessError, SECURITY_LEVEL, tSecurityLevel } from '../../util/index.js'
 import { tDeriveOptions, tRemoteResponse } from '../../session/index.js'
 
 export const sessionApi = new Hono()
@@ -12,7 +11,7 @@ export const sessionApi = new Hono()
   .get('/', verifyPermission({ path: '/session' }), async (ctx) => {
     const { app, token } = ctx.var
     const session = await app.db.sessions.findOne({ _id: token.sid, terminated: { $ne: true } })
-    if (!session) throw new HTTPException(404)
+    if (!session) throw new BusinessError('NOT_FOUND', { msg: 'Session not found' })
     return ctx.json({
       authorizedApps: session.authorizedApps
     })
@@ -23,7 +22,7 @@ export const sessionApi = new Hono()
     const { client_id } = token
     if (client_id === app.appId) {
       const user = await app.db.users.findOne({ _id: token.sub })
-      if (!user) throw new HTTPException(404)
+      if (!user) throw new BusinessError('NOT_FOUND', { msg: 'User not found' })
       const claims = await app.claim.filterBasicClaims(ctx, user.claims)
       return ctx.json({ claims })
     }
@@ -34,7 +33,10 @@ export const sessionApi = new Hono()
     })
     const clientApp = await app.db.apps.findOne({ _id: client_id, disabled: { $ne: true } })
     const user = await app.db.users.findOne({ _id: token.sub })
-    if (!installation || !clientApp || !user) throw new HTTPException(404)
+    if (!installation) throw new BusinessError('NOT_FOUND', { msg: 'Installation not found' })
+    if (!clientApp) throw new BusinessError('NOT_FOUND', { msg: 'Client app not found' })
+    if (!user) throw new BusinessError('NOT_FOUND', { msg: 'User not found' })
+
     const claims = await app.claim.filterClaimsForApp(
       ctx,
       installation.grantedClaims,
@@ -44,8 +46,8 @@ export const sessionApi = new Hono()
     return ctx.json({ claims })
   })
   .get(
-    '/elevate',
-    verifyPermission({ path: '/session/elevate', securityLevel: SECURITY_LEVEL.HINT }),
+    '/upgrade',
+    verifyPermission({ path: '/session/upgrade', securityLevel: SECURITY_LEVEL.HINT }),
     arktypeValidator(
       'query',
       type({
@@ -59,8 +61,8 @@ export const sessionApi = new Hono()
     }
   )
   .post(
-    '/elevate',
-    verifyPermission({ path: '/session/elevate', securityLevel: SECURITY_LEVEL.HINT }),
+    '/upgrade',
+    verifyPermission({ path: '/session/upgrade', securityLevel: SECURITY_LEVEL.HINT }),
     arktypeValidator(
       'json',
       type({
@@ -80,6 +82,21 @@ export const sessionApi = new Hono()
         payload
       )
       return ctx.json(await session.upgrade(ctx.var.token, verifyResult, {}))
+    }
+  )
+  .post(
+    '/downgrade',
+    verifyPermission({ path: '/session/downgrade' }),
+    arktypeValidator(
+      'json',
+      type({
+        targetLevel: tSecurityLevel
+      })
+    ),
+    async (ctx) => {
+      const { targetLevel } = ctx.req.valid('json')
+      const { session } = ctx.var.app
+      return ctx.json(await session.downgrade(ctx.var.token, targetLevel, {}))
     }
   )
   .post(

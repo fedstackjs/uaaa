@@ -141,9 +141,9 @@ export class TokenManager extends Hookable<{}> {
       return new BusinessError('TOKEN_EXPIRED', {})
     }
     if (err instanceof jwt.NotBeforeError) {
-      return new BusinessError('TOKEN_NOT_BEFORE', {})
+      return new BusinessError('TOKEN_PENDING', {})
     }
-    return new BusinessError('INVALID_TOKEN', {})
+    return new BusinessError('TOKEN_INVALID_JWT', {})
   }
 
   async verify(
@@ -154,9 +154,9 @@ export class TokenManager extends Hookable<{}> {
       jwt.verify(
         token,
         async ({ kid }, cb) => {
-          if (!kid) return cb(new BusinessError('INVALID_TOKEN', {}))
+          if (!kid) return cb(new BusinessError('TOKEN_INVALID_JWT', {}))
           const key = this.trustedLocalKeys[kid] ?? this.trustedUpstreamKeys[kid]
-          if (!key) return cb(new BusinessError('INVALID_TOKEN', {}))
+          if (!key) return cb(new BusinessError('TOKEN_INVALID_JWT', {}))
           return cb(null, key)
         },
         { complete: true },
@@ -259,7 +259,7 @@ export class TokenManager extends Hookable<{}> {
     const containsUAAA = parsedPermissions.some((perm) => perm.appId === this.app.appId)
     targetAppId ??= containsUAAA ? this.app.appId : parsedPermissions[0].appId
     if (!targetAppId) {
-      throw new BusinessError('INVALID_TOKEN', {})
+      throw new BusinessError('TOKEN_INVALID_CONFIG', {})
     }
 
     const tokenExpiresAt = Math.min(tokenDoc.expiresAt, now + tokenDoc.tokenTimeout)
@@ -318,7 +318,7 @@ export class TokenManager extends Hookable<{}> {
       { $unset: { refreshToken: '' } }
     )
     if (!tokenDoc) {
-      throw new BusinessError('INVALID_TOKEN', {})
+      throw new BusinessError('TOKEN_INVALID_REFRESH', {})
     }
     if (tokenDoc.confidential && client.id) {
       let clientApp = client.app
@@ -327,7 +327,7 @@ export class TokenManager extends Hookable<{}> {
         { projection: { secret: 1 } }
       )
       if (!clientApp || clientApp.secret !== client.secret) {
-        throw new BusinessError('INVALID_TOKEN', {})
+        throw new BusinessError('TOKEN_INVALID_CLIENT', {})
       }
     }
     return this.signToken(tokenDoc, targetAppId)
@@ -347,7 +347,7 @@ export class TokenManager extends Hookable<{}> {
     const jwt = await this.verify(token)
     const payload = tTokenPayload(jwt.payload)
     if (payload instanceof type.errors) {
-      throw new BusinessError('INVALID_TOKEN', {})
+      throw new BusinessError('TOKEN_INVALID_JWT', {})
     }
     return {
       jwt,
@@ -358,7 +358,7 @@ export class TokenManager extends Hookable<{}> {
   async verifyUAAAToken(token: string) {
     const { jwt, payload } = await this.verifyToken(token)
     if (payload.aud !== this.app.appId) {
-      throw new BusinessError('INVALID_TOKEN', {})
+      throw new BusinessError('TOKEN_INVALID_JWT', {})
     }
     return { jwt, payload }
   }

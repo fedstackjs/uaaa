@@ -35,7 +35,6 @@ const { t } = useI18n()
 onMounted(() => {
   setTimeout(async () => {
     await api.logout()
-    router.replace('/')
   }, 1000)
 })
 </script>

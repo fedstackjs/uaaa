@@ -14,30 +14,30 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "nuxt": "^3.12.3",
-    "vue": "latest"
+    "nuxt": "^3.15.4",
+    "vue": "^3.5.13"
   },
   "devDependencies": {
     "@mdi/font": "^7.4.47",
     "@nuxtjs/i18n": "^8.3.1",
-    "@simplewebauthn/browser": "^10.0.0",
+    "@simplewebauthn/browser": "^13.1.0",
     "@types/whatwg-url": "^11.0.5",
-    "@unocss/nuxt": "^0.61.3",
-    "@unocss/reset": "^0.63.4",
-    "@vueuse/core": "^10.11.0",
-    "@vueuse/nuxt": "^10.11.0",
-    "@vueuse/router": "^11.0.3",
+    "@unocss/nuxt": "^66.0.0",
+    "@unocss/reset": "^66.0.0",
+    "@vueuse/core": "^12.7.0",
+    "@vueuse/nuxt": "^12.7.0",
+    "@vueuse/router": "^12.7.0",
     "confbox": "^0.1.7",
     "copy-to-clipboard": "^3.3.3",
-    "hono": "^4.5.8",
+    "hono": "^4.7.2",
     "minimatch": "^10.0.1",
     "typescript": "^5.7.3",
-    "unocss": "^0.61.3",
+    "unocss": "^66.0.0",
     "uqr": "^0.1.2",
-    "vite-plugin-vuetify": "^2.0.4",
+    "vite-plugin-vuetify": "^2.1.0",
     "vue-toastification": "^2.0.0-rc.5",
-    "vue-tsc": "^2.1.6",
-    "vuetify": "^3.7.1",
+    "vue-tsc": "^2.2.4",
+    "vuetify": "^3.7.13",
     "whatwg-url": "^14.0.0"
   }
 }

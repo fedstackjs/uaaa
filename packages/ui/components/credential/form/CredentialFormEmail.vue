@@ -55,11 +55,12 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import { useDisplay, type SubmitEventPromise } from 'vuetify'
+import type { SecurityLevel } from '~/utils/api'
 
 const props = defineProps<{
   action: 'login' | 'verify' | 'bind' | 'unbind'
   credentialId?: string
-  targetLevel?: number
+  targetLevel?: SecurityLevel
 }>()
 const emit = defineEmits<{
   updated: [credentialId?: string]

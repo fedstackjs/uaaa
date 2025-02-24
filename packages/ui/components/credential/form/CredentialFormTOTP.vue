@@ -23,10 +23,12 @@
 </template>
 
 <script setup lang="ts">
+import type { SecurityLevel } from '~/utils/api'
+
 const props = defineProps<{
   action: 'login' | 'verify' | 'bind' | 'unbind'
   credentialId?: string
-  targetLevel?: number
+  targetLevel?: SecurityLevel
 }>()
 const emit = defineEmits<{
   updated: [credentialId?: string]

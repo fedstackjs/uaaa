@@ -51,9 +51,6 @@ const { data, status, refresh } = await useAsyncData(async () => {
   } catch (err) {
     if (isAPIError(err)) {
       switch (err.code) {
-        case 'INVALID_TOKEN': {
-          api.dropEffectiveToken()
-        }
         case 'FORBIDDEN': {
           api.logout()
         }
@@ -69,8 +66,8 @@ const color = computed(() => {
     case 3:
       return 'error'
     case 2:
-    case 1:
       return 'warning'
+    case 1:
     default:
       return 'info'
   }

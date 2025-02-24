@@ -1,5 +1,6 @@
 import { type } from 'arktype'
 import {
+  BusinessError,
   logger,
   SECURITY_LEVEL,
   verifyAuthorizationJwt,
@@ -9,7 +10,6 @@ import {
 } from '../../../index.js'
 import { type IWebauthnKey, WebauthnImpl } from './credential.js'
 import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import ms from 'ms'
 import { generateAuthenticationOptions, generateRegistrationOptions } from '@simplewebauthn/server'
 import { arktypeValidator } from '@hono/arktype-validator'
@@ -79,7 +79,7 @@ export class WebauthnPlugin {
             const { local, userVerification } = ctx.req.valid('json')
             const { app, token } = ctx.var
             const user = await app.db.users.findOne({ _id: token.sub })
-            if (!user) throw new HTTPException(404)
+            if (!user) throw new BusinessError('NOT_FOUND', { msg: 'User not found' })
             const credentials = await app.db.credentials
               .find({ userId: user._id, type: 'webauthn' })
               .toArray()
@@ -117,7 +117,7 @@ export class WebauthnPlugin {
             const { userVerification } = ctx.req.valid('json')
             const { app, token } = ctx.var
             const user = await app.db.users.findOne({ _id: token.sub })
-            if (!user) throw new HTTPException(404)
+            if (!user) throw new BusinessError('NOT_FOUND', { msg: 'User not found' })
             const credentials = await app.db.credentials
               .find({ userId: user._id, type: 'webauthn' })
               .toArray()

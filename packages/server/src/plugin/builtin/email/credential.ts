@@ -25,7 +25,7 @@ export class EmailImpl extends CredentialImpl {
   private async _checkPayload(ctx: CredentialContext, payload: unknown) {
     const checked = EmailImpl.tPayload(payload)
     if (checked instanceof type.errors) {
-      throw new HTTPException(400, { cause: checked.summary })
+      throw new BusinessError('BAD_REQUEST', { msg: checked.summary })
     }
     await this.plugin.checkCode(this.plugin.mailKey(checked.email), checked.code)
     return { email: checked.email }
@@ -87,7 +87,7 @@ export class EmailImpl extends CredentialImpl {
         securityLevel: SECURITY_LEVEL.MEDIUM
       }
     }
-    throw new HTTPException(401, { message: 'User not found' })
+    throw new BusinessError('NOT_FOUND', { msg: 'User not found' })
   }
 
   override async showElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
@@ -125,7 +125,7 @@ export class EmailImpl extends CredentialImpl {
       disabled: { $ne: true }
     })
     if (!credential) {
-      throw new HTTPException(401)
+      throw new BusinessError('NOT_FOUND', { msg: 'Email credential not found' })
     }
     await ctx.manager.checkCredentialUse(credential._id)
 

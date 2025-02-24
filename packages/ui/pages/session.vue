@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 definePageMeta({
-  level: 2
+  level: 3
 })
 useHead({
   title: 'Session Management'

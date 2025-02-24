@@ -14,11 +14,12 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import type { SecurityLevel } from '~/utils/api'
 
 const props = defineProps<{
   action: 'login' | 'verify' | 'bind' | 'unbind'
   credentialId?: string
-  targetLevel?: number
+  targetLevel?: SecurityLevel
 }>()
 const emit = defineEmits<{
   updated: [credentialId?: string]
