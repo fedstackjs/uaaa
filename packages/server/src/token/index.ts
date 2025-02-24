@@ -202,14 +202,14 @@ export class TokenManager extends Hookable<{}> {
             securityLevel: token.securityLevel,
             createdAt: token.createdAt,
             tokenTimeout: token.tokenTimeout,
-            refreshTimeout: token.refreshTimeout,
-            code: generateCode ? nanoid() : undefined
+            refreshTimeout: token.refreshTimeout
           },
           $set: {
             confidential: token.confidential,
             remote: token.remote,
             nonce: token.nonce,
             challenge: token.challenge,
+            code: generateCode ? nanoid() : undefined,
             // TODO: consider how to merge environment
             environment: token.environment
           },

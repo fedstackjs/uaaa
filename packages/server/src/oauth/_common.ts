@@ -6,7 +6,7 @@ import type { Context } from 'hono'
 import type { App, ClaimName, IAppDoc, IUserClaims } from '../index.js'
 import { OAuthError } from './_errors.js'
 import { tRemoteRequest, type RemoteRequest } from '../session/index.js'
-import { Permission, SECURITY_LEVEL } from '../util/index.js'
+import { isSecurityLevel, Permission, rAppId, SECURITY_LEVEL } from '../util/index.js'
 
 export interface IOAuthTokenResponse {
   access_token: string
@@ -140,10 +140,15 @@ export class OAuthManager {
         'client_id?': 'string',
         'client_secret?': 'string',
         refresh_token: 'string',
-        'scope?': 'string|undefined'
+        'scope?': 'string|undefined',
+        'target_app_id?': type('string').narrow((id) => rAppId.test(id))
       }),
-      async (ctx, { refresh_token, scope }, client) => {
-        const { token, refreshToken } = await ctx.var.app.token.refreshToken(refresh_token, client)
+      async (ctx, { refresh_token, scope, target_app_id }, client) => {
+        const { token, refreshToken } = await ctx.var.app.token.refreshToken(
+          refresh_token,
+          client,
+          target_app_id
+        )
         return {
           access_token: token,
           token_type: 'Bearer',
@@ -287,11 +292,15 @@ export class OAuthManager {
     if (!clientApp) {
       return this._authorizeUrl({ type: 'oidc', error: 'invalid_client' })
     }
+    const securityLevel =
+      this._checkSecurityLevel('security_level' in rest && rest.security_level) ??
+      this._checkSecurityLevel(clientApp.openid?.minSecurityLevel) ??
+      '1'
     return this._authorizeUrl({
       clientAppId: client_id,
       type: 'oidc',
       params: JSON.stringify(rest),
-      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '1'),
+      securityLevel,
       ...this.scopeToPermissions(scope)
     })
   }
@@ -449,6 +458,11 @@ export class OAuthManager {
     throw new OAuthError('unsupported_grant_type')
   }
 
+  _checkSecurityLevel(level: unknown) {
+    if (typeof level === 'string' && isSecurityLevel(parseInt(level))) return level
+    return null
+  }
+
   async handleDeviceCodeRequest(ctx: Context, _request: Record<string, string>) {
     const request = OAuthManager.tDeviceCodeRequest(_request)
     if (request instanceof type.errors) {
@@ -465,11 +479,16 @@ export class OAuthManager {
     const verificationUriComplete = this._deviceUrl({ user_code: userCode })
     const expiresIn = Math.floor(this._deviceTimeout / 1000)
     const interval = Math.floor(this._devicePollInterval / 1000)
+    const securityLevel =
+      this._checkSecurityLevel('security_level' in rest && rest.security_level) ??
+      this._checkSecurityLevel(clientApp.openid?.minSecurityLevel) ??
+      '1'
+
     const remoteRequest: RemoteRequest = {
       clientAppId: clientId,
       type: 'oidc',
       params: JSON.stringify(rest),
-      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '1'),
+      securityLevel,
       confidential: '0',
       ...this.scopeToPermissions(scope ?? '')
     }

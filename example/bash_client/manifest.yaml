@@ -1,0 +1,22 @@
+appId: org.fedstack.bash_client
+name: Bash Client
+description: OAuth2 Bash客户端
+providedPermissions: []
+requestedClaims:
+  - name: email
+    reason: 获取用户邮箱地址
+    required: true
+  - name: username
+    reason: 获取用户名
+    required: true
+requestedPermissions:
+  - reason: 访问用户授权的信息
+    perm: uaaa.local/session/claim
+    required: true
+callbackUrls: []
+variables: {}
+secrets: {}
+promoted: false
+securityLevel: 1
+openid:
+  allowPublicClient: true
