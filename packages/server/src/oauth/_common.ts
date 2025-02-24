@@ -413,17 +413,17 @@ export class OAuthManager {
     }
   }
 
-  defineGrant<G extends string, R extends { grant_type: G }, T extends Type<R>>(
-    grant_type: G,
-    request_type: T,
-    fn: GrantFn<T extends { infer: infer U } ? U : never>
-  ) {
+  defineGrant<
+    T extends (input: unknown) => unknown,
+    R extends Exclude<ReturnType<T>, type.errors>,
+    G extends R extends { grant_type: string } ? R['grant_type'] : never
+  >(grant_type: G, request_type: T, fn: GrantFn<R>) {
     this._grants[grant_type] = (ctx, request, client) => {
       const data = request_type(request)
       if (data instanceof type.errors) {
         throw new OAuthError('invalid_request')
       }
-      return fn(ctx, data, client)
+      return fn(ctx, data as R, client)
     }
   }
 
