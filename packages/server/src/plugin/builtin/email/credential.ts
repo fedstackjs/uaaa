@@ -92,7 +92,6 @@ export class EmailImpl extends CredentialImpl {
 
   override async showElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
-      _id: { $nin: await ctx.getCredentialIdBlacklist('email') },
       userId,
       type: 'email',
       disabled: { $ne: true },
@@ -117,7 +116,6 @@ export class EmailImpl extends CredentialImpl {
   ) {
     const { email } = await this._checkPayload(ctx, payload)
     const credential = await ctx.app.db.credentials.findOne({
-      _id: { $nin: await ctx.getCredentialIdBlacklist('email') },
       userId,
       data: email,
       type: 'email',

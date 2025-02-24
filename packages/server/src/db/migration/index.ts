@@ -5,7 +5,7 @@ import { MongoServerError } from 'mongodb'
 import type { DbManager } from '../index.js'
 import { logger, wait } from '../../util/index.js'
 
-export const databaseVersion = 1
+export const databaseVersion = 2
 
 export interface IMigrationImpl {
   (this: MigrationManager): Promise<void>
@@ -51,6 +51,16 @@ export class MigrationManager extends Hookable<{
         privateKey: privateKey.export({ format: 'jwk' })
       })
       await this.db.setSystemConfig('version', 1)
+    })
+
+    this.migrations.set(1, async function () {
+      // Since UAAA v1.0.0
+      // Token Document is changed, delete all of old items
+      await this.db.tokens.deleteMany({})
+      // Also Session Document is changed
+      await this.db.sessions.deleteMany({})
+
+      await this.db.setSystemConfig('version', 2)
     })
   }
 

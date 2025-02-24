@@ -47,7 +47,6 @@ class TOTPImpl extends CredentialImpl {
 
   override async showElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
-      _id: { $nin: await ctx.getCredentialIdBlacklist(this.type) },
       userId,
       type: this.type,
       disabled: { $ne: true },
@@ -75,7 +74,6 @@ class TOTPImpl extends CredentialImpl {
       throw new BusinessError('INVALID_TYPE', { summary: payload.summary })
     }
     const credential = await ctx.app.db.credentials.findOne({
-      _id: { $nin: await ctx.getCredentialIdBlacklist(this.type) },
       userId,
       type: this.type,
       securityLevel: { $gte: targetLevel },

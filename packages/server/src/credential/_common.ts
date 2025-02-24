@@ -36,13 +36,6 @@ export class CredentialContext {
     if (!this._credentialChain) this._credentialChain = this._getCredentialChain()
     return this._credentialChain
   }
-
-  async getCredentialIdBlacklist(type?: CredentialType) {
-    let chain = await this.getCredentialChain()
-    chain = chain.slice(1)
-    if (type) chain = chain.filter((token) => token.credential.type === type)
-    return chain.map((token) => token.credential._id)
-  }
 }
 
 export interface ICredentialLoginResult {
@@ -88,7 +81,6 @@ export abstract class CredentialImpl {
     targetLevel: SecurityLevel
   ): Promise<boolean> {
     const credential = await ctx.app.db.credentials.findOne({
-      _id: { $nin: await ctx.getCredentialIdBlacklist(this.type) },
       userId,
       type: this.type,
       disabled: { $ne: true },
@@ -97,7 +89,11 @@ export abstract class CredentialImpl {
     return !!credential
   }
 
-  async showBindNew(ctx: CredentialContext, userId: string): Promise<boolean> {
+  async showBindNew(
+    ctx: CredentialContext,
+    userId: string,
+    targetLevel?: SecurityLevel
+  ): Promise<boolean> {
     return true
   }
 
@@ -164,11 +160,11 @@ export class CredentialManager extends Hookable<{}> {
     return types
   }
 
-  async getBindTypes(ctx: Context, userId: string) {
+  async getBindTypes(ctx: Context, userId: string, targetLevel?: SecurityLevel) {
     const types: CredentialType[] = []
     const credentialCtx = new CredentialContext(this, ctx)
     for (const impl of Object.values(this.impls)) {
-      if (await impl.showBindNew(credentialCtx, userId)) {
+      if (await impl.showBindNew(credentialCtx, userId, targetLevel)) {
         types.push(impl.type)
       }
     }

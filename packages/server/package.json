@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "concurrently yarn:build:watch yarn:dev:server",
-    "dev:server": "node --watch ./lib/cli/index.js --config ../../local/config.json",
+    "dev:server": "node --watch ./lib/cli/index.js serve --config ../../local/config.json",
     "build": "tsc",
     "build:watch": "tsc -w",
     "prepack": "run build"

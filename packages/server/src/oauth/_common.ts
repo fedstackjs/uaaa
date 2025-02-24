@@ -291,7 +291,7 @@ export class OAuthManager {
       clientAppId: client_id,
       type: 'oidc',
       params: JSON.stringify(rest),
-      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0'),
+      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '1'),
       ...this.scopeToPermissions(scope)
     })
   }
@@ -469,7 +469,7 @@ export class OAuthManager {
       clientAppId: clientId,
       type: 'oidc',
       params: JSON.stringify(rest),
-      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '0'),
+      securityLevel: '' + (clientApp.openid?.minSecurityLevel ?? '1'),
       confidential: '0',
       ...this.scopeToPermissions(scope ?? '')
     }

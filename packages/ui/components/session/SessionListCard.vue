@@ -17,6 +17,7 @@
       <template v-slot:[`item._id`]="{ item }">
         <code>{{ item._id }}</code>
         <VChip
+          size="small"
           v-if="item._id === currentSession"
           color="info"
           :text="t('msg.current-session')"
@@ -24,14 +25,23 @@
         />
       </template>
       <template v-slot:[`item.createdAt`]="{ item }">
-        <VChip class="font-mono" :text="new Date(item.createdAt).toLocaleString()" />
+        <VChip size="small" class="font-mono" :text="new Date(item.createdAt).toLocaleString()" />
       </template>
       <template v-slot:[`item.expiresAt`]="{ item }">
         <div class="flex gap-1">
-          <VChip class="font-mono mr-2" :text="new Date(item.expiresAt).toLocaleString()" />
-          <VChip v-if="item.terminated" color="info" :text="t('msg.terminated')" />
-          <VChip v-else-if="item.expiresAt < Date.now()" color="success" :text="t('msg.expired')" />
-          <VChip v-else color="warning" :text="t('msg.active')" />
+          <VChip
+            size="small"
+            class="font-mono mr-2"
+            :text="new Date(item.expiresAt).toLocaleString()"
+          />
+          <VChip size="small" v-if="item.terminated" color="info" :text="t('msg.terminated')" />
+          <VChip
+            size="small"
+            v-else-if="item.expiresAt < Date.now()"
+            color="success"
+            :text="t('msg.expired')"
+          />
+          <VChip size="small" v-else color="warning" :text="t('msg.active')" />
         </div>
       </template>
       <template v-slot:[`item._apps`]="{ item }">
@@ -59,7 +69,6 @@
 const { t } = useI18n()
 const headers = [
   { title: t('msg.session-id'), key: '_id', sortable: false, minWidth: '320px' },
-  { title: t('msg.session-token-count'), key: 'tokenCount', sortable: false, minWidth: '96px' },
   { title: t('msg.created-at'), key: 'createdAt', sortable: false },
   { title: t('msg.expires-at'), key: 'expiresAt', sortable: false },
   { title: t('msg.session-authorized-apps'), key: '_apps', sortable: false },

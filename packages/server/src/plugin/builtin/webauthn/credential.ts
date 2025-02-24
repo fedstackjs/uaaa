@@ -59,7 +59,6 @@ export class WebauthnImpl extends CredentialImpl {
       this.plugin.getCacheKey('verify', userId)
     )
     const credential = await this.app.db.credentials.findOne({
-      _id: { $nin: await ctx.getCredentialIdBlacklist(this.type) },
       type: 'webauthn',
       userId,
       userIdentifier: body.id,

@@ -62,6 +62,7 @@ export class ApiManager {
   isAdmin
   securityLevel
   refreshTokensDebounced
+  tokensInit
 
   public
   session
@@ -84,6 +85,7 @@ export class ApiManager {
       () => navigator.locks.request(`tokens`, this._refreshTokens.bind(this)),
       1000
     )
+    this.tokensInit = navigator.locks.request(`tokens`, this._refreshTokens.bind(this))
 
     const headers = this.getHeaders.bind(this)
     this.public = hc<IPublicApi>('/api/public')
@@ -184,6 +186,7 @@ export class ApiManager {
   }
 
   async getHeaders() {
+    await this.tokensInit
     this.refreshTokensDebounced()
     const headers: Record<string, string> = Object.create(null)
     const token = this.effectiveToken.value

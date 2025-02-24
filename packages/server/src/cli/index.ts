@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises'
-import { Command, Option, runExit } from 'clipanion'
+import { Cli, Builtins, Command, Option } from 'clipanion'
 import * as t from 'typanion'
-import { App } from '../index.js'
 import type { Document } from 'mongodb'
+import { App } from '../index.js'
 
 abstract class BaseCommand extends Command {
   config = Option.String(`--config`, { env: 'UAAA_SERVER_CONFIG_PATH' })
@@ -24,7 +24,8 @@ abstract class BaseCommand extends Command {
 }
 
 class ServeCommand extends BaseCommand {
-  static paths = [[`serve`], [`s`], Command.Default]
+  static paths = [[`serve`], [`s`]]
+  static usage = Command.Usage({})
 
   async execute() {
     const app = await this.getApp()
@@ -34,6 +35,8 @@ class ServeCommand extends BaseCommand {
 
 class FindUserCommand extends BaseCommand {
   static paths = [[`find-user`], [`fu`]]
+  static usage = Command.Usage({})
+
   userId = Option.String(`-u,--id`, { required: false })
   userName = Option.String(`-n,--username`, { required: false })
   realName = Option.String(`-r,--realname`, { required: false })
@@ -85,6 +88,8 @@ class FindUserCommand extends BaseCommand {
 
 class UpdateUserCommand extends BaseCommand {
   static paths = [[`update-user`], [`uu`]]
+  static usage = Command.Usage({})
+
   userId = Option.String(`-u,--id`, { required: true })
   setUserName = Option.String(`-sn,--set-username`)
   setEmail = Option.String(`-se,--set-email`)
@@ -122,6 +127,8 @@ class UpdateUserCommand extends BaseCommand {
 
 class FindCredentialCommand extends BaseCommand {
   static paths = [[`find-credential`], [`fc`]]
+  static usage = Command.Usage({})
+
   userId = Option.String(`-u,--id`, { required: false })
   credentialId = Option.String(`-c,--credential`, { required: false })
   credentialType = Option.String(`-t,--type`, { required: false })
@@ -178,6 +185,8 @@ class FindCredentialCommand extends BaseCommand {
 
 class UpdateCredentialCommand extends BaseCommand {
   static paths = [[`update-credential`], [`uc`]]
+  static usage = Command.Usage({})
+
   credentialId = Option.String(`-c,--credential`, { required: true })
   setRemark = Option.String(`-sr,--set-remark`)
   setSecurityLevel = Option.String(`-ssl,--set-security-level`, {
@@ -197,10 +206,18 @@ class UpdateCredentialCommand extends BaseCommand {
   }
 }
 
-runExit([
-  ServeCommand,
-  FindUserCommand,
-  UpdateUserCommand,
-  FindCredentialCommand,
-  UpdateCredentialCommand
-])
+const [node, app, ...args] = process.argv
+
+const cli = new Cli({
+  binaryLabel: `UAAA Server`,
+  binaryName: `uaaa-server`
+})
+
+cli.register(ServeCommand)
+cli.register(FindUserCommand)
+cli.register(UpdateUserCommand)
+cli.register(FindCredentialCommand)
+cli.register(UpdateCredentialCommand)
+cli.register(Builtins.HelpCommand)
+cli.register(Builtins.VersionCommand)
+cli.runExit(args)

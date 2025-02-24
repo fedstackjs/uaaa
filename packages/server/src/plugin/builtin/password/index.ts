@@ -90,7 +90,6 @@ class PasswordImpl extends CredentialImpl {
 
   override async showElevate(ctx: CredentialContext, userId: string, targetLevel: SecurityLevel) {
     const credential = await ctx.app.db.credentials.findOne({
-      _id: { $nin: await ctx.getCredentialIdBlacklist('password') },
       userId,
       type: 'password',
       disabled: { $ne: true },
@@ -118,7 +117,6 @@ class PasswordImpl extends CredentialImpl {
       throw new BusinessError('INVALID_TYPE', { summary: payload.summary })
     }
     const credential = await ctx.app.db.credentials.findOne({
-      _id: { $nin: await ctx.getCredentialIdBlacklist('password') },
       userId: userId,
       type: 'password',
       securityLevel: { $gte: targetLevel },
