@@ -1,15 +1,15 @@
 {
   "name": "@uaaa/ui",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.4.0",
   "type": "module",
   "installConfig": {
     "hoistingLimits": "workspaces"
   },
   "scripts": {
-    "build": "nuxt build",
+    "build": "nuxt generate",
+    "build:ssr": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },

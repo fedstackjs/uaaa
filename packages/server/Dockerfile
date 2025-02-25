@@ -19,4 +19,4 @@ COPY --from=builder /app/packages/core/lib ./packages/core/lib
 COPY --from=builder /app/packages/server/lib ./packages/server/lib
 USER node
 VOLUME [ "/etc/uaaa" ]
-CMD ["node", "packages/server/lib/cli/index.js", "--config", "/etc/uaaa/config.json"]
+CMD ["node", "packages/server/lib/cli/index.js", "serve", "--config", "/etc/uaaa/config.json"]
