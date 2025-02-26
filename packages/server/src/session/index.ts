@@ -20,7 +20,7 @@ const remoteCodeGen = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 8)
 
 export const tRemoteRequest = type({
   type: 'string',
-  clientAppId: 'string',
+  appId: 'string',
   params: 'string',
   securityLevel: 'string',
   'confidential?': 'string',
@@ -49,7 +49,7 @@ interface IRemoteState {
 }
 
 export const tDeriveOptions = type({
-  clientAppId: 'string',
+  appId: 'string',
   securityLevel: tSecurityLevel,
   'permissions?': 'string[]',
   'optionalPermissions?': 'string[]',
@@ -63,10 +63,15 @@ export const tDeriveOptions = type({
 export type DeriveOptions = typeof tDeriveOptions.infer
 
 export const tExchangeOptions = type({
-  clientAppId: 'string',
+  appId: 'string',
+  'appSecret?': 'string',
   securityLevel: tSecurityLevel,
   'permissions?': 'string[]',
-  'optionalPermissions?': 'string[]'
+  'optionalPermissions?': 'string[]',
+  'nonce?': 'string',
+  'challenge?': 'string',
+  'signToken?': 'boolean',
+  'confidential?': 'boolean'
 })
 
 export type ExchangeOptions = typeof tExchangeOptions.infer
@@ -130,9 +135,9 @@ export class SessionManager extends Hookable<{
   async _resolvePermissions(
     app: IAppDoc,
     installation: IInstallationDoc,
-    permissions?: string[],
-    optionalPermissions?: string[]
+    options: DeriveOptions | ExchangeOptions
   ) {
+    const { permissions, optionalPermissions } = options
     const granted = new Set([...installation.grantedPermissions])
     const hasPermission = (p: string) => {
       return granted.has(p) || Permission.fromCompactString(p).appId === app._id
@@ -174,7 +179,7 @@ export class SessionManager extends Hookable<{
       {
         userId,
         sessionId,
-        clientAppId: this.app.appId,
+        appId: this.app.appId,
         permissions: [`${this.app.appId}/**`],
         credentialId,
         securityLevel,
@@ -219,7 +224,7 @@ export class SessionManager extends Hookable<{
       {
         sessionId: token.sessionId,
         userId: token.userId,
-        clientAppId: this.app.appId,
+        appId: this.app.appId,
         // Always grant session token full permissions
         permissions: [`${this.app.appId}/**`],
         parentId: token._id,
@@ -263,7 +268,7 @@ export class SessionManager extends Hookable<{
       {
         sessionId: token.sessionId,
         userId: token.userId,
-        clientAppId: this.app.appId,
+        appId: this.app.appId,
         permissions: token.permissions,
         parentId: token._id,
         securityLevel: targetLevel,
@@ -278,6 +283,86 @@ export class SessionManager extends Hookable<{
       { timestamp: now }
     )
     return { token: newToken }
+  }
+
+  async deriveToken(
+    parent: ITokenDoc,
+    permissions: string[],
+    options: DeriveOptions | ExchangeOptions,
+    environment: ITokenEnvironment
+  ) {
+    const { appId, securityLevel, signToken = false, confidential = true } = options
+    const remote = ('remote' in options && options.remote) || undefined
+
+    await this.app.db.sessions.updateOne(
+      { _id: parent.sessionId, terminated: { $ne: true } },
+      { $addToSet: { authorizedApps: appId } }
+    )
+    const now = Date.now()
+    const tokenDoc = await this.app.token.createToken(
+      {
+        sessionId: parent.sessionId,
+        userId: parent.userId,
+        appId,
+        permissions,
+        parentId: parent._id,
+        securityLevel,
+        createdAt: now,
+        updatedAt: now,
+        activatedAt: parent.activatedAt,
+        expiresAt: parent.activatedAt + this.app.token.getSessionTokenTimeout(securityLevel),
+        tokenTimeout: this.app.token.getTokenTimeout(securityLevel),
+        refreshTimeout: this.app.token.getRefreshTimeout(securityLevel),
+        confidential,
+        remote,
+        nonce: options?.nonce,
+        challenge: options?.challenge,
+        environment
+      },
+      { generateCode: !signToken, timestamp: now }
+    )
+    if (!signToken) {
+      return { code: tokenDoc.code! }
+    }
+    return this.app.token.signToken(tokenDoc)
+  }
+
+  async checkDeriveJWT(jwt: ITokenPayload, options: DeriveOptions | ExchangeOptions) {
+    const { securityLevel, signToken = false, confidential = true } = options
+
+    if (confidential && signToken) {
+      throw new BusinessError('BAD_REQUEST', {
+        msg: 'Confidential token can not be signed'
+      })
+    }
+    if (securityLevel > jwt.level) {
+      throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', { required: securityLevel })
+    }
+  }
+
+  async checkDeriveApp(appId: string, options: DeriveOptions | ExchangeOptions) {
+    const { securityLevel, confidential = true } = options
+
+    const clientApp = await this._getAppOrFail(appId)
+    if (securityLevel > clientApp.securityLevel) {
+      throw new BusinessError('BAD_REQUEST', { msg: 'Client App cannot hold the target level' })
+    }
+    if (!confidential && !clientApp.openid?.allowPublicClient) {
+      throw new BusinessError('BAD_REQUEST', { msg: 'Client App requires confidential token' })
+    }
+    return { clientApp }
+  }
+
+  async checkDeriveInstall(clientApp: IAppDoc, userId: string) {
+    const installation = await this.app.db.installations.findOne({
+      userId,
+      appId: clientApp._id,
+      disabled: { $ne: true }
+    })
+    if (!installation) {
+      throw new BusinessError('APP_NOT_INSTALLED', {})
+    }
+    return { installation }
   }
 
   /**
@@ -295,38 +380,15 @@ export class SessionManager extends Hookable<{
       })
     }
 
-    const { clientAppId, securityLevel, confidential = true } = options
-    if (securityLevel > jwt.level) {
-      throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', { required: securityLevel })
-    }
-
-    const clientApp = await this._getAppOrFail(clientAppId)
-    if (securityLevel > clientApp.securityLevel) {
-      throw new BusinessError('BAD_REQUEST', { msg: 'Client App cannot hold the target level' })
-    }
-    if (!confidential && !clientApp.openid?.allowPublicClient) {
-      throw new BusinessError('BAD_REQUEST', { msg: 'Client App requires confidential token' })
-    }
-
+    const { appId } = options
+    await this.checkDeriveJWT(jwt, options)
+    const { clientApp } = await this.checkDeriveApp(appId, options)
     const session = await this._getSessionOrFail(jwt.sid)
     const token = await this._getTokenOrFail(jwt.jti)
     await this.callHook('preDerive', session, token, options, environment)
+    const { installation } = await this.checkDeriveInstall(clientApp, token.userId)
 
-    const installation = await this.app.db.installations.findOne({
-      userId: token.userId,
-      appId: clientAppId,
-      disabled: { $ne: true }
-    })
-    if (!installation) {
-      throw new BusinessError('APP_NOT_INSTALLED', {})
-    }
-
-    const permissions = await this._resolvePermissions(
-      clientApp,
-      installation,
-      options.permissions,
-      options.optionalPermissions
-    )
+    const permissions = await this._resolvePermissions(clientApp, installation, options)
     return { clientApp, installation, token, session, permissions }
   }
 
@@ -345,46 +407,35 @@ export class SessionManager extends Hookable<{
    * @returns Derived token
    */
   async derive(jwt: ITokenPayload, options: DeriveOptions, environment: ITokenEnvironment) {
-    const {
-      clientAppId,
-      securityLevel,
-      signToken = false,
-      confidential = true,
-      remote = false
-    } = options
-    const { token, session, permissions } = await this.checkDerive(jwt, options, environment)
+    const { token, permissions } = await this.checkDerive(jwt, options, environment)
+    return this.deriveToken(token, permissions, options, environment)
+  }
 
-    await this.app.db.sessions.updateOne(
-      { _id: token.sessionId, terminated: { $ne: true } },
-      { $addToSet: { authorizedApps: clientAppId } }
-    )
-    const now = Date.now()
-    const tokenDoc = await this.app.token.createToken(
-      {
-        sessionId: token.sessionId,
-        userId: token.userId,
-        clientAppId,
-        permissions,
-        parentId: token._id,
-        securityLevel,
-        createdAt: now,
-        updatedAt: now,
-        activatedAt: token.activatedAt,
-        expiresAt: token.activatedAt + this.app.token.getSessionTokenTimeout(securityLevel),
-        tokenTimeout: this.app.token.getTokenTimeout(securityLevel),
-        refreshTimeout: this.app.token.getRefreshTimeout(securityLevel),
-        confidential,
-        remote,
-        nonce: options?.nonce,
-        challenge: options?.challenge,
-        environment
-      },
-      { generateCode: !signToken, timestamp: now }
-    )
-    if (!signToken) {
-      return { code: tokenDoc.code! }
+  async checkExchange(
+    jwt: ITokenPayload,
+    options: ExchangeOptions,
+    environment: ITokenEnvironment
+  ) {
+    const { appId } = options
+    if (appId !== jwt.aud) {
+      throw new BusinessError('BAD_REQUEST', { msg: 'App ID mismatch' })
     }
-    return this.app.token.signToken(tokenDoc)
+    await this.checkDeriveJWT(jwt, options)
+    const { clientApp } = await this.checkDeriveApp(appId, options)
+    const session = await this._getSessionOrFail(jwt.sid)
+    const token = await this._getTokenOrFail(jwt.jti)
+    await this.callHook('preExchange', session, token, options, environment)
+    const { installation } = await this.checkDeriveInstall(clientApp, token.userId)
+
+    const uaaaPermissions = installation.grantedPermissions
+      .map((p) => Permission.fromCompactString(p))
+      .filter((p) => p.appId === this.app.appId)
+    if (!uaaaPermissions.some((p) => p.test('/session/exchange'))) {
+      throw new BusinessError('INSUFFICIENT_PERMISSION', { required: ['/session/exchange'] })
+    }
+
+    const permissions = await this._resolvePermissions(clientApp, installation, options)
+    return { clientApp, installation, token, session, permissions }
   }
 
   /**
@@ -395,56 +446,8 @@ export class SessionManager extends Hookable<{
    * @param environment The environment of this operation
    */
   async exchange(jwt: ITokenPayload, options: ExchangeOptions, environment: ITokenEnvironment) {
-    const { clientAppId, securityLevel } = options
-    if (securityLevel > jwt.level) {
-      throw new BusinessError('INSUFFICIENT_SECURITY_LEVEL', { required: securityLevel })
-    }
-    const clientApp = await this._getAppOrFail(clientAppId)
-    if (securityLevel > clientApp.securityLevel) {
-      throw new BusinessError('BAD_REQUEST', { msg: 'Client App cannot hold the target level' })
-    }
-    const session = await this._getSessionOrFail(jwt.sid)
-    const token = await this._getTokenOrFail(jwt.jti)
-    await this.callHook('preExchange', session, token, options, environment)
-
-    const installation = await this.app.db.installations.findOne({
-      userId: token.userId,
-      appId: clientAppId,
-      disabled: { $ne: true }
-    })
-    if (!installation) {
-      throw new BusinessError('APP_NOT_INSTALLED', {})
-    }
-
-    const permissions = await this._resolvePermissions(
-      clientApp,
-      installation,
-      options.permissions,
-      options.optionalPermissions
-    )
-    await this.app.db.sessions.updateOne(
-      { _id: token.sessionId, terminated: { $ne: true } },
-      { $addToSet: { authorizedApps: clientAppId } }
-    )
-    const now = Date.now()
-    return this.app.token.createAndSignToken(
-      {
-        sessionId: token.sessionId,
-        userId: token.userId,
-        clientAppId,
-        permissions,
-        parentId: token._id,
-        securityLevel,
-        createdAt: now,
-        updatedAt: now,
-        activatedAt: token.activatedAt,
-        expiresAt: token.activatedAt + this.app.token.getSessionTokenTimeout(securityLevel),
-        tokenTimeout: this.app.token.getTokenTimeout(securityLevel),
-        refreshTimeout: this.app.token.getRefreshTimeout(securityLevel),
-        environment
-      },
-      { generateCode: false, timestamp: now }
-    )
+    const { token, permissions } = await this.checkExchange(jwt, options, environment)
+    return this.deriveToken(token, permissions, options, environment)
   }
 
   private _getRemoteState(userCode: string) {

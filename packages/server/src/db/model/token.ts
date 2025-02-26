@@ -46,7 +46,7 @@ export interface ITokenDoc {
   /** Session ID */
   sessionId: string
   /** Token Client AppID */
-  clientAppId: string
+  appId: string
   /** Token's permissions. Array of compact UPM-URLs */
   permissions: string[]
   /** Token's security level' */

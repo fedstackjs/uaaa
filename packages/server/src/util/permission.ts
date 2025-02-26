@@ -13,6 +13,7 @@ export const UAAAPermissionDescriptionMap = {
   '/session/upgrade': { name: 'Upgrade token inside session', description: '' },
   '/session/downgrade': { name: 'Downgrade token inside session', description: '' },
   '/session/derive': { name: 'Derive token inside session', description: '' },
+  '/session/exchange': { name: 'Background login', description: '' },
   '/session/slient_authorize': { name: 'Allow sliently authorize', description: '' },
   '/session/remote_authorize': { name: 'Authorize remote clients', description: '' },
   '/user': { name: 'Get user info', description: '' },

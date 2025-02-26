@@ -9,7 +9,6 @@ const tAppConfig = type({
   plugins: 'string[]',
   port: 'number',
   deploymentUrl: type('string').narrow((s) => !s.endsWith('/')),
-  sessionTimeout: 'string',
   tokenTimeout: 'string|string[]',
   refreshTimeout: 'string|string[]',
   'sessionTokenTimeout?': 'string|string[]',

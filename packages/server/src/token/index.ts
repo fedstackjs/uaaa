@@ -3,7 +3,6 @@ import { type } from 'arktype'
 import { Hookable } from 'hookable'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
-import { ObjectId } from 'mongodb'
 import { BusinessError, logger, Permission, tSecurityLevel } from '../util/index.js'
 import type { App, IAppDoc, ITokenDoc, SecurityLevel } from '../index.js'
 import ms from 'ms'
@@ -38,7 +37,6 @@ export class TokenManager extends Hookable<{}> {
   trustedUpstreamKeys: Record<string, KeyObject>
   trustedLocalKeys: Record<string, KeyObject>
 
-  sessionTimeout: number
   tokenTimeouts: number[]
   refreshTimeouts: number[]
   sessionTokenTimeouts: number[]
@@ -50,7 +48,6 @@ export class TokenManager extends Hookable<{}> {
     this.trustedUpstreamKeys = Object.create(null)
     this.trustedLocalKeys = Object.create(null)
 
-    this.sessionTimeout = ms(app.config.get('sessionTimeout'))
     this.tokenTimeouts = this._loadTimeouts(app.config.get('tokenTimeout'))
     this.sessionTokenTimeouts = this._loadTimeouts(
       app.config.get('sessionTokenTimeout') ?? app.config.get('tokenTimeout')
@@ -187,7 +184,7 @@ export class TokenManager extends Hookable<{}> {
           userId: token.userId,
           sessionId: token.sessionId,
           parentId: token.parentId ? token.parentId : { $exists: false },
-          clientAppId: token.clientAppId,
+          appId: token.appId,
           securityLevel: token.securityLevel,
           expiresAt: { $gt: timestamp },
           terminated: { $ne: true }
@@ -198,7 +195,7 @@ export class TokenManager extends Hookable<{}> {
             userId: token.userId,
             sessionId: token.sessionId,
             parentId: token.parentId,
-            clientAppId: token.clientAppId,
+            appId: token.appId,
             securityLevel: token.securityLevel,
             createdAt: token.createdAt,
             tokenTimeout: token.tokenTimeout,
@@ -291,7 +288,7 @@ export class TokenManager extends Hookable<{}> {
     }
     const token = await this.sign(
       {
-        client_id: tokenDoc.clientAppId,
+        client_id: tokenDoc.appId,
         sid: tokenDoc.sessionId,
         perm: permissions,
         level: tokenDoc.securityLevel,
@@ -312,7 +309,7 @@ export class TokenManager extends Hookable<{}> {
       {
         refreshToken,
         refreshExpiresAt: { $gt: Date.now() },
-        clientAppId: client.id,
+        appId: client.id,
         terminated: { $ne: true }
       },
       { $unset: { refreshToken: '' } }

@@ -78,7 +78,7 @@ export class OAuthManager {
         const tokenDoc = await tokens.findOneAndUpdate(
           {
             code: request.code,
-            clientAppId: client.id,
+            appId: client.id,
             terminated: { $ne: true }
           },
           { $unset: { code: '', challenge: '' } },
@@ -189,7 +189,7 @@ export class OAuthManager {
         const tokenDoc = await tokens.findOneAndUpdate(
           {
             code: response.code,
-            clientAppId: client.id,
+            appId: client.id,
             remote: true,
             terminated: { $ne: true }
           },
@@ -297,7 +297,7 @@ export class OAuthManager {
       this._checkSecurityLevel(clientApp.openid?.minSecurityLevel) ??
       '1'
     return this._authorizeUrl({
-      clientAppId: client_id,
+      appId: client_id,
       type: 'oidc',
       params: JSON.stringify(rest),
       securityLevel,
@@ -485,7 +485,7 @@ export class OAuthManager {
       '1'
 
     const remoteRequest: RemoteRequest = {
-      clientAppId: clientId,
+      appId: clientId,
       type: 'oidc',
       params: JSON.stringify(rest),
       securityLevel,
