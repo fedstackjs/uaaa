@@ -31,8 +31,8 @@
           <AppAvatar v-for="app of item.apps" size="36px" :key="app" :appId="app" />
         </div>
       </template>
-      <template v-slot:[`item.clientAppId`]="{ item }">
-        <AppAvatar size="36px" :appId="item.clientAppId ?? 'uaaa'" />
+      <template v-slot:[`item.appId`]="{ item }">
+        <AppAvatar size="36px" :appId="item.appId" />
       </template>
       <template v-slot:[`item.createdAt`]="{ item }">
         <VChip class="font-mono" :text="new Date(item.createdAt).toLocaleString()" />
@@ -79,7 +79,7 @@ const headers = [
   { title: t('msg.token-index'), key: 'index', sortable: false, minWidth: '96px' },
   { title: t('msg.security-level'), key: 'securityLevel', sortable: false, minWidth: '96px' },
   { title: t('msg.target-app'), key: 'targetAppId', sortable: false, minWidth: '96px' },
-  { title: t('msg.client-app'), key: 'clientAppId', sortable: false, minWidth: '96px' },
+  { title: t('msg.client-app'), key: 'appId', sortable: false, minWidth: '96px' },
   { title: t('msg.created-at'), key: 'createdAt', sortable: false },
   { title: t('msg.expires-at'), key: 'expiresAt', sortable: false },
   { title: t('msg.actions'), key: '_actions', sortable: false }

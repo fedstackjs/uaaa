@@ -90,8 +90,7 @@ export class WebauthnImpl extends CredentialImpl {
       })
       return {
         credentialId: credential._id,
-        securityLevel: credential.securityLevel,
-        expiresIn: ms('30min')
+        securityLevel: credential.securityLevel
       }
     } catch (err) {
       throw new BusinessError('BAD_REQUEST', { msg: `${err}` })

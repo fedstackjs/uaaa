@@ -1,6 +1,6 @@
 <template>
   <VAppBar border>
-    <VAppBarNavIcon @click="model = !model" />
+    <VAppBarNavIcon v-if="mode !== 'authorize'" @click="model = !model" />
     <VToolbarItems>
       <VBtn to="/" rounded="lg" :active="false">
         <VIcon size="42">
@@ -23,10 +23,9 @@ import { useDisplay } from 'vuetify'
 
 const model = defineModel<boolean>()
 defineProps<{
-  console?: boolean
+  mode?: 'authorize' | 'console'
 }>()
 
 const config = useRuntimeConfig()
-const { t } = useI18n()
 const { mdAndUp } = useDisplay()
 </script>

@@ -62,29 +62,9 @@ export const tAppManifest = type({
 
 export type IAppManifest = typeof tAppManifest.infer
 
-export interface IAppDoc {
+export interface IAppDoc extends Omit<IAppManifest, 'appId'> {
   /** The app id is the unique app id [a-zA-Z._-]+ */
   _id: string
-  version: number
-
-  name: string
-  description?: string
-  icon?: string
-
-  providedPermissions: IAppProvidedPermission[]
-
-  requestedClaims: IAppRequestedClaim[]
-  requestedPermissions: IAppRequestedPermission[]
-
-  callbackUrls: string[]
-  variables: Record<string, string>
-  secrets: Record<string, string>
-
-  /** Max security level can be hold by this app */
-  securityLevel: SecurityLevel
-
-  config?: IAppGeneralConfig
-  openid?: IAppOpenIdConfig
 
   /** Managed properties */
   disabled?: boolean | undefined

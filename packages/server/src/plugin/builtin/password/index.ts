@@ -36,12 +36,10 @@ class PasswordImpl extends CredentialImpl {
   readonly type = 'password'
   defaultLevel = SECURITY_LEVEL.MEDIUM
   passwordExpiration
-  passwordTimeout
 
   constructor(config: IPasswordConfig) {
     super()
     this.passwordExpiration = this.parseTimeout(config.passwordExpiration ?? '100y')
-    this.passwordTimeout = this.parseTimeout(config.passwordTimeout ?? '60min')
   }
 
   private parseTimeout(timeout: number | string) {
@@ -83,8 +81,7 @@ class PasswordImpl extends CredentialImpl {
     return {
       userId: user._id,
       credentialId: credential._id,
-      securityLevel: SECURITY_LEVEL.MEDIUM,
-      expiresIn: this.passwordTimeout
+      securityLevel: SECURITY_LEVEL.MEDIUM
     }
   }
 
@@ -133,8 +130,7 @@ class PasswordImpl extends CredentialImpl {
     await ctx.manager.checkCredentialUse(credential._id)
     return {
       credentialId: credential._id,
-      securityLevel: targetLevel,
-      expiresIn: this.passwordTimeout
+      securityLevel: targetLevel
     }
   }
 

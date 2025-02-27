@@ -129,8 +129,7 @@ export class EmailImpl extends CredentialImpl {
 
     return {
       credentialId: credential._id,
-      securityLevel: targetLevel,
-      expiresIn: ms('1d')
+      securityLevel: targetLevel
     }
   }
 

@@ -29,6 +29,8 @@ const toast = useToast()
 const manifest = ref<IAppManifest>({
   appId: 'com.example.appid',
   name: 'Example App',
+  version: 0,
+  changelog: [],
   description: 'This is an example app',
   providedPermissions: [],
   requestedClaims: [
@@ -39,7 +41,6 @@ const manifest = ref<IAppManifest>({
   callbackUrls: [],
   variables: {},
   secrets: {},
-  promoted: true,
   securityLevel: 1
 })
 

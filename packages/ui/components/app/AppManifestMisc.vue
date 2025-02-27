@@ -1,8 +1,6 @@
 <template>
   <VCard flat>
     <VCardText>
-      <VCheckbox v-model="manifest.promoted" label="Promoted" />
-      <VDivider />
       <template v-if="manifest.openid">
         <VCheckbox v-model="manifest.openid.allowPublicClient" label="Allow public client" />
         <VTextField

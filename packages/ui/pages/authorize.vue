@@ -20,9 +20,10 @@
 
 <script setup lang="ts">
 definePageMeta({
-  layout: 'plain',
+  layout: 'authorize',
   middleware: 'verifyauth'
 })
+
 useHead({
   title: 'Authorize'
 })

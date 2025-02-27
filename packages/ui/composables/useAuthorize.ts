@@ -53,7 +53,7 @@ class OpenIDConnector extends Connector {
     const challenge = code_challenge && `${code_challenge_method ?? 'plain'}:${code_challenge}`
     const resp = await api.session.derive.$post({
       json: {
-        clientAppId: params.clientAppId,
+        appId: params.appId,
         securityLevel: params.securityLevel,
         permissions: params.permissions,
         optionalPermissions: params.optionalPermissions,
@@ -124,7 +124,7 @@ const isConnectorType = (value: string): value is ConnectorType => value in conn
 export interface IAuthorizeParams {
   type: ConnectorType
   connector: Connector
-  clientAppId: string
+  appId: string
   securityLevel: SecurityLevel
   permissions?: string[]
   optionalPermissions?: string[]
@@ -136,8 +136,8 @@ export interface IAuthorizeParams {
 const parseAuthorizeParams = (query: LocationQuery) => {
   const type = toSingle(query.type, 'oidc')
   if (!isConnectorType(type)) return { error: `Invalid connector type: ${type}` }
-  const clientAppId = toSingle(query.clientAppId, '')
-  if (!clientAppId) return { error: 'Missing clientAppId' }
+  const appId = toSingle(query.appId, '')
+  if (!appId) return { error: 'Missing appId' }
   const connector = connectors[type]
   const securityLevel = +toSingle(query.securityLevel, '0')
   if (!Number.isInteger(securityLevel) || securityLevel < 0 || securityLevel > 4) {
@@ -147,7 +147,7 @@ const parseAuthorizeParams = (query: LocationQuery) => {
   const params: IAuthorizeParams = {
     type,
     connector,
-    clientAppId,
+    appId,
     securityLevel: securityLevel as SecurityLevel,
     userCode
   }

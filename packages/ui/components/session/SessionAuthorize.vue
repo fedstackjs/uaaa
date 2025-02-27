@@ -64,7 +64,7 @@ const showGrant = ref(false)
 const grantedPermissions = ref<string[]>([])
 
 const { data: app } = await useAsyncData(async () => {
-  const resp = await api.public.app[':id'].$get({ param: { id: props.params.clientAppId } })
+  const resp = await api.public.app[':id'].$get({ param: { id: props.params.appId } })
   const { app } = await resp.json()
   return app
 })
@@ -81,7 +81,7 @@ const { run: authorize, running } = useTask(async () => {
       router.replace({
         path: '/install',
         query: {
-          appId: props.params.clientAppId,
+          appId: props.params.appId,
           redirect: route.fullPath
         }
       })
@@ -120,7 +120,7 @@ const {
 onMounted(async () => {
   const resp = await api.session.try_derive.$post({
     json: {
-      clientAppId: props.params.clientAppId,
+      appId: props.params.appId,
       securityLevel: props.params.securityLevel,
       permissions: props.params.permissions,
       optionalPermissions: props.params.optionalPermissions,
@@ -136,7 +136,7 @@ onMounted(async () => {
       router.replace({
         path: '/install',
         query: {
-          appId: props.params.clientAppId,
+          appId: props.params.appId,
           redirect: route.fullPath
         }
       })
@@ -149,9 +149,10 @@ onMounted(async () => {
   grantedPermissions.value = permissions
   const parsedPermissions = permissions
     .map((perm) => Permission.fromCompactString(perm))
-    .filter((perm) => perm.appId === 'uaaa')
+    .filter((perm) => perm.appId === api.appId.value)
   if (parsedPermissions.some((perm) => perm.test('/session/slient_authorize'))) {
-    start(5)
+    // start(5)
+    authorize()
   }
 })
 </script>
