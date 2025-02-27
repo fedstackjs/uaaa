@@ -327,7 +327,7 @@ export class SessionManager extends Hookable<{
     return this.app.token.signToken(tokenDoc)
   }
 
-  async checkDeriveJWT(jwt: ITokenPayload, options: DeriveOptions | ExchangeOptions) {
+  async checkDeriveJwt(jwt: ITokenPayload, options: DeriveOptions | ExchangeOptions) {
     const { securityLevel, signToken = false, confidential = true } = options
 
     if (confidential && signToken) {
@@ -408,7 +408,7 @@ export class SessionManager extends Hookable<{
     }
 
     const { appId } = options
-    await this.checkDeriveJWT(jwt, options)
+    await this.checkDeriveJwt(jwt, options)
     const { clientApp } = await this.checkDeriveApp(appId, options)
     const session = await this._getSessionOrFail(jwt.sid)
     const token = await this._getTokenOrFail(jwt.jti)
@@ -447,7 +447,7 @@ export class SessionManager extends Hookable<{
     if (appId !== jwt.aud) {
       throw new BusinessError('BAD_REQUEST', { msg: 'App ID mismatch' })
     }
-    await this.checkDeriveJWT(jwt, options)
+    await this.checkDeriveJwt(jwt, options)
     const { clientApp } = await this.checkDeriveApp(appId, options)
     const session = await this._getSessionOrFail(jwt.sid)
     const token = await this._getTokenOrFail(jwt.jti)

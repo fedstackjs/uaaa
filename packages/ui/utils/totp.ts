@@ -40,9 +40,9 @@ export async function generateTOTPSecretUrl() {
       return JSON.parse(localStorage.getItem(cacheKey) ?? '')
     } catch {}
   }
-  const claims = await api.getSessionClaimMap()
+  await api.getSessionClaims()
   const issuer = getIssuer()
-  const username = claims.username?.value ?? 'UAAA User'
+  const username = api.claims.value.username?.value ?? 'UAAA User'
   const secret = generateTOTPSecret()
   const label = encodeURIComponent(`${issuer}:${username}`)
   const params = new URLSearchParams({ secret, issuer })

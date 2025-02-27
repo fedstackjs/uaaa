@@ -11,7 +11,7 @@
     <template v-slot:activator="{ props }">
       <VBtn
         v-bind="props"
-        :loading="status === 'pending'"
+        :loading="!username"
         prepend-icon="mdi-account"
         class="text-none"
         variant="tonal"
@@ -21,7 +21,7 @@
           {{ t('msg.user-menu') }}
         </template>
         <template v-else>
-          {{ data?.find(({ name }) => name === 'username')?.value }}
+          {{ username }}
         </template>
       </VBtn>
     </template>
@@ -44,22 +44,8 @@ const links = [
   { to: '/auth/signout', title: 'pages.auth.signout', prependIcon: 'mdi-logout' }
 ]
 
-const { data, status, refresh } = await useAsyncData(async () => {
-  try {
-    const claims = await api.getSessionClaims()
-    return claims
-  } catch (err) {
-    if (isAPIError(err)) {
-      switch (err.code) {
-        case 'FORBIDDEN': {
-          api.logout()
-        }
-      }
-    }
-  }
-})
-
-const { effectiveToken } = api
+const { effectiveToken, claims } = api
+const username = computed(() => claims.value?.username?.value)
 const color = computed(() => {
   switch (effectiveToken.value?.decoded.level) {
     case 4:
@@ -72,11 +58,6 @@ const color = computed(() => {
       return 'info'
   }
 })
-
-watch(
-  () => effectiveToken.value?.decoded.level,
-  () => refresh()
-)
 
 watch(
   () => effectiveToken.value,

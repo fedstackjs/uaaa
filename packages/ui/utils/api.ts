@@ -7,7 +7,8 @@ import type {
   IClaim,
   ErrorName,
   IErrorMap,
-  SecurityLevel
+  SecurityLevel,
+  IUserClaims
 } from '@uaaa/server'
 import type { IEmailApi } from '@uaaa/server/lib/plugin/builtin/email'
 import type { IWebauthnApi } from '@uaaa/server/lib/plugin/builtin/webauthn'
@@ -59,10 +60,11 @@ export class ApiManager {
   effectiveToken
   appId
   isLoggedIn
-  isAdmin
   securityLevel
   refreshTokensDebounced
   tokensInit
+  claims
+  isAdmin
 
   public
   session
@@ -79,13 +81,14 @@ export class ApiManager {
       () => this.tokens.value[this.securityLevel.value] ?? null
     )
     this.appId = computed(() => this.effectiveToken.value?.decoded.client_id ?? '')
-    this.isAdmin = ref(false)
     this.isLoggedIn = computed(() => this.securityLevel.value !== -1)
     this.refreshTokensDebounced = useDebounceFn(
       () => navigator.locks.request(`tokens`, this._refreshTokens.bind(this)),
       1000
     )
     this.tokensInit = navigator.locks.request(`tokens`, this._refreshTokens.bind(this))
+    this.claims = useLocalStorage<Partial<IUserClaims>>('session_claims', {}, options)
+    this.isAdmin = computed(() => this.claims.value.is_admin?.value === 'true')
 
     const headers = this.getHeaders.bind(this)
     this.public = hc<IPublicApi>('/api/public')
@@ -95,6 +98,8 @@ export class ApiManager {
 
     this.email = hc<IEmailApi>('/api/plugin/email', { headers })
     this.webauthn = hc<IWebauthnApi>('/api/plugin/webauthn', { headers })
+
+    this.isLoggedIn.value && setTimeout(() => this.getSessionClaims().catch(console.error), 0)
   }
 
   private async _refreshTokenFor(level: SecurityLevel, now = Date.now()) {
@@ -114,7 +119,7 @@ export class ApiManager {
         this.tokens.value[level] = {
           token: newToken,
           refreshToken,
-          decoded: ApiManager.parseJWT(newToken)
+          decoded: ApiManager.parseJwt(newToken)
         }
         console.log(`[API] Token at level ${level} refreshed`)
         return
@@ -164,7 +169,7 @@ export class ApiManager {
       const {
         token: { token, refreshToken }
       } = await resp.json()
-      this.tokens.value[level] = { token, refreshToken, decoded: ApiManager.parseJWT(token) }
+      this.tokens.value[level] = { token, refreshToken, decoded: ApiManager.parseJwt(token) }
     } catch (err) {
       console.log(`[API] Token downgrade failed: ${this._formatError(err)}`)
     }
@@ -174,7 +179,7 @@ export class ApiManager {
    * Fill token store
    */
   private async _applyToken(token: string, refreshToken?: string) {
-    const decoded = ApiManager.parseJWT(token)
+    const decoded = ApiManager.parseJwt(token)
     const { jti, level } = decoded
     console.group(`[API] Applying token ${jti}`)
     this.tokens.value[level] = { token, refreshToken, decoded }
@@ -200,7 +205,8 @@ export class ApiManager {
     const {
       token: { token, refreshToken }
     } = await resp.json()
-    return navigator.locks.request(`tokens`, () => this._applyToken(token, refreshToken))
+    await navigator.locks.request(`tokens`, () => this._applyToken(token, refreshToken))
+    await this.getSessionClaims()
   }
 
   async verify(type: string, targetLevel: SecurityLevel, payload: unknown) {
@@ -210,7 +216,8 @@ export class ApiManager {
     const {
       token: { token, refreshToken }
     } = await resp.json()
-    return navigator.locks.request(`tokens`, () => this._applyToken(token, refreshToken))
+    await navigator.locks.request(`tokens`, () => this._applyToken(token, refreshToken))
+    await this.getSessionClaims()
   }
 
   async logout() {
@@ -223,23 +230,24 @@ export class ApiManager {
     window.open('/', '_self')
   }
 
-  async getSessionClaimMap() {
+  async getSessionClaims(): Promise<IUserClaim[]> {
     const resp = await api.session.claim.$get()
     await this.checkResponse(resp)
     const { claims } = await resp.json()
-    this.isAdmin.value = claims.is_admin?.value === 'true'
-    return claims
-  }
-
-  async getSessionClaims(): Promise<IUserClaim[]> {
-    const claims = await this.getSessionClaimMap()
+    this.claims.value = {
+      ...this.claims.value,
+      ...claims
+    }
     return Object.entries(claims).map(([name, claim]) => ({ name, ...claim }))
   }
 
   async getUserClaims(): Promise<IUserClaim[]> {
     const resp = await api.user.claim.$get()
     const { claims } = await resp.json()
-    this.isAdmin.value = claims.is_admin?.value === 'true'
+    this.claims.value = {
+      ...this.claims.value,
+      ...claims
+    }
     return Object.entries(claims).map(([name, claim]) => ({ name, ...claim }))
   }
 
@@ -265,7 +273,7 @@ export class ApiManager {
     return err instanceof Error ? err.message : `${err}`
   }
 
-  static parseJWT(token: string) {
+  static parseJwt(token: string) {
     return JSON.parse(atob(token.split('.')[1])) as ITokenPayload
   }
 }
