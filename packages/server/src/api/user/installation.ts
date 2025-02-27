@@ -47,13 +47,18 @@ export const userInstallationApi = new Hono()
     ),
     async (ctx) => {
       const { app, token } = ctx.var
-      const { appId, grantedPermissions, grantedClaims } = ctx.req.valid('json')
+      const { appId, ...req } = ctx.req.valid('json')
       const clientApp = await app.db.apps.findOne({ _id: appId, disabled: { $ne: true } })
       const user = await app.db.users.findOne({ _id: token.sub })
       if (!clientApp || !user) throw new BusinessError('NOT_FOUND', { msg: 'App not found' })
       if (clientApp.disabled) {
         throw new BusinessError('BAD_REQUEST', { msg: `App ${appId} is disabled` })
       }
+
+      const allowedPermissions = new Set([...clientApp.requestedPermissions.map((p) => p.perm)])
+      const allowedClaims = new Set([...clientApp.requestedClaims.map((c) => c.name)])
+      const grantedPermissions = req.grantedPermissions.filter((p) => allowedPermissions.has(p))
+      const grantedClaims = req.grantedClaims.filter((c) => allowedClaims.has(c))
 
       const permissionSet = new Set(grantedPermissions)
       const missingPermissions = clientApp.requestedPermissions
@@ -74,7 +79,12 @@ export const userInstallationApi = new Hono()
       await app.db.installations.updateOne(
         { appId, userId: token.sub },
         {
-          $set: { grantedPermissions, grantedClaims, updatedAt: now },
+          $set: {
+            version: clientApp.version,
+            grantedPermissions,
+            grantedClaims,
+            updatedAt: now
+          },
           $setOnInsert: { createdAt: now }
         },
         { upsert: true }

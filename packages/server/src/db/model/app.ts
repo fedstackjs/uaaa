@@ -23,6 +23,13 @@ export const tAppRequestedPermission = type({
 })
 export type IAppRequestedPermission = typeof tAppRequestedPermission.infer
 
+export const tAppGeneralConfig = type({
+  'promoted?': 'boolean',
+  'autoInstall?': 'boolean'
+})
+
+export type IAppGeneralConfig = typeof tAppGeneralConfig.infer
+
 export const tAppOpenIdConfig = type({
   'additionalClaims?': 'Record<string,string>',
   'allowPublicClient?': 'boolean',
@@ -30,9 +37,15 @@ export const tAppOpenIdConfig = type({
 })
 export type IAppOpenIdConfig = typeof tAppOpenIdConfig.infer
 
+export const tChangelogItem = type({
+  versionName: 'string',
+  content: 'string'
+})
+
 export const tAppManifest = type({
   appId: type('string').narrow((id) => rAppId.test(id)),
   name: 'string',
+  version: type('number').narrow((v) => Number.isSafeInteger(v) && v >= 0),
   'description?': 'string',
   'icon?': 'string',
   providedPermissions: tAppProvidedPermission.array(),
@@ -41,15 +54,18 @@ export const tAppManifest = type({
   callbackUrls: 'string[]',
   variables: 'Record<string,string>',
   secrets: 'Record<string,string>',
-  'promoted?': 'boolean',
+  changelog: tChangelogItem.array(),
+  'config?': tAppGeneralConfig,
   'openid?': tAppOpenIdConfig,
   securityLevel: tSecurityLevel
-})
+}).narrow((manifest) => manifest.version === manifest.changelog.length)
+
 export type IAppManifest = typeof tAppManifest.infer
 
 export interface IAppDoc {
   /** The app id is the unique app id [a-zA-Z._-]+ */
   _id: string
+  version: number
 
   name: string
   description?: string
@@ -64,11 +80,10 @@ export interface IAppDoc {
   variables: Record<string, string>
   secrets: Record<string, string>
 
-  promoted?: boolean | undefined
-
   /** Max security level can be hold by this app */
   securityLevel: SecurityLevel
 
+  config?: IAppGeneralConfig
   openid?: IAppOpenIdConfig
 
   /** Managed properties */

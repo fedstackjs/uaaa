@@ -35,11 +35,15 @@ export const consoleAppApi = new Hono()
     async (ctx) => {
       const { app } = ctx.var
       const { id } = ctx.req.valid('param')
-      const { appId, ...update } = ctx.req.valid('json')
+      const { appId, ...manifest } = ctx.req.valid('json')
       if (appId && appId !== id) {
         throw new BusinessError('BAD_REQUEST', { msg: 'appId in body must match id in path' })
       }
-      await app.db.apps.updateOne({ _id: appId }, { $set: update }, { ignoreUndefined: true })
+      await app.db.apps.updateOne(
+        { _id: appId, version: { $lte: manifest.version } },
+        { $set: manifest },
+        { ignoreUndefined: true }
+      )
       return ctx.json({})
     }
   )

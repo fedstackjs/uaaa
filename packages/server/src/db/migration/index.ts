@@ -60,6 +60,10 @@ export class MigrationManager extends Hookable<{
       // Also Session Document is changed
       await this.db.sessions.deleteMany({})
 
+      // App version is added
+      await this.db.apps.updateMany({}, { $set: { version: 0 } })
+      await this.db.installations.updateMany({}, { $set: { version: 0 } })
+
       await this.db.setSystemConfig('version', 2)
     })
   }

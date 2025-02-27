@@ -354,15 +354,42 @@ export class SessionManager extends Hookable<{
   }
 
   async checkDeriveInstall(clientApp: IAppDoc, userId: string) {
-    const installation = await this.app.db.installations.findOne({
-      userId,
-      appId: clientApp._id,
-      disabled: { $ne: true }
-    })
-    if (!installation) {
-      throw new BusinessError('APP_NOT_INSTALLED', {})
+    if (clientApp.config?.autoInstall) {
+      const now = Date.now()
+      const installation = await this.app.db.installations.findOneAndUpdate(
+        { userId, appId: clientApp._id },
+        {
+          $setOnInsert: { createdAt: now },
+          $set: { version: clientApp.version, updatedAt: now },
+          $addToSet: {
+            grantedPermissions: {
+              $each: clientApp.requestedPermissions.filter((p) => p.required).map((p) => p.perm)
+            },
+            grantedClaims: {
+              $each: clientApp.requestedClaims.filter((c) => c.required).map((c) => c.name)
+            }
+          }
+        },
+        { returnDocument: 'after', upsert: true }
+      )
+      if (!installation || installation.disabled) {
+        throw new BusinessError('APP_DISABLED', {})
+      }
+      return { installation }
+    } else {
+      const installation = await this.app.db.installations.findOne({
+        userId,
+        appId: clientApp._id,
+        version: { $gte: clientApp.version }
+      })
+      if (!installation) {
+        throw new BusinessError('APP_NOT_INSTALLED', {})
+      }
+      if (installation.disabled) {
+        throw new BusinessError('APP_DISABLED', {})
+      }
+      return { installation }
     }
-    return { installation }
   }
 
   /**

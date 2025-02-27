@@ -10,6 +10,7 @@ export interface IErrorMap {
   NOT_FOUND: { msg: string }
   BAD_REQUEST: { msg: string }
   APP_NOT_INSTALLED: {}
+  APP_DISABLED: {}
   MISSING_REQUIRED_PERMISSIONS: { perms: string[] }
   MISSING_REQUIRED_CLAIMS: { claims: string[] }
   MISSING_VERIFIED_CLAIMS: { claims: string[] }
@@ -50,7 +51,10 @@ export const ErrorStatusMap: {
   INVALID_TYPE: 400,
   NOT_FOUND: 404,
   BAD_REQUEST: 400,
+
   APP_NOT_INSTALLED: 400,
+  APP_DISABLED: 400,
+
   MISSING_REQUIRED_PERMISSIONS: 400,
   MISSING_REQUIRED_CLAIMS: 400,
   MISSING_VERIFIED_CLAIMS: 400,
