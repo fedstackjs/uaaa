@@ -226,6 +226,7 @@ export class ApiManager {
       console.log(`[API] Logging out`)
       this.tokens.value = []
       this.securityLevel.value = null
+      this.claims.value = {}
     })
     window.open('/', '_self')
   }

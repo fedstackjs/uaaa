@@ -37,9 +37,9 @@ export class TokenManager extends Hookable<{}> {
   trustedUpstreamKeys: Record<string, KeyObject>
   trustedLocalKeys: Record<string, KeyObject>
 
-  tokenTimeouts: number[]
+  jwtTimeouts: number[]
   refreshTimeouts: number[]
-  sessionTokenTimeouts: number[]
+  tokenTimeouts: number[]
 
   constructor(public app: App) {
     super()
@@ -49,9 +49,7 @@ export class TokenManager extends Hookable<{}> {
     this.trustedLocalKeys = Object.create(null)
 
     this.tokenTimeouts = this._loadTimeouts(app.config.get('tokenTimeout'))
-    this.sessionTokenTimeouts = this._loadTimeouts(
-      app.config.get('sessionTokenTimeout') ?? app.config.get('tokenTimeout')
-    )
+    this.jwtTimeouts = this._loadTimeouts(app.config.get('jwtTimeout'))
     this.refreshTimeouts = this._loadTimeouts(app.config.get('refreshTimeout'))
   }
 
@@ -198,7 +196,7 @@ export class TokenManager extends Hookable<{}> {
             appId: token.appId,
             securityLevel: token.securityLevel,
             createdAt: token.createdAt,
-            tokenTimeout: token.tokenTimeout,
+            jwtTimeout: token.jwtTimeout,
             refreshTimeout: token.refreshTimeout
           },
           $set: {
@@ -259,24 +257,24 @@ export class TokenManager extends Hookable<{}> {
       throw new BusinessError('TOKEN_INVALID_CONFIG', {})
     }
 
-    const tokenExpiresAt = Math.min(tokenDoc.expiresAt, now + tokenDoc.tokenTimeout)
+    const jwtExpiresAt = Math.min(tokenDoc.expiresAt, now + tokenDoc.jwtTimeout)
     let refreshToken: string | undefined
     let refreshExpiresAt: number | undefined
-    if (tokenExpiresAt < tokenDoc.expiresAt) {
+    if (jwtExpiresAt < tokenDoc.expiresAt) {
       refreshToken = nanoid()
       refreshExpiresAt = Math.min(tokenDoc.expiresAt, now + tokenDoc.refreshTimeout)
     }
     await this.app.db.tokens.updateOne(
       { _id: tokenDoc._id },
       {
-        $set: { refreshToken, refreshExpiresAt, tokenExpiresAt, lastIssuedAt: now },
+        $set: { refreshToken, refreshExpiresAt, jwtExpiresAt, lastIssuedAt: now },
         $inc: { issuedCount: 1 }
       },
       { ignoreUndefined: true }
     )
     await this.app.db.sessions.updateOne(
       { _id: tokenDoc.sessionId },
-      { $max: { expiresAt: Math.max(tokenExpiresAt, refreshExpiresAt ?? 0) } }
+      { $max: { expiresAt: Math.max(jwtExpiresAt, refreshExpiresAt ?? 0) } }
     )
 
     const permissions = tokenDoc.permissions
@@ -293,7 +291,7 @@ export class TokenManager extends Hookable<{}> {
         perm: permissions,
         level: tokenDoc.securityLevel,
         iat: Math.floor(now / 1000),
-        exp: Math.floor(tokenExpiresAt / 1000)
+        exp: Math.floor(jwtExpiresAt / 1000)
       },
       { subject: tokenDoc.userId, jwtid: tokenDoc._id, audience: targetAppId }
     )
@@ -360,15 +358,15 @@ export class TokenManager extends Hookable<{}> {
     return { jwt, payload }
   }
 
-  getTokenTimeout(securityLevel: SecurityLevel, suggested?: number) {
-    return suggested ?? this.tokenTimeouts[securityLevel]
+  getJwtTimeout(securityLevel: SecurityLevel, suggested?: number) {
+    return suggested ?? this.jwtTimeouts[securityLevel]
   }
 
   getRefreshTimeout(securityLevel: SecurityLevel, suggested?: number) {
     return suggested ?? this.refreshTimeouts[securityLevel]
   }
 
-  getSessionTokenTimeout(securityLevel: SecurityLevel, suggested?: number) {
-    return suggested ?? this.sessionTokenTimeouts[securityLevel]
+  getTokenTimeout(securityLevel: SecurityLevel, suggested?: number) {
+    return suggested ?? this.tokenTimeouts[securityLevel]
   }
 }

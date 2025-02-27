@@ -47,7 +47,7 @@
             :text="t('msg.expired')"
           />
           <VChip
-            v-else-if="(item.tokenExpiresAt ?? 0) < Date.now()"
+            v-else-if="(item.jwtExpiresAt ?? 0) < Date.now()"
             color="warning"
             :text="t('msg.inactive')"
           />

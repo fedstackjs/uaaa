@@ -369,7 +369,7 @@ export class OAuthManager {
       ...mappedClaims,
       aud: appId,
       // TODO: configure this timeout
-      exp: now + ctx.var.app.token.getSessionTokenTimeout(SECURITY_LEVEL.LOW),
+      exp: now + ctx.var.app.token.getTokenTimeout(SECURITY_LEVEL.LOW),
       iat: now,
       nonce
     })

@@ -9,9 +9,9 @@ const tAppConfig = type({
   plugins: 'string[]',
   port: 'number',
   deploymentUrl: type('string').narrow((s) => !s.endsWith('/')),
-  tokenTimeout: 'string|string[]',
+  jwtTimeout: 'string|string[]',
   refreshTimeout: 'string|string[]',
-  'sessionTokenTimeout?': 'string|string[]',
+  tokenTimeout: 'string|string[]',
   'realIpHeader?': 'string',
   'trustedUpstreamIssuers?': 'string[]',
   'openidClaimConfig?': type.Record(

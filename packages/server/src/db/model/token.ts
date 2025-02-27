@@ -73,9 +73,9 @@ export interface ITokenDoc {
   refreshTimeout: number
 
   /** JWT expires at */
-  tokenExpiresAt?: number
+  jwtExpiresAt?: number
   /** JWT timeout */
-  tokenTimeout: number
+  jwtTimeout: number
 
   /** Token's last issue time */
   lastIssuedAt?: number
