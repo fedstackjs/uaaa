@@ -10,8 +10,6 @@ outline: deep
 
 ## 清单文件
 
-<!-- Every application in UAAA has a manifest that describes the application's configuration and permissions. You can write the manifest in `JSON/YAML/TOML` format. Here is an example of an application manifest: -->
-
 每个 UAAA 中的应用都有一个清单文件，用于描述应用的配置和权限。您可以使用 `JSON/YAML/TOML` 格式编写清单文件。以下是一个`YAML`应用清单文件的示例：
 
 ```yaml
@@ -19,6 +17,7 @@ appId: com.example.app # The application ID
 name: Example App # The application name
 description: An example application # The application description
 icon: https://example.com/icon.png # The application icon
+
 providedPermissions: # Array of permissions provided by the application
   - name: Read user data # The permission name
     description: Allow the application to read user data # The permission description
@@ -34,11 +33,23 @@ requestedClaims: # Array of claims requested by the application
     verified: true # Whether the claim must be verified
 callbackUrls: # Array of callback URLs
   - https://example.com/callback
+
 variables: # Application variables
   example_var: aaa
 secrets: # Application secrets
   example_secret: bbb
+
 securityLevel: 0 # Security level that the application can hold
+config: # optional general config
+  autoInstall: true # Whether the application can be auto-installed
+openid: # optional OpenID config
+  additionalClaims: # OpenID Connect Claims to be added based on UAAA claims
+    example: ${realname}_${email}
+
+version: 1 # Application version in number
+changelog: # Application changelog, must match the version
+  - versionName: '1.0.0'
+    changes: Some updates
 ```
 
 如果要注册一个应用程序，首先创建一个清单文件并将其提交给 UAAA 管理员。
