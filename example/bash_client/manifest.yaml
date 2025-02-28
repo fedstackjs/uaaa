@@ -1,6 +1,7 @@
 appId: org.fedstack.bash_client
 name: Bash Client
 description: OAuth2 Bash客户端
+version: 0
 providedPermissions: []
 requestedClaims:
   - name: email
