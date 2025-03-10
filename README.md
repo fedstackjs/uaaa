@@ -19,3 +19,11 @@
 
   </div>
 </div>
+
+## Build Images
+
+```sh
+TAG=latest
+docker build . -f ./packages/server/Dockerfile -t git.pku.edu.cn/uaaa/server:"$TAG"
+docker build . -f ./packages/ui/Dockerfile -t git.pku.edu.cn/uaaa/ui:"$TAG"
+```
