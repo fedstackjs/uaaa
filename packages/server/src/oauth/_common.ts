@@ -296,11 +296,16 @@ export class OAuthManager {
       this._checkSecurityLevel('security_level' in rest && rest.security_level) ??
       this._checkSecurityLevel(clientApp.openid?.minSecurityLevel) ??
       '1'
+    const confidential =
+      'confidential' in rest && clientApp.openid?.allowPublicClient
+        ? `${rest['confidential']}`
+        : '1'
     return this._authorizeUrl({
       appId: client_id,
       type: 'oidc',
       params: JSON.stringify(rest),
       securityLevel,
+      confidential,
       ...this.scopeToPermissions(scope)
     })
   }

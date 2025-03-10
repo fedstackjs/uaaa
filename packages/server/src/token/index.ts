@@ -258,12 +258,8 @@ export class TokenManager extends Hookable<{}> {
     }
 
     const jwtExpiresAt = Math.min(tokenDoc.expiresAt, now + tokenDoc.jwtTimeout)
-    let refreshToken: string | undefined
-    let refreshExpiresAt: number | undefined
-    if (jwtExpiresAt < tokenDoc.expiresAt) {
-      refreshToken = nanoid()
-      refreshExpiresAt = Math.min(tokenDoc.expiresAt, now + tokenDoc.refreshTimeout)
-    }
+    const refreshToken = nanoid()
+    const refreshExpiresAt = Math.min(tokenDoc.expiresAt, now + tokenDoc.refreshTimeout)
     await this.app.db.tokens.updateOne(
       { _id: tokenDoc._id },
       {
@@ -274,7 +270,7 @@ export class TokenManager extends Hookable<{}> {
     )
     await this.app.db.sessions.updateOne(
       { _id: tokenDoc.sessionId },
-      { $max: { expiresAt: Math.max(jwtExpiresAt, refreshExpiresAt ?? 0) } }
+      { $max: { expiresAt: Math.max(jwtExpiresAt, refreshExpiresAt) } }
     )
 
     const permissions = tokenDoc.permissions
