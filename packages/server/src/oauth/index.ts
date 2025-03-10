@@ -1,9 +1,11 @@
-import { arktypeValidator } from '@hono/arktype-validator'
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { arktypeValidator } from '@hono/arktype-validator'
 import { verifyAuthorizationJwt, verifyPermission } from '../api/_middleware.js'
 import { type } from 'arktype'
 
 export const oauthWellKnownRouter = new Hono()
+  .use(cors())
   // OIDC Discovery
   // https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
   .get('/openid-configuration', async (ctx) => {
@@ -23,7 +25,7 @@ export const oauthRouter = new Hono()
   })
   // OIDC Access Token Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#TokenEndpoint
-  .post('/token', arktypeValidator('form', type('Record<string,string>')), async (ctx) => {
+  .post('/token', cors(), arktypeValidator('form', type('Record<string,string>')), async (ctx) => {
     const response = await ctx.var.app.oauth.handleTokenRequest(ctx, ctx.req.valid('form'))
     return ctx.json(response)
   })
@@ -32,6 +34,7 @@ export const oauthRouter = new Hono()
   .on(
     ['GET', 'POST'],
     '/userinfo',
+    cors(),
     verifyAuthorizationJwt,
     verifyPermission({ path: '/session/claim' }),
     async (ctx) => {

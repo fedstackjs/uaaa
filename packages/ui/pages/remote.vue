@@ -71,6 +71,7 @@ definePageMeta({
   layout: 'plain',
   middleware: 'verifyauth'
 })
+
 useHead({
   title: 'Remote Authorize'
 })

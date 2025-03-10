@@ -37,8 +37,9 @@
 
 <script setup lang="ts">
 definePageMeta({
-  level: 1
+  level: 2
 })
+
 useHead({
   title: 'Credential Management'
 })

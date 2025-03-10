@@ -42,6 +42,7 @@
 definePageMeta({
   level: 2
 })
+
 useHead({
   title: 'Install App'
 })
