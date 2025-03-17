@@ -173,7 +173,8 @@ export class ClaimManager extends Hookable<{
       description: 'User name',
       editable: SECURITY_LEVEL.MEDIUM,
       securityLevel: SECURITY_LEVEL.LOW,
-      basic: true
+      basic: true,
+      openid: { alias: 'nickname' }
     })
     this.hook('validate:username', reFilter(rUsername, 'username'))
 
@@ -181,7 +182,8 @@ export class ClaimManager extends Hookable<{
       name: 'realname',
       description: 'Real name',
       securityLevel: SECURITY_LEVEL.LOW,
-      basic: true
+      basic: true,
+      openid: { alias: 'name', verifiable: true }
     })
 
     this.addClaimDescriptor({
@@ -198,7 +200,8 @@ export class ClaimManager extends Hookable<{
       description: 'Email',
       editable: true,
       securityLevel: SECURITY_LEVEL.LOW,
-      basic: true
+      basic: true,
+      openid: { verifiable: true }
     })
     this.hook('validate:email', reFilter(rEmail, 'email'))
 
@@ -206,7 +209,9 @@ export class ClaimManager extends Hookable<{
       name: 'phone',
       description: 'Phone number',
       editable: true,
-      securityLevel: SECURITY_LEVEL.LOW
+      securityLevel: SECURITY_LEVEL.LOW,
+      basic: true,
+      openid: { alias: 'phone_number', verifiable: true }
     })
     this.hook('validate:phone', reFilter(rPhone, 'phone'))
 
