@@ -3221,6 +3221,7 @@ __metadata:
     bcrypt: "npm:^5.1.1"
     clipanion: "npm:^4.0.0-rc.3"
     concurrently: "npm:^9.0.0"
+    destr: "npm:^2.0.3"
     dotenv: "npm:^16.4.5"
     hono: "npm:^4.7.2"
     hookable: "npm:^5.5.3"

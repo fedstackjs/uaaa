@@ -60,6 +60,7 @@ const { t } = useI18n()
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()
+const { config, silentFail } = useTransparentUX()
 const showGrant = ref(false)
 const grantedPermissions = ref<string[]>([])
 
@@ -71,21 +72,24 @@ const { data: app } = await useAsyncData(async () => {
 
 const { run: authorize, running } = useTask(async () => {
   if (!app.value) return
-  await props.params.connector.preAuthorize(props.params, app.value)
   try {
+    await props.params.connector.preAuthorize(props.params, app.value)
     await props.params.connector.onAuthorize(props.params, app.value)
     router.replace('/')
   } catch (err) {
-    if (isAPIError(err) && err.code === 'APP_NOT_INSTALLED') {
-      toast.error(t('msg.app-not-installed'))
-      router.replace({
-        path: '/install',
-        query: {
-          appId: props.params.appId,
-          redirect: route.fullPath
-        }
-      })
-      return
+    if (isAPIError(err)) {
+      switch (err.code) {
+        case 'APP_NOT_INSTALLED':
+          toast.error(t('msg.app-not-installed'))
+          router.replace({
+            path: '/install',
+            query: {
+              appId: props.params.appId,
+              redirect: route.fullPath
+            }
+          })
+          return
+      }
     }
     throw err
   }
@@ -118,41 +122,53 @@ const {
 })
 
 onMounted(async () => {
-  const resp = await api.session.try_derive.$post({
-    json: {
-      appId: props.params.appId,
-      securityLevel: props.params.securityLevel,
-      permissions: props.params.permissions,
-      optionalPermissions: props.params.optionalPermissions,
-      confidential: props.params.confidential,
-      remote: !!props.params.userCode
-    }
-  })
   try {
+    const resp = await api.session.try_derive.$post({
+      json: {
+        appId: props.params.appId,
+        securityLevel: props.params.securityLevel,
+        permissions: props.params.permissions,
+        optionalPermissions: props.params.optionalPermissions,
+        confidential: props.params.confidential,
+        remote: !!props.params.userCode
+      }
+    })
     await api.checkResponse(resp)
-  } catch (err) {
-    if (isAPIError(err) && err.code === 'APP_NOT_INSTALLED') {
-      toast.error(t('msg.app-not-installed'))
-      router.replace({
-        path: '/install',
-        query: {
-          appId: props.params.appId,
-          redirect: route.fullPath
-        }
-      })
-      return
+    const { permissions } = await resp.json()
+    grantedPermissions.value = permissions
+    const parsedPermissions = permissions
+      .map((perm) => Permission.fromCompactString(perm))
+      .filter((perm) => perm.appId === api.appId.value)
+    if (parsedPermissions.some((perm) => perm.test('/session/slient_authorize'))) {
+      // start(5)
+      authorize()
     }
-    // Handle error
+  } catch (err) {
+    if (isAPIError(err)) {
+      switch (err.code) {
+        case 'APP_NOT_INSTALLED':
+          toast.error(t('msg.app-not-installed'))
+          router.replace({
+            path: '/install',
+            query: {
+              appId: props.params.appId,
+              redirect: route.fullPath
+            }
+          })
+          return
+        case 'INSUFFICIENT_SECURITY_LEVEL':
+          router.replace({
+            path: '/auth/verify',
+            query: { redirect: route.fullPath, targetLevel: err.data.required }
+          })
+          return
+      }
+    }
+    // TODO: Handle error
+    if (config.value.nonInteractive) {
+      silentFail()
+    }
     return
-  }
-  const { permissions } = await resp.json()
-  grantedPermissions.value = permissions
-  const parsedPermissions = permissions
-    .map((perm) => Permission.fromCompactString(perm))
-    .filter((perm) => perm.appId === api.appId.value)
-  if (parsedPermissions.some((perm) => perm.test('/session/slient_authorize'))) {
-    // start(5)
-    authorize()
   }
 })
 </script>

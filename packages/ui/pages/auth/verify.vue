@@ -87,12 +87,23 @@ const router = useRouter()
 const type = useRouteQuery<string>('type', '')
 const currentLevel = api.securityLevel
 const targetLevel = useRouteQuery('targetLevel', '0')
+const { config } = useTransparentUX()
 
 const { data } = await useAsyncData(async () => {
   const resp = await api.session.upgrade.$get({ query: { targetLevel: targetLevel.value } })
   const { types } = await resp.json()
   return types.filter((type) => t(`credentials.${type}`) !== `credentials.${type}`)
 })
+
+watch(
+  [data, config],
+  () => {
+    if (data.value?.includes(config.value?.preferType as any)) {
+      type.value = config.value?.preferType as (typeof data.value)[number]
+    }
+  },
+  { immediate: true }
+)
 
 let redirected = false
 

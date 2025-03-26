@@ -22,7 +22,7 @@ function getWindow(redirectUrl: string) {
 
 const timeout = 60 * 1000 // 1 minute
 
-export async function getIAAAToken() {
+export async function getIAAAToken(nonInteractive = false) {
   const resp = await fetch('/.well-known/iaaa-configuration')
   const { appID, appName, authorizeUrl, redirectUrl, crossOrigin } = await resp.json()
   const html = `
@@ -42,7 +42,7 @@ export async function getIAAAToken() {
     client.document.write(html)
     client.document.forms[0].submit()
     const start = Date.now()
-    for (; Date.now() - start < timeout; ) {
+    for (; !client.closed && Date.now() - start < timeout; ) {
       try {
         const params = new URLSearchParams(client.document.location.search)
         const token = params.get('token') || params.get('code')
@@ -56,7 +56,6 @@ export async function getIAAAToken() {
       await sleep(200)
     }
     close()
-    throw new Error('IAAA timeout')
   } else {
     const { origin } = new URL(redirectUrl)
     console.log(`[IAAA] Using stub: ${origin}`)
@@ -75,7 +74,7 @@ export async function getIAAAToken() {
     }
 
     const start = Date.now()
-    for (; Date.now() - start < timeout; ) {
+    for (; !client.closed && Date.now() - start < timeout; ) {
       client.postMessage({ actions: [{ action: 'init' }] }, origin)
       if (ready) break
       await sleep(200)
@@ -92,6 +91,11 @@ export async function getIAAAToken() {
       await sleep(200)
     }
     cleanup()
-    throw new Error('IAAA timeout')
   }
+  if (nonInteractive) {
+    history.go(1 - history.length)
+    await sleep(2000)
+    return ''
+  }
+  throw new Error('IAAA timeout')
 }

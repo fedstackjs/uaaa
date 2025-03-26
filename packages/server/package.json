@@ -28,6 +28,7 @@
     "arktype": "^2.0.4",
     "bcrypt": "^5.1.1",
     "clipanion": "^4.0.0-rc.3",
+    "destr": "^2.0.3",
     "dotenv": "^16.4.5",
     "hono": "^4.7.2",
     "hookable": "^5.5.3",

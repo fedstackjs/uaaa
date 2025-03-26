@@ -97,12 +97,31 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const type = useRouteQuery<string>('type', '')
+const { config, parseAndLoad } = useTransparentUX()
+
+if (route.query.redirect) {
+  const originalRoute = router.resolve(toSingle(route.query.redirect, '/'))
+  const params = parseAuthorizeParams(originalRoute.query)
+  if (!('error' in params)) {
+    parseAndLoad(params.params ?? {})
+  }
+}
 
 const { data } = await useAsyncData(async () => {
   const resp = await api.public.login.$get()
   const { types } = await resp.json()
   return types.filter((type) => t(`credentials.${type}`) !== `credentials.${type}`)
 })
+
+watch(
+  [data, config],
+  () => {
+    if (data.value?.includes(config.value?.preferType as any)) {
+      type.value = config.value?.preferType as (typeof data.value)[number]
+    }
+  },
+  { immediate: true }
+)
 
 function postLogin() {
   router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')

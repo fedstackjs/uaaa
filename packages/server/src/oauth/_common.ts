@@ -1,7 +1,8 @@
 import ms from 'ms'
 import jwt from 'jsonwebtoken'
 import { createHash } from 'node:crypto'
-import { Type, type } from 'arktype'
+import { type } from 'arktype'
+import { safeDestr } from 'destr'
 import type { Context } from 'hono'
 import type { App, ClaimName, IAppDoc, IUserClaims } from '../index.js'
 import { OAuthError } from './_errors.js'
@@ -281,6 +282,23 @@ export class OAuthManager {
     }
   }
 
+  scopeToParams(scope: string) {
+    const scopes = scope
+      .split(' ')
+      .map((s) => decodeURIComponent(s))
+      .filter((s) => URL.canParse(s))
+      .map((s) => new URL(s))
+      .filter((s) => s.protocol === 'uaaa+param:')
+    const merged = Object.create(null)
+    for (const { pathname } of scopes) {
+      try {
+        const parsed = safeDestr(pathname)
+        if (parsed && typeof parsed === 'object') Object.assign(merged, parsed)
+      } catch {}
+    }
+    return merged
+  }
+
   async authorizeToUI(ctx: Context, _request: Record<string, string>) {
     const request = OAuthManager.tAuthorizationRequest(_request)
     if (request instanceof type.errors) {
@@ -303,7 +321,10 @@ export class OAuthManager {
     return this._authorizeUrl({
       appId: client_id,
       type: 'oidc',
-      params: JSON.stringify(rest),
+      params: JSON.stringify({
+        ...this.scopeToParams(scope),
+        ...rest
+      }),
       securityLevel,
       confidential,
       ...this.scopeToPermissions(scope)
@@ -492,7 +513,10 @@ export class OAuthManager {
     const remoteRequest: RemoteRequest = {
       appId: clientId,
       type: 'oidc',
-      params: JSON.stringify(rest),
+      params: JSON.stringify({
+        ...this.scopeToParams(scope ?? ''),
+        ...rest
+      }),
       securityLevel,
       confidential: '0',
       ...this.scopeToPermissions(scope ?? '')

@@ -1,13 +1,9 @@
 import type { ApiManager } from '#imports'
-import type { LocationQuery, LocationQueryValue } from '#vue-router'
+import type { LocationQuery } from '#vue-router'
 import type { InferResponseType } from 'hono'
 import { renderSVG } from 'uqr'
 import type { SecurityLevel } from '~/utils/api'
 
-const toSingle = (value: LocationQueryValue | LocationQueryValue[], init: string): string =>
-  (Array.isArray(value) ? value[0] : value) ?? init
-const toArray = (value: LocationQueryValue | LocationQueryValue[]): string[] =>
-  value === null ? [] : Array.isArray(value) ? value.filter((v) => v !== null) : [value]
 type IAppDTO = InferResponseType<ApiManager['public']['app'][':id']['$get']>['app']
 
 abstract class Connector {
@@ -133,7 +129,7 @@ export interface IAuthorizeParams {
   confidential?: boolean
 }
 
-const parseAuthorizeParams = (query: LocationQuery) => {
+export const parseAuthorizeParams = (query: LocationQuery) => {
   const type = toSingle(query.type, 'oidc')
   if (!isConnectorType(type)) return { error: `Invalid connector type: ${type}` }
   const appId = toSingle(query.appId, '')
@@ -163,14 +159,20 @@ const parseAuthorizeParams = (query: LocationQuery) => {
   } catch (err) {
     return { error: `Invalid params` }
   }
+  //
   return params
 }
 
 export const useAuthorize = () => {
   const route = useRoute()
-  const params = computed<IAuthorizeParams | { error: string }>(() =>
-    parseAuthorizeParams(route.query)
-  )
+  const { parseAndLoad } = useTransparentUX()
+  const params = computed<IAuthorizeParams | { error: string }>(() => {
+    const params = parseAuthorizeParams(route.query)
+    if (!('error' in params)) {
+      parseAndLoad(params.params ?? {})
+    }
+    return params
+  })
   return { params }
 }
 

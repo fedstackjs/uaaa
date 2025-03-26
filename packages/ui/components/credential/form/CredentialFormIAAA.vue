@@ -27,15 +27,17 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const authRedirect = useLocalStorage('authRedirect', '')
+const { config, silentFail } = useTransparentUX()
 
 const { running: isLoading, run: submit } = useTask(async () => {
   authRedirect.value = 'false'
-  const token = await getIAAAToken()
+  const token = await getIAAAToken(config.value.nonInteractive)
   let credentialId: string | undefined
   switch (props.action) {
-    case 'login':
+    case 'login': {
       await api.login('iaaa', { token })
       break
+    }
     case 'verify': {
       await api.verify('iaaa', props.targetLevel ?? 0, { token })
       break
@@ -63,6 +65,15 @@ const { running: isLoading, run: submit } = useTask(async () => {
     }
   }
   emit('updated', credentialId)
+})
+
+onMounted(() => {
+  switch (props.action) {
+    case 'login':
+    case 'verify':
+      submit()
+      break
+  }
 })
 </script>
 
