@@ -8,7 +8,11 @@ type IAppDTO = InferResponseType<ApiManager['public']['app'][':id']['$get']>['ap
 
 abstract class Connector {
   abstract preAuthorize(params: IAuthorizeParams, app: IAppDTO): Promise<void>
-  abstract onAuthorize(params: IAuthorizeParams, app: IAppDTO): Promise<void>
+  abstract onAuthorize(
+    params: IAuthorizeParams,
+    app: IAppDTO,
+    beforeRedirect?: () => void
+  ): Promise<void>
   abstract onRemoteAuthorize(
     params: IAuthorizeParams,
     response: Record<string, unknown>
@@ -43,7 +47,11 @@ class OpenIDConnector extends Connector {
     }
   }
 
-  override async onAuthorize(params: IAuthorizeParams, app: IAppDTO): Promise<void> {
+  override async onAuthorize(
+    params: IAuthorizeParams,
+    app: IAppDTO,
+    beforeRedirect?: () => void
+  ): Promise<void> {
     const { redirect_uri, state, code_challenge, code_challenge_method, nonce } =
       this._extractParams(params)
     const challenge = code_challenge && `${code_challenge_method ?? 'plain'}:${code_challenge}`
@@ -80,6 +88,8 @@ class OpenIDConnector extends Connector {
         code: data.code,
         state
       })
+      beforeRedirect?.()
+      await sleep(200)
       const url = redirect_uri + '?' + redirectParams.toString()
       location.href = url
     }
@@ -170,6 +180,8 @@ export const useAuthorize = () => {
     const params = parseAuthorizeParams(route.query)
     if (!('error' in params)) {
       parseAndLoad(params.params ?? {})
+    } else {
+      console.error(`Error parsing authorize params: ${params.error}`)
     }
     return params
   })

@@ -84,7 +84,7 @@ useHead({
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const type = useRouteQuery<string>('type', '')
+const type = useRouteQuery<string>('verify_type', '')
 const currentLevel = api.securityLevel
 const targetLevel = useRouteQuery('targetLevel', '0')
 const { config } = useTransparentUX()
@@ -97,9 +97,10 @@ const { data } = await useAsyncData(async () => {
 
 watch(
   [data, config],
-  () => {
-    if (data.value?.includes(config.value?.preferType as any)) {
-      type.value = config.value?.preferType as (typeof data.value)[number]
+  ([data, config], [oldData, oldConfig]) => {
+    if (config?.preferType === oldConfig?.preferType) return
+    if (data?.includes(config?.preferType as any)) {
+      type.value = config?.preferType as (typeof data)[number]
     }
   },
   { immediate: true }

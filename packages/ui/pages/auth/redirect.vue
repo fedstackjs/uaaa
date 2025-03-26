@@ -32,10 +32,11 @@ onMounted(() => {
   authRedirect.value = ''
   if (value) {
     if (value === 'false') return
-    const { path, query } = router.resolve(authRedirect.value)
+    const { path, query, hash } = router.resolve(value)
     router.replace({
       path,
-      query: { ...query, ...route.query }
+      query: { ...query, ...route.query },
+      hash
     })
   } else if (!route.query.stub) {
     router.replace('/')

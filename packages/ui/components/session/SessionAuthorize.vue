@@ -74,7 +74,9 @@ const { run: authorize, running } = useTask(async () => {
   if (!app.value) return
   try {
     await props.params.connector.preAuthorize(props.params, app.value)
-    await props.params.connector.onAuthorize(props.params, app.value)
+    await props.params.connector.onAuthorize(props.params, app.value, () => {
+      resetTransparentUXData()
+    })
     router.replace('/')
   } catch (err) {
     if (isAPIError(err)) {

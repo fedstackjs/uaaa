@@ -3,8 +3,10 @@ export default defineNuxtPlugin(() => {
   watch(
     config,
     ({ nonInteractive }) => {
-      const nuxtElement = document.getElementById('__nuxt')!
-      nuxtElement.style.opacity = nonInteractive ? '0' : '1'
+      if (!localStorage.getItem('forceInteractive')) {
+        const nuxtElement = document.getElementById('__nuxt')!
+        nuxtElement.style.opacity = nonInteractive ? '0' : '1'
+      }
     },
     { immediate: true }
   )

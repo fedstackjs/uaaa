@@ -28,6 +28,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const authRedirect = useLocalStorage('authRedirect', '')
 const { config, silentFail } = useTransparentUX()
+const { getIAAAToken } = useIAAA()
 
 const { running: isLoading, run: submit } = useTask(async () => {
   authRedirect.value = 'false'

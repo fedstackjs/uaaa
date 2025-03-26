@@ -29,6 +29,10 @@ const parseTransparentUXConfig = (query: LocationQuery) => {
 
 const config = useLocalStorage<ITransparentUXConfig>('tux_v0', {}, options)
 
+export const resetTransparentUXData = () => {
+  localStorage.setItem('tux_v0', '{}')
+}
+
 export const useTransparentUX = () => {
   const route = useRoute()
   const parseAndLoad = (query = route.query) => {

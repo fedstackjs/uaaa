@@ -96,7 +96,7 @@ useHead({
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const type = useRouteQuery<string>('type', '')
+const type = useRouteQuery<string>('signin_type', '')
 const { config, parseAndLoad } = useTransparentUX()
 
 if (route.query.redirect) {
@@ -124,7 +124,9 @@ watch(
 )
 
 function postLogin() {
-  router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
+  const target = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+  console.log(`Login finished, redirecting to ${target}`)
+  router.replace(target)
 }
 
 const {
