@@ -292,7 +292,8 @@ export class OAuthManager {
     const merged = Object.create(null)
     for (const { pathname } of scopes) {
       try {
-        const parsed = safeDestr(pathname)
+        const decoded = Buffer.from(pathname, 'base64').toString()
+        const parsed = safeDestr(decoded)
         if (parsed && typeof parsed === 'object') Object.assign(merged, parsed)
       } catch {}
     }
