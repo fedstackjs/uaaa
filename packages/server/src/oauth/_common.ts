@@ -392,12 +392,13 @@ export class OAuthManager {
     const { app } = ctx.var
     const mappedClaims = await this.generateClaims(ctx, appId, userId)
     const now = Date.now()
+    // TODO: configure this timeout
+    const exp = now + ctx.var.app.token.getTokenTimeout(SECURITY_LEVEL.MEDIUM)
     return app.token.sign({
       ...mappedClaims,
       aud: appId,
-      // TODO: configure this timeout
-      exp: now + ctx.var.app.token.getTokenTimeout(SECURITY_LEVEL.LOW),
-      iat: now,
+      iat: Math.floor(now / 1000),
+      exp: Math.floor(exp / 1000),
       nonce
     })
   }
