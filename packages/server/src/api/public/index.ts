@@ -22,7 +22,10 @@ export const publicApi = new Hono()
   .get('/app', async (ctx) => {
     const apps: Array<null | Omit<IAppDoc, 'secret' | 'secrets' | 'callbackUrls'>> =
       await ctx.var.app.db.apps
-        .find({ promoted: true }, { projection: { secret: 0, secrets: 0, callbackUrls: 0 } })
+        .find(
+          { 'config.promoted': true },
+          { projection: { secret: 0, secrets: 0, callbackUrls: 0 } }
+        )
         .toArray()
     return ctx.json({ apps })
   })

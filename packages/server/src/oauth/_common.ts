@@ -318,7 +318,7 @@ export class OAuthManager {
     const confidential =
       'confidential' in rest && clientApp.openid?.allowPublicClient
         ? `${rest['confidential']}`
-        : '1'
+        : `${+!(clientApp.openid?.defaultPublicClient ?? false)}`
     return this._authorizeUrl({
       appId: client_id,
       type: 'oidc',

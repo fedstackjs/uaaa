@@ -24,7 +24,6 @@ callbackUrls:
   - http://localhost:4180/oauth2/callback
 variables: {}
 secrets: {}
-promoted: false
 securityLevel: 1
 openid:
   allowPublicClient: false

@@ -3,6 +3,7 @@
     <VCardText>
       <template v-if="manifest.openid">
         <VCheckbox v-model="manifest.openid.allowPublicClient" label="Allow public client" />
+        <VCheckbox v-model="manifest.openid.defaultPublicClient" label="Default public client" />
         <VTextField
           v-model.number="manifest.openid.minSecurityLevel"
           label="Minimal security level"

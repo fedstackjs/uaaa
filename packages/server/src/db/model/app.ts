@@ -33,6 +33,7 @@ export type IAppGeneralConfig = typeof tAppGeneralConfig.infer
 export const tAppOpenIdConfig = type({
   'additionalClaims?': 'Record<string,string>',
   'allowPublicClient?': 'boolean',
+  'defaultPublicClient?': 'boolean',
   'minSecurityLevel?': tSecurityLevel
 })
 export type IAppOpenIdConfig = typeof tAppOpenIdConfig.infer

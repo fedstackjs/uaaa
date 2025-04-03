@@ -27,7 +27,6 @@ const headers = [
   { title: t('id'), value: '_id' },
   { title: t('name'), value: 'name' },
   { title: t('description'), value: 'description' },
-  { title: t('promoted'), value: 'promoted' },
   { title: t('security-level'), value: 'securityLevel' },
   { title: t('actions'), value: 'actions', align: 'end', sortable: false }
 ] as const

@@ -17,7 +17,6 @@ requestedPermissions:
 callbackUrls: []
 variables: {}
 secrets: {}
-promoted: false
 securityLevel: 1
 openid:
   allowPublicClient: true
