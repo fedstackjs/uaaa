@@ -2,7 +2,7 @@
   "name": "@uaaa/server",
   "type": "module",
   "main": "lib/index.js",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"

@@ -202,9 +202,7 @@ export class ApiManager {
   async login(type: string, payload: unknown) {
     const resp = await this.public.login.$post({ json: { type, payload } })
     await this.checkResponse(resp)
-    const {
-      token: { token, refreshToken }
-    } = await resp.json()
+    const { token, refreshToken } = await resp.json()
     await navigator.locks.request(`tokens`, () => this._applyToken(token, refreshToken))
     await this.getSessionClaims()
   }
@@ -259,10 +257,10 @@ export class ApiManager {
       if (errors && success === false) {
         return new APIError('INVALID_TYPE', { summary: '' })
       }
-      return new APIError(code, data)
     } catch (err) {
       return new APIError('UNKNOWN_ERROR', { msg: this._formatError(err) })
     }
+    return new APIError('UNKNOWN_ERROR', { msg: 'Unknown Error' })
   }
 
   async checkResponse(resp: Response) {

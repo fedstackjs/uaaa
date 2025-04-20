@@ -99,8 +99,7 @@ export const publicApi = new Hono()
         ip: getRemoteIP(ctx),
         ua: getUserAgent(ctx)
       }
-      const token = await session.login(loginResult, environment)
-      return ctx.json({ token })
+      return ctx.json(await session.login(loginResult, environment))
     }
   )
   // Exchange
@@ -121,8 +120,7 @@ export const publicApi = new Hono()
         ip: getRemoteIP(ctx),
         ua: getUserAgent(ctx)
       }
-      const token = await app.session.exchange(payload, config, environment)
-      return ctx.json({ token })
+      return ctx.json(await app.session.exchange(payload, config, environment))
     }
   )
   // Refresh Token

@@ -326,12 +326,11 @@ export class TokenManager extends Hookable<{}> {
 
   async createAndSignToken(
     token: Omit<ITokenDoc, '_id'>,
-    options: ICreateTokenOptions = {},
+    options: Omit<ICreateTokenOptions, 'generateCode'> = {},
     targetAppId?: string
   ) {
-    const tokenDoc = await this.createToken(token, options)
-    const generated = await this.signToken(tokenDoc, targetAppId)
-    return tokenDoc.code ? { ...generated, code: tokenDoc.code } : generated
+    const tokenDoc = await this.createToken(token, { ...options, generateCode: false })
+    return this.signToken(tokenDoc, targetAppId)
   }
 
   async verifyToken(token: string) {

@@ -191,7 +191,7 @@ export class SessionManager extends Hookable<{
         refreshTimeout: token.getRefreshTimeout(securityLevel, refreshTimeout),
         environment
       },
-      { generateCode: false, timestamp: now }
+      { timestamp: now }
     )
   }
 
