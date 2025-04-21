@@ -27,3 +27,9 @@ TAG=latest
 docker build . -f ./packages/server/Dockerfile -t git.pku.edu.cn/uaaa/server:"$TAG"
 docker build . -f ./packages/ui/Dockerfile -t git.pku.edu.cn/uaaa/ui:"$TAG"
 ```
+
+or using docker compose
+
+```sh
+export TAG=latest && docker compose build && docker compose push
+```

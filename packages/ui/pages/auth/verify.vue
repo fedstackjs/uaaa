@@ -74,7 +74,8 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'authorize',
-  middleware: 'verifyauth'
+  middleware: 'verifyauth',
+  level: 0
 })
 
 useHead({
