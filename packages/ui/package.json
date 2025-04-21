@@ -14,12 +14,12 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "nuxt": "^3.15.4",
+    "nuxt": "^3.16.2",
     "vue": "^3.5.13"
   },
   "devDependencies": {
     "@mdi/font": "^7.4.47",
-    "@nuxtjs/i18n": "^8.3.1",
+    "@nuxtjs/i18n": "^9.5.3",
     "@simplewebauthn/browser": "^13.1.0",
     "@types/whatwg-url": "^11.0.5",
     "@unocss/nuxt": "^66.0.0",
@@ -34,7 +34,7 @@
     "typescript": "^5.7.3",
     "unocss": "^66.0.0",
     "uqr": "^0.1.2",
-    "vite-plugin-vuetify": "^2.1.0",
+    "vite-plugin-vuetify": "^2.1.1",
     "vue-toastification": "^2.0.0-rc.5",
     "vue-tsc": "^2.2.4",
     "vuetify": "^3.7.13",
