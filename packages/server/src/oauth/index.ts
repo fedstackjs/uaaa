@@ -23,12 +23,25 @@ export const oauthRouter = new Hono()
     const url = await ctx.var.app.oauth.authorizeToUI(ctx, ctx.req.valid('form'))
     return ctx.redirect(url)
   })
+
+  // OIDC End Session Endpoint
+  // see https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout
+  .get('/logout', async (ctx) => {
+    const url = await ctx.var.app.oauth.endSessionToUI(ctx, ctx.req.query())
+    return ctx.redirect(url)
+  })
+  .post('/logout', async (ctx) => {
+    const url = await ctx.var.app.oauth.endSessionToUI(ctx, ctx.req.query())
+    return ctx.redirect(url)
+  })
+
   // OIDC Access Token Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#TokenEndpoint
   .post('/token', cors(), arktypeValidator('form', type('Record<string,string>')), async (ctx) => {
     const response = await ctx.var.app.oauth.handleTokenRequest(ctx, ctx.req.valid('form'))
     return ctx.json(response)
   })
+
   // OIDC UserInfo Endpoint
   // see https://openid.net/specs/openid-connect-core-1_0-final.html#UserInfo
   .on(

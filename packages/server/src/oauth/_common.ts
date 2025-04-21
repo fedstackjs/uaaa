@@ -20,11 +20,7 @@ export interface IOAuthTokenResponse {
 type GrantFn<T> = (
   ctx: Context,
   request: T,
-  client: {
-    id: string
-    secret: string
-    app: IAppDoc
-  }
+  client: { id: string; secret: string; app: IAppDoc }
 ) => Promise<IOAuthTokenResponse>
 
 export class OAuthManager {
@@ -77,11 +73,7 @@ export class OAuthManager {
       }),
       async (ctx, request, client) => {
         const tokenDoc = await tokens.findOneAndUpdate(
-          {
-            code: request.code,
-            appId: client.id,
-            terminated: { $ne: true }
-          },
+          { code: request.code, appId: client.id, terminated: { $ne: true } },
           { $unset: { code: '', challenge: '' } },
           { returnDocument: 'before' }
         )
@@ -188,12 +180,7 @@ export class OAuthManager {
           throw new OAuthError('access_denied')
         }
         const tokenDoc = await tokens.findOneAndUpdate(
-          {
-            code: response.code,
-            appId: client.id,
-            remote: true,
-            terminated: { $ne: true }
-          },
+          { code: response.code, appId: client.id, remote: true, terminated: { $ne: true } },
           { $unset: { code: '', challenge: '' } },
           { returnDocument: 'before' }
         )
@@ -249,11 +236,16 @@ export class OAuthManager {
     return this._relativeUrl('/remote?' + new URLSearchParams(...params).toString())
   }
 
+  private _logoutUrl(...params: ConstructorParameters<typeof URLSearchParams>) {
+    return this._relativeUrl('/logout?' + new URLSearchParams(...params).toString())
+  }
+
   async getMetadata() {
     return {
       issuer: this._base,
       authorization_endpoint: this._relativeUrl('/oauth/authorize'),
       token_endpoint: this._relativeUrl('/oauth/token'),
+      end_session_endpoint: this._relativeUrl('/oauth/logout'),
       jwks_uri: this._relativeUrl('/api/public/jwks'),
       userinfo_endpoint: this._relativeUrl('/oauth/userinfo'),
       response_types_supported: ['code', 'id_token'],
@@ -322,14 +314,15 @@ export class OAuthManager {
     return this._authorizeUrl({
       appId: client_id,
       type: 'oidc',
-      params: JSON.stringify({
-        ...this.scopeToParams(scope),
-        ...rest
-      }),
+      params: JSON.stringify({ ...this.scopeToParams(scope), ...rest }),
       securityLevel,
       confidential,
       ...this.scopeToPermissions(scope)
     })
+  }
+
+  async endSessionToUI(ctx: Context, _request: Record<string, string>) {
+    return this._logoutUrl(_request)
   }
 
   generateAdditionalClaim(claims: Partial<IUserClaims>, template: string) {
@@ -515,10 +508,7 @@ export class OAuthManager {
     const remoteRequest: RemoteRequest = {
       appId: clientId,
       type: 'oidc',
-      params: JSON.stringify({
-        ...this.scopeToParams(scope ?? ''),
-        ...rest
-      }),
+      params: JSON.stringify({ ...this.scopeToParams(scope ?? ''), ...rest }),
       securityLevel,
       confidential: '0',
       ...this.scopeToPermissions(scope ?? '')

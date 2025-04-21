@@ -5,10 +5,7 @@ export interface ITransparentUXConfig {
   nonInteractive?: boolean
 }
 
-const serializer = {
-  read: JSON.parse,
-  write: JSON.stringify
-}
+const serializer = { read: JSON.parse, write: JSON.stringify }
 
 const options = { serializer }
 
