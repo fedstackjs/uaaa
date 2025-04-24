@@ -1,6 +1,6 @@
 <template>
   <VAppBar border>
-    <VAppBarNavIcon v-if="mode !== 'authorize'" @click="model = !model" />
+    <VAppBarNavIcon v-if="showNavIcon" @click="model = !model" />
     <VToolbarItems>
       <VBtn to="/" rounded="lg" :active="false">
         <VIcon size="42">
@@ -14,7 +14,8 @@
 
     <VSpacer></VSpacer>
 
-    <UiUserMenu :dense="!mdAndUp" />
+    <UiUserMenu v-if="showUserMenu" :dense="!mdAndUp" />
+    <UiLocaleSelector v-if="!showNavIcon" />
   </VAppBar>
 </template>
 
@@ -22,10 +23,11 @@
 import { useDisplay } from 'vuetify'
 
 const model = defineModel<boolean>()
-defineProps<{
-  mode?: 'authorize' | 'console'
-}>()
+const props = defineProps<{ mode?: 'authorize' | 'console' | 'plain' }>()
 
 const config = useRuntimeConfig()
 const { mdAndUp } = useDisplay()
+
+const showNavIcon = computed(() => props.mode !== 'authorize' && props.mode !== 'plain')
+const showUserMenu = computed(() => props.mode !== 'plain')
 </script>

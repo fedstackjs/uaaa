@@ -16,27 +16,11 @@ export default defineNuxtConfig({
       })
     }
   ],
-  runtimeConfig: {
-    public: {
-      appName: 'UAAA'
-    }
-  },
-  app: {
-    head: {
-      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]
-    }
-  },
+  runtimeConfig: { public: { appName: 'UAAA' } },
+  app: { head: { link: [{ rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }] } },
   css: ['@/assets/main.css'],
-  build: {
-    transpile: ['vuetify']
-  },
-  vite: {
-    vue: {
-      template: {
-        transformAssetUrls
-      }
-    }
-  },
+  build: { transpile: ['vuetify'] },
+  vite: { vue: { template: { transformAssetUrls } } },
   nitro: {
     devProxy: {
       '/api': 'http://localhost:3030/api',
@@ -46,11 +30,13 @@ export default defineNuxtConfig({
   },
   i18n: {
     vueI18n: './i18n.config.ts',
-    langDir: 'locales',
     strategy: 'no_prefix',
+    defaultLocale: 'zh-Hans',
     locales: [
-      { code: 'en', file: 'en.yml' },
-      { code: 'zh-Hans', file: 'zh-Hans.yml', isCatchallLocale: true }
-    ]
+      //
+      { code: 'en', name: 'English', file: 'en.yml' },
+      { code: 'zh-Hans', name: '简体中文', file: 'zh-Hans.yml' }
+    ],
+    bundle: { optimizeTranslationDirective: false }
   }
 })

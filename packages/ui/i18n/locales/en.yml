@@ -1,1 +1,201 @@
-current_locale: English
+uaaa: UAAA System
+client-for: '{0} Client'
+
+pages:
+  index: Home
+  current: Current Session
+  session: Session Management
+  app: Application Management
+  credential: Credential Management
+  setting: User Settings
+  authorize: Authorize
+  remote-authorize: Remote Authorization
+  auth:
+    signin: Sign In
+    signout: Sign Out
+    verify: Verify
+    redirect: Redirect
+  console:
+    index: Admin Console
+    user: User Management
+    app: Application Management
+    setting: System Settings
+
+credentials:
+  password: Password
+  passkey: Passkey
+  phone: Phone
+  email: Email
+  webauthn: Passkey
+  iaaa: Peking University Unified Identity Authentication
+  totp: Mobile Token
+
+actions:
+  submit: Submit
+  login: Login
+  verify: Verify
+  bind: Bind
+  unbind: Unbind
+  rebind: Rebind
+  edit-remark: Edit Note
+  cancel: Cancel
+  save: Save
+  add-credential: Add Credential
+  edit: Edit {0}
+  reset: Reset
+  back: Back
+  add: Add
+  install: Configure
+  authorize: Authorize
+  terminate: Revoke
+  confirm: Confirm
+  continue: Continue
+  send-otp: Send Verification Code
+  goto: Go to {target}
+
+msg:
+  id: ID
+  value: Value
+  user-menu: User Menu
+  system-settings: System Settings
+  actions: Actions
+  login-by: Login via {0}
+  verify-by: Verify via {0}
+  credentials: Credential Management
+  credential-type: '{0} Credential'
+  current-security-level: 'Security Level: {0}'
+  upgrade-security-level-to: 'Upgrade Security Level to: {0}'
+  credential-id: Credential ID
+  credential-user-identifier: User Identifier
+  credential-global-identifier: Global Identifier
+  unbind-confirm: Confirm unbinding credential?
+  unknown-credential-type: Unsupported Credential Type
+  user-settings: User Settings
+  task-succeeded: Operation Successful
+  task-failed: Operation Failed
+  manage-session: Session Management
+  tips: Tips
+  not-implemented: Feature Not Implemented
+  no-verify-methods: No Verification Methods Available
+  no-verify-methods-hint: |
+    You haven't bound sufficient secure credentials and cannot access this feature.
+    Please go to the Credential Management page to bind recommended credentials.
+  downgrade-security-level: Lower Security Level
+  security-level: Security Level
+  app: Application
+  request-for: 'Purpose: {0}'
+  install-app: Configure Application
+  permissions: Permissions
+  claims: User Information
+  grants: Authorizations
+  manage-app: Application Management
+  app-not-found: Application Not Found
+  unsupported-connector: Unsupported Authorization Method
+  authorize-warn: By clicking Authorize, you will grant the application the permissions you set. Continue?
+  bad-arguments: Invalid Arguments
+  app-not-installed: Application Not Configured
+  redirecting: Redirecting...
+  use-local-authenticator: Use Local Credentials
+  no-app-installed: No Applications Configured
+  session-list: Session List
+  session-id: Session ID
+  session-token-count: Token Count
+  session-authorized-apps: Authorized Applications
+  terminated: Terminated
+  expired: Expired
+  active: Active
+  inactive: Inactive
+  expires-at: Expiration Time
+  created-at: Creation Time
+  view: View
+  token-list: Token List
+  token-id: Token ID
+  token-index: Index
+  target-app: Target Application
+  client-app: Client Application
+  do-in-seconds: '{0} seconds to {1}'
+  missing-required-claims: 'Missing required information: {0}'
+  missing-verified-claims: 'Missing verified information: {0}'
+  missing-required-permissions: 'Missing required permissions: {0}'
+  task-failed-with: 'Task failed: {0}'
+  will-grant-permission-for: 'The following permissions will be granted for the purpose of:'
+  will-grant-claim-for: 'This information will be granted for the purpose of:'
+  required: Required
+  show-grant: Show Authorization Details
+  hide-grant: Hide Authorization Details
+  current-session: Current Session
+  current-user: Current User
+  confirm-operation: Confirm operation? This operation cannot be undone!
+  user-id: User ID
+  user-list: User List
+  username: Username
+  is-disabled: Is Disabled
+  scan-qrcode-to-authorize: Scan QR code to authorize
+  or-visit: or visit
+  and-type-code-below: and enter the authorization code below
+  start-remote-authorize: Authorize
+  user-code: Authorization Code
+  scanned: Authorization device connected, waiting for authorization result...
+  remote-connected: Remote device connected successfully
+  remote-warn: |
+    You are performing a remote authorization operation, please carefully verify the following:
+    1. Is the authorization code on the remote device {code}
+    2. Does the page address on the remote device match this page
+    Never share your authorization code with others
+  email-email-hint: |
+    Step 1:
+    Enter your email address and send verification code
+  email-otp-hint: |
+    Step 2:
+    Enter the numeric verification code received in your email
+  login-hint: |
+    Please carefully check the page URL to ensure you are logging into the correct website
+    Note:
+    If you are using a public computer, please use the remote authorization feature
+  verify-hint: |
+    Verification is required to upgrade security level from "{currentLevel}" to "{targetLevel}"
+
+claims:
+  username: Username
+  email: Email
+  realname: Real Name
+  phone: Phone
+  avatar_hash: Avatar ID
+  is_admin: Is Administrator
+  'iaaa:name': IAAA Name
+  'iaaa:status': IAAA Status
+  'iaaa:identity_id': Student/Employee ID
+  'iaaa:dept_id': IAAA Department ID
+  'iaaa:dept': IAAA Department
+  'iaaa:identity_type': IAAA Identity Type
+  'iaaa:detail_type': IAAA Detail Type
+  'iaaa:identity_status': IAAA Identity Status
+  'iaaa:campus': Campus
+
+securityLevel:
+  0: Verification Required
+  1: Low
+  2: Medium
+  3: High
+  4: Secure Device
+
+console:
+  app-list: Application List
+  add-app: Add Application
+
+errors:
+  api:
+    unknown: API Error {code}
+    INSUFFICIENT_SECURITY_LEVEL: Higher Security Level Required
+    INSUFFICIENT_PERMISSION: Insufficient Permissions
+    REQUIRE_ADMIN: Admin Privileges Required
+    INVALID_OPERATION: Invalid Operation
+    INVALID_TYPE: Invalid Input Format
+    NOT_FOUND: Not Found
+    BAD_REQUEST: 'Bad Request: {msg}'
+    FORBIDDEN: 'Access Forbidden: {msg}'
+    TOO_MANY_REQUESTS: 'Too Many Requests: {msg}'
+  api-hint:
+    INSUFFICIENT_SECURITY_LEVEL: Redirecting to verification page
+  error: 'Error occurred: {message}'
+  unknown: Unknown Error
