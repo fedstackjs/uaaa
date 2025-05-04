@@ -143,7 +143,8 @@ export class TokenManager extends Hookable<{}> {
 
   async verify(
     token: string,
-    mapVerifyError: (err: jwt.VerifyErrors | null) => Error = this._mapVerifyError
+    mapVerifyError: (err: jwt.VerifyErrors | null) => Error = this._mapVerifyError,
+    options: jwt.VerifyOptions = {}
   ) {
     const result = await new Promise<jwt.Jwt>((resolve, reject) =>
       jwt.verify(
@@ -154,7 +155,11 @@ export class TokenManager extends Hookable<{}> {
           if (!key) return cb(new BusinessError('TOKEN_INVALID_JWT', {}))
           return cb(null, key)
         },
-        { complete: true },
+        {
+          issuer: this.issuer,
+          ...options,
+          complete: true
+        },
         (err, decoded) => (decoded ? resolve(decoded) : reject(mapVerifyError(err)))
       )
     )
