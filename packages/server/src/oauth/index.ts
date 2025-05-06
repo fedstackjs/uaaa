@@ -30,8 +30,8 @@ export const oauthRouter = new Hono()
     const url = await ctx.var.app.oauth.endSessionToUI(ctx, ctx.req.query())
     return ctx.redirect(url)
   })
-  .post('/logout', async (ctx) => {
-    const url = await ctx.var.app.oauth.endSessionToUI(ctx, ctx.req.query())
+  .post('/logout', arktypeValidator('form', type('Record<string,string>')), async (ctx) => {
+    const url = await ctx.var.app.oauth.endSessionToUI(ctx, ctx.req.valid('form'))
     return ctx.redirect(url)
   })
 
