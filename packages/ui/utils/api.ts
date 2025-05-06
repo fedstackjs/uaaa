@@ -257,10 +257,10 @@ export class ApiManager {
       if (errors && success === false) {
         return new APIError('INVALID_TYPE', { summary: '' })
       }
+      return new APIError(code, data)
     } catch (err) {
       return new APIError('UNKNOWN_ERROR', { msg: this._formatError(err) })
     }
-    return new APIError('UNKNOWN_ERROR', { msg: 'Unknown Error' })
   }
 
   async checkResponse(resp: Response) {
