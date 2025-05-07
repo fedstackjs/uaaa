@@ -350,8 +350,8 @@ export class OAuthManager {
         return { appId: clientId }
       }
     } finally {
-      return {}
     }
+    return {}
   }
 
   async endSessionToUI(ctx: Context, _request: Record<string, string>) {
