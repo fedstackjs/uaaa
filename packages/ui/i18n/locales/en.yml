@@ -10,6 +10,7 @@ pages:
   setting: User Settings
   authorize: Authorize
   remote-authorize: Remote Authorization
+  logout: Sign Out
   auth:
     signin: Sign In
     signout: Sign Out
@@ -52,6 +53,7 @@ actions:
   continue: Continue
   send-otp: Send Verification Code
   goto: Go to {target}
+  logout: Sign Out
 
 msg:
   id: ID

@@ -112,7 +112,7 @@ export class ApiManager {
     if (token.refreshToken) {
       try {
         const resp = await this.public.refresh.$post({
-          json: { clientId: this.appId.value, refreshToken: token.refreshToken }
+          json: { clientAppId: this.appId.value, refreshToken: token.refreshToken }
         })
         await this.checkResponse(resp)
         const { token: newToken, refreshToken } = await resp.json()

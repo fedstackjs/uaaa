@@ -150,5 +150,34 @@ export const sessionApi = new Hono()
       return ctx.json(await ctx.var.app.session.remoteUserPoll(userCode))
     }
   )
+  .post(
+    '/validate_token',
+    verifyPermission({ path: '/session/validate_token' }),
+    arktypeValidator(
+      'json',
+      type({
+        token: 'string',
+        appId: 'string?',
+        ignoreExpiration: 'boolean?'
+      })
+    ),
+    async (ctx) => {
+      const { token, appId, ignoreExpiration } = ctx.req.valid('json')
+      try {
+        const result = await ctx.var.app.token.verify(token, undefined, {
+          ignoreExpiration,
+          audience: appId
+        })
+        if (appId) return ctx.json({ appId })
+        if (typeof result.payload === 'object') {
+          if (typeof result.payload.aud === 'string') {
+            return ctx.json({ appId: result.payload.aud })
+          }
+        }
+      } finally {
+      }
+      return ctx.json({ appId: null })
+    }
+  )
 
 export type ISessionApi = typeof sessionApi

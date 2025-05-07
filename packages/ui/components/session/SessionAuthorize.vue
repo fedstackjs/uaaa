@@ -50,8 +50,6 @@
 </template>
 
 <script setup lang="ts">
-import type { IAuthorizeParams } from '~/composables/useAuthorize'
-
 const props = defineProps<{
   params: IAuthorizeParams
 }>()
@@ -141,7 +139,7 @@ onMounted(async () => {
     const parsedPermissions = permissions
       .map((perm) => Permission.fromCompactString(perm))
       .filter((perm) => perm.appId === api.appId.value)
-    if (parsedPermissions.some((perm) => perm.test('/session/slient_authorize'))) {
+    if (parsedPermissions.some((perm) => perm.test('/session/silent_authorize'))) {
       // start(5)
       authorize()
     }

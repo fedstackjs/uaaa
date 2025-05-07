@@ -169,7 +169,6 @@ export const parseAuthorizeParams = (query: LocationQuery) => {
   } catch (err) {
     return { error: `Invalid params` }
   }
-  //
   return params
 }
 

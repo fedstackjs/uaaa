@@ -328,43 +328,14 @@ export class OAuthManager {
     })
   }
 
-  private async _validateEndSessionClientId(
-    idTokenHint: string | undefined,
-    clientId: string | undefined
-  ): Promise<{ appId?: string; verified?: 'true' }> {
-    try {
-      if (idTokenHint) {
-        // https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout
-        const result = await this.app.token.verify(idTokenHint, undefined, {
-          ignoreExpiration: true,
-          audience: clientId
-        })
-        if (clientId) return { appId: clientId, verified: 'true' }
-        if (typeof result.payload === 'object') {
-          if (typeof result.payload.aud === 'string') {
-            return { appId: result.payload.aud, verified: 'true' }
-          }
-        }
-      }
-      if (clientId) {
-        return { appId: clientId }
-      }
-    } finally {
-    }
-    return {}
-  }
-
   async endSessionToUI(ctx: Context, _request: Record<string, string>) {
     const request = OAuthManager.tEndSessionRequest(_request)
     if (request instanceof type.errors) {
       return this._logoutUrl({ type: 'oidc', error: 'invalid_request' })
     }
-    const { id_token_hint, client_id, ...rest } = request
-    const client = await this._validateEndSessionClientId(id_token_hint, client_id)
     return this._logoutUrl({
       type: 'oidc',
-      ...client,
-      params: JSON.stringify({ ...rest })
+      params: JSON.stringify(request)
     })
   }
 

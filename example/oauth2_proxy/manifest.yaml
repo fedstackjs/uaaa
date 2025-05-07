@@ -18,7 +18,7 @@ requestedPermissions:
     perm: uaaa.local/session/claim
     required: true
   - reason: 快速登录
-    perm: uaaa.local/session/slient_authorize
+    perm: uaaa.local/session/silent_authorize
     required: true
 callbackUrls:
   - http://localhost:4180/oauth2/callback
