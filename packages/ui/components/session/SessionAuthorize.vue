@@ -72,7 +72,10 @@ const { data: app, status } = await useAsyncData(async () => {
 })
 
 const { run: authorize, running } = useTask(async () => {
-  if (!app.value) return
+  if (!app.value) {
+    toast.error(t('msg.bad-arguments'))
+    return symNoToast
+  }
   try {
     await props.params.connector.onAuthorize(props.params, app.value, () => {
       resetTransparentUXData()
@@ -90,7 +93,7 @@ const { run: authorize, running } = useTask(async () => {
               redirect: route.fullPath
             }
           })
-          return
+          return symNoToast
       }
     }
     throw err
