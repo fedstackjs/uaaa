@@ -1,5 +1,7 @@
 <template>
-  <VAlert v-if="!app" type="error" :text="t('msg.app-not-found')" />
+  <VSkeletonLoader v-if="status === 'pending'" type="card" />
+  <VAlert v-else-if="status === 'error'" type="error" :text="t('msg.bad-arguments')" />
+  <VAlert v-else-if="!app" type="error" :text="t('msg.app-not-found')" />
   <template v-else>
     <VList>
       <VListItem :title="app.name" :subtitle="app.description">
@@ -62,16 +64,16 @@ const { config, silentFail } = useTransparentUX()
 const showGrant = ref(false)
 const grantedPermissions = ref<string[]>([])
 
-const { data: app } = await useAsyncData(async () => {
+const { data: app, status } = await useAsyncData(async () => {
   const resp = await api.public.app[':id'].$get({ param: { id: props.params.appId } })
   const { app } = await resp.json()
+  await props.params.connector.preAuthorize(props.params, app)
   return app
 })
 
 const { run: authorize, running } = useTask(async () => {
   if (!app.value) return
   try {
-    await props.params.connector.preAuthorize(props.params, app.value)
     await props.params.connector.onAuthorize(props.params, app.value, () => {
       resetTransparentUXData()
     })

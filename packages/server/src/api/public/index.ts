@@ -32,10 +32,10 @@ export const publicApi = new Hono()
   // Get Application info
   .get('/app/:id', idParamValidator, async (ctx) => {
     const { id } = ctx.req.valid('param')
-    const app: null | Omit<IAppDoc, 'secret' | 'secrets' | 'callbackUrls'> =
+    const app: null | Omit<IAppDoc, 'secret' | 'secrets' | 'config' | 'openid' | 'callbackUrls'> =
       await ctx.var.app.db.apps.findOne(
         { _id: id },
-        { projection: { secret: 0, secrets: 0, callbackUrls: 0 } }
+        { projection: { secret: 0, secrets: 0, config: 0, openid: 0, callbackUrls: 0 } }
       )
     if (!app) {
       throw new BusinessError('NOT_FOUND', { msg: 'App not found' })
@@ -60,19 +60,28 @@ export const publicApi = new Hono()
   .post(
     '/app/:id/check_redirect',
     idParamValidator,
-    arktypeValidator('json', type({ url: 'string' })),
+    arktypeValidator('json', type({ url: 'string', 'type?': '"authorize"|"logout"' })),
     async (ctx) => {
       const { id } = ctx.req.valid('param')
-      const { url } = ctx.req.valid('json')
+      const { url, type = 'authorize' } = ctx.req.valid('json')
       const app = await ctx.var.app.db.apps.findOne(
         { _id: id },
-        { projection: { callbackUrls: 1 } }
+        { projection: { callbackUrls: 1, openid: 1 } }
       )
       if (!app) {
         throw new BusinessError('NOT_FOUND', { msg: 'App not found' })
       }
-      if (!app.callbackUrls.includes(url)) {
-        throw new BusinessError('BAD_REQUEST', { msg: 'Invalid redirect url' })
+      switch (type) {
+        case 'authorize':
+          if (!app.callbackUrls.includes(url)) {
+            throw new BusinessError('BAD_REQUEST', { msg: 'Invalid redirect url' })
+          }
+          break
+        case 'logout':
+          if (!app.openid?.logoutUrls?.includes(url)) {
+            throw new BusinessError('BAD_REQUEST', { msg: 'Invalid redirect url' })
+          }
+          break
       }
       return ctx.json({})
     }

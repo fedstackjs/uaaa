@@ -18,6 +18,15 @@
             <VTextField v-bind="scoped" label="Value" />
           </template>
         </CommonDictEditor>
+        <CommonListEditor
+          v-model="manifest.callbackUrls"
+          label="OIDC Logout URLs"
+          :factory="() => ''"
+        >
+          <template #item="scoped">
+            <VTextField v-bind="scoped" label="Logout URL" />
+          </template>
+        </CommonListEditor>
       </template>
     </VCardText>
   </VCard>

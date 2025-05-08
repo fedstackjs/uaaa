@@ -1,5 +1,5 @@
 import { type } from 'arktype'
-import { rAppId, tSecurityLevel, type SecurityLevel } from '../../util/index.js'
+import { rAppId, tSecurityLevel } from '../../util/index.js'
 
 export const tAppProvidedPermission = type({
   name: 'string',
@@ -34,7 +34,8 @@ export const tAppOpenIdConfig = type({
   'additionalClaims?': 'Record<string,string>',
   'allowPublicClient?': 'boolean',
   'defaultPublicClient?': 'boolean',
-  'minSecurityLevel?': tSecurityLevel
+  'minSecurityLevel?': tSecurityLevel,
+  'logoutUrls?': 'string[]'
 })
 export type IAppOpenIdConfig = typeof tAppOpenIdConfig.infer
 

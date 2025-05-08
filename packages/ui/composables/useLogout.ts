@@ -7,6 +7,7 @@ type IAppDTO = InferResponseType<ApiManager['public']['app'][':id']['$get']>['ap
 export interface IPreLogoutResult {
   app?: IAppDTO
   trusted?: boolean
+  redirect?: string
 }
 
 abstract class LogoutConnector {
@@ -50,22 +51,42 @@ class OpenIDLogoutConnector extends LogoutConnector {
     })
     await api.checkResponse(resp)
     const { app } = await resp.json()
-    return app
+    return { app }
+  }
+
+  private async _loadRedirect(appId: string, redirect?: string) {
+    if (!redirect) return { redirect: undefined }
+    try {
+      const resp = await api.public.app[':id'].check_redirect.$post({
+        param: { id: appId },
+        json: { url: redirect, type: 'logout' }
+      })
+      await api.checkResponse(resp)
+      return { redirect }
+    } catch {
+      return { redirect: undefined }
+    }
   }
 
   override async preLogout(params: ILogoutParams) {
-    const { id_token_hint, client_id } = this._extractParams(params)
+    const { id_token_hint, client_id, post_logout_redirect_uri } = this._extractParams(params)
     if (id_token_hint) {
       const appId = await this._verifyClient(id_token_hint, client_id)
       if (appId) {
-        const app = await this._loadApp(appId)
-        return { app, trusted: true }
+        return {
+          ...(await this._loadApp(appId)),
+          ...(await this._loadRedirect(appId, post_logout_redirect_uri)),
+          trusted: true
+        }
       }
     }
     if (client_id) {
       try {
-        const app = await this._loadApp(client_id)
-        return { app, trusted: false }
+        return {
+          ...(await this._loadApp(client_id)),
+          ...(await this._loadRedirect(client_id, post_logout_redirect_uri)),
+          trusted: false
+        }
       } finally {
       }
     }
@@ -78,6 +99,10 @@ class OpenIDLogoutConnector extends LogoutConnector {
     beforeRedirect?: () => void
   ) {
     await api.logout()
+    if (preLogoutResult.redirect) {
+      beforeRedirect?.()
+      window.location.href = preLogoutResult.redirect
+    }
   }
 
   override async onCancel(
@@ -85,7 +110,10 @@ class OpenIDLogoutConnector extends LogoutConnector {
     params: ILogoutParams,
     beforeRedirect?: () => void
   ) {
-    //
+    if (preLogoutResult.redirect) {
+      beforeRedirect?.()
+      window.location.href = preLogoutResult.redirect
+    }
   }
 }
 
