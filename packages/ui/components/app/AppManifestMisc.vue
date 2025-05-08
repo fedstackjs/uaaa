@@ -19,7 +19,8 @@
           </template>
         </CommonDictEditor>
         <CommonListEditor
-          v-model="manifest.callbackUrls"
+          v-if="manifest.openid.logoutUrls"
+          v-model="manifest.openid.logoutUrls"
           label="OIDC Logout URLs"
           :factory="() => ''"
         >
@@ -38,4 +39,5 @@ import type { IAppManifest } from '@uaaa/server'
 const manifest = defineModel<IAppManifest>({ required: true })
 manifest.value.openid ??= {}
 manifest.value.openid.additionalClaims ??= {}
+manifest.value.openid.logoutUrls ??= []
 </script>
